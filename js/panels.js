@@ -1,0 +1,41 @@
+/* Bottom sheets (CapCut-style panels) built from small reusable controls. */
+import { begin, end } from './store.js';
+import { icon } from './icons.js';
+
+const sheet = () => document.getElementById('sheet');
+let onClose = null;
+export const sheetOpen = () => !sheet().classList.contains('hidden');
+export function openSheet(title, build, { gesture = true, className = '' } = {}) {
+  closeSheet();
+  const el = sheet(); el.className = 'sheet ' + className;
+  el.innerHTML = `<div class="sh-head"><b>${title}</b><button class="ib sh-done" aria-label="Done">${icon('check')}</button></div><div class="sh-body"></div>`;
+  if (gesture) begin();
+  onClose = () => { if (gesture) end(); };
+  el.querySelector('.sh-done').onclick = () => closeSheet();
+  build(el.querySelector('.sh-body'));
+  document.body.classList.add('sheet-open');
+}
+export function closeSheet() {
+  const el = sheet(); if (el.classList.contains('hidden')) return;
+  el.classList.add('hidden'); el.innerHTML = ''; document.body.classList.remove('sheet-open');
+  const f = onClose; onClose = null; f && f();
+}
+export function slider(label, { min, max, step = 0.01, value, fmt = v => v, onInput, id }) {
+  const w = document.createElement('label'); w.className = 'ctl';
+  w.innerHTML = `<span class="cl">${label}</span><input type="range" min="${min}" max="${max}" step="${step}" value="${value}" ${id ? `id="${id}"` : ''}><output>${fmt(+value)}</output>`;
+  const inp = w.querySelector('input'), out = w.querySelector('output');
+  inp.addEventListener('input', () => { out.textContent = fmt(+inp.value); onInput(+inp.value); });
+  w.set = v => { inp.value = v; out.textContent = fmt(+v); };
+  return w;
+}
+export function chips(items, active, onPick, cls = '') {
+  const w = document.createElement('div'); w.className = 'chips ' + cls;
+  for (const it of items) { const b = document.createElement('button'); b.className = 'chipbtn' + (it.value === active ? ' on' : ''); b.innerHTML = it.html || it.label; b.dataset.v = String(it.value);
+    if (it.title) b.title = it.title;
+    b.onclick = () => { w.querySelectorAll('.chipbtn').forEach(x => x.classList.toggle('on', x === b)); onPick(it.value); }; w.appendChild(b); }
+  w.setActive = v => w.querySelectorAll('.chipbtn').forEach(x => x.classList.toggle('on', x.dataset.v === String(v)));
+  return w;
+}
+export function swatches(colors, active, onPick) {
+  return chips(colors.map(c => ({ value: c, html: `<i style="background:${c}"></i>`, title: c })), active, onPick, 'swatches');
+}
