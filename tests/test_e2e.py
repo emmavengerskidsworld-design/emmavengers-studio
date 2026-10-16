@@ -74,7 +74,7 @@ async def export_ui(pg, res, tag, fname):
     await pg.wait_for_selector('#exDone:not([hidden])', timeout=240000)
     info = await P(pg, '({codec:studioLastExport.codec,path:studioLastExport.path,sec:studioLastExport.seconds,src:studioLastExport.sources,dur:studioLastExport.duration})')
     log(f'  {tag}: exported in {time.time()-t0:.1f}s', info)
-    if fname == 'first': await pg.wait_for_timeout(600); await pg.screenshot(path=str(SHOTS / 'export-done-390.png')); log('  shot export-done-390.png')
+    if fname == 'first': await pg.wait_for_timeout(600); await pg.screenshot(path=str(SHOTS / 'export-done-desktop-390.png')); log('  shot export-done-desktop-390.png')
     async with pg.expect_download() as dl: await pg.click('#exSave')
     d = await dl.value; path = OUT / (tag + '_' + d.suggested_filename); await d.save_as(str(path))
     await pg.click('#exBack'); await pg.wait_for_timeout(300)

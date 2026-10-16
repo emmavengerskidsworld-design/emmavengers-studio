@@ -15,9 +15,18 @@ export function outputSize(aspect, short) {
 }
 const hasWebCodecs = () => typeof VideoEncoder !== 'undefined' && typeof AudioEncoder !== 'undefined' && typeof VideoFrame !== 'undefined' && typeof Mp4Muxer !== 'undefined';
 
-export async function pickCodecs(W, H, fps) {
+export const defaultBitrate = (W, H, fps) => Math.round(Math.min(16e6, W * H * fps * 0.16));
+/** Lowest video bitrate we still call good quality (used when fitting a video under the share size limit). */
+export const qualityFloor = (W, H) => Math.round(W * H * 2.0);   // ~4.1 Mbps at 1080x1920, ~1.8 Mbps at 720x1280
+const AUDIO_BR = 192000;
+/** Video bitrate so the whole file stays under maxBytes (with a safety margin), never above the normal bitrate. */
+export function planBitrate(W, H, fps, D, maxBytes) {
+  const full = defaultBitrate(W, H, fps); if (!maxBytes || !D) return full;
+  return Math.round(Math.max(400000, Math.min(full, maxBytes * 8 * 0.86 / D - AUDIO_BR - 30000)));
+}
+export async function pickCodecs(W, H, fps, vbr) {
   if (!hasWebCodecs()) return null;
-  const bitrate = Math.round(Math.min(16e6, W * H * fps * 0.16));
+  const bitrate = vbr || defaultBitrate(W, H, fps);
   const lvl = W * H * fps > 1920 * 1088 * 30 ? '2a' : '28';
   const vc = [['avc1.6400' + lvl, 'avc'], ['avc1.4d00' + lvl, 'avc'], ['avc1.42e0' + lvl, 'avc'], ['vp09.00.40.08', 'vp9'], ['av01.0.08M.08', 'av1']];
   let video = null;
@@ -26,7 +35,7 @@ export async function pickCodecs(W, H, fps) {
     try { if ((await VideoEncoder.isConfigSupported(config)).supported) { video = { config, mux }; break; } } catch (e) {}
   }
   let audio = null;
-  for (const [codec, mux, br] of [['mp4a.40.2', 'aac', 192000], ['opus', 'opus', 160000]]) {
+  for (const [codec, mux, br] of [['mp4a.40.2', 'aac', AUDIO_BR], ['opus', 'opus', 160000]]) {
     const config = { codec, sampleRate: SR, numberOfChannels: 2, bitrate: br };
     try { if ((await AudioEncoder.isConfigSupported(config)).supported) { audio = { config, mux }; break; } } catch (e) {}
   }
@@ -52,13 +61,13 @@ export async function mixAudio(p, D) {
 }
 
 export async function exportVideo(p, opt) {
-  const { short = 1080, fps = 30, onProgress = () => {}, signal = {}, mode } = opt;
+  const { short = 1080, fps = 30, onProgress = () => {}, signal = {}, mode, maxBytes } = opt;
   const D = projectDuration(p); if (!D) throw new Error('Nothing to export yet');
-  const { W, H } = outputSize(p.aspect, short);
-  const codecs = mode === 'recorder' ? null : await pickCodecs(W, H, fps);
+  const { W, H } = outputSize(p.aspect, short), vbr = planBitrate(W, H, fps, D, maxBytes);
+  const codecs = mode === 'recorder' ? null : await pickCodecs(W, H, fps, vbr);
   try {
-    if (codecs) return await encodeWebCodecs(p, D, W, H, fps, codecs, onProgress, signal);
-    if (recorderMime()) return await encodeRecorder(p, D, W, H, fps, onProgress, signal);
+    if (codecs) return { ...(await encodeWebCodecs(p, D, W, H, fps, codecs, onProgress, signal)), bitrate: vbr };
+    if (recorderMime()) return { ...(await encodeRecorder(p, D, W, H, fps, onProgress, signal, vbr)), bitrate: vbr };
     throw new Error('This browser cannot export video. Please use Chrome.');
   } finally { dropAudioCache(); dropDemuxCache(); }
 }
@@ -120,7 +129,7 @@ function drain(enc, below) {
 }
 
 /* Real-time fallback: plays the project into a hidden canvas and records it (takes as long as the video). */
-async function encodeRecorder(p, D, W, H, fps, onProgress, signal) {
+async function encodeRecorder(p, D, W, H, fps, onProgress, signal, vbr) {
   const t0 = performance.now(), mime = recorderMime();
   const canvas = Object.assign(document.createElement('canvas'), { width: W, height: H });
   let dest = null;
@@ -128,7 +137,7 @@ async function encodeRecorder(p, D, W, H, fps, onProgress, signal) {
   player.ensureAudio();
   player.seek(0); await new Promise(r => setTimeout(r, 800)); player.draw();
   const stream = canvas.captureStream(fps); if (dest) dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
-  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: Math.round(Math.min(12e6, W * H * fps * 0.14)), audioBitsPerSecond: 160000 });
+  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: Math.round(Math.min(12e6, vbr || W * H * fps * 0.14)), audioBitsPerSecond: 160000 });
   const chunks = []; rec.ondataavailable = e => e.data.size && chunks.push(e.data);
   const stopped = new Promise(r => rec.onstop = r);
   await new Promise(res => {

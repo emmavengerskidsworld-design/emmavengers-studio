@@ -6,7 +6,7 @@ import { Player } from './player.js';
 import { Timeline, fmtS } from './timeline.js';
 import { openSheet, closeSheet, sheetOpen, slider, chips, swatches } from './panels.js';
 import { FILTERS, FONTS, COLORS, BG_COLORS, SPEED_PRESETS, KEYFRAME_PROPS, DEFAULT_TRANSFORM, TRACK_KINDS } from './registry.js';
-import { exportVideo, outputSize, pickCodecs, recorderMime } from './export.js';
+import { exportVideo, outputSize, pickCodecs, recorderMime, planBitrate, qualityFloor } from './export.js';
 import { hitTest } from './render.js';
 import { icon } from './icons.js';
 
@@ -256,11 +256,32 @@ function menuSheet() {
 }
 
 /* ---------------- export ---------------- */
+/* Getting the video onto the phone (Android Chrome):
+   - "Save to Gallery" downloads <name>.mp4 as video/mp4. Chrome stores it in the phone's Download folder through
+     Android's media store, so it shows up in Gallery / Google Photos (Download album) — no file manager needed.
+   - "Post to…" opens the Android share sheet with the video (TikTok, YouTube, Instagram, WhatsApp, Photos, Drive…).
+     Chrome only shares files up to 50 MiB, so exports are sized to fit when that keeps good quality, and a
+     "smaller copy for posting" can be made when a long video is too big.
+   - "Download file" (small link): Save-As dialog where the browser has one (desktop), else a normal download. */
+const SHARE_LIMIT = () => window.__studioShareLimit || 50 * 1024 * 1024 - 512 * 1024;   // Chrome: 50 MiB per share
+const fileFor = r => new File([r.blob], r.name, { type: r.mime, lastModified: Date.now() });
+export function canShareVideo(file) {
+  try { const f = file || new File([new Uint8Array(16)], 'test.mp4', { type: 'video/mp4' }); return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [f] })); } catch (e) { return false; }
+}
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+const isAndroid = () => /Android/i.test(navigator.userAgent);
 function exportView() {
   if (player.playing) player.pause(); closeSheet();
-  const v = $('#exportView'); v.hidden = false; document.body.classList.add('exporting');
-  let short = +(localStorage.getItem('studio.res') || 1080), fps = +(localStorage.getItem('studio.fps') || 30), ctrl = null, resultUrl = null;
-  const D = projectDuration(S.project);
+  const v = $('#exportView'); v.hidden = false; document.body.classList.add('exporting'); $('#toast').classList.remove('show');
+  let short = +(localStorage.getItem('studio.res') || 1080), fps = +(localStorage.getItem('studio.fps') || 30), ctrl = null, result = null, small = null;
+  const D = projectDuration(S.project), shareOK = canShareVideo();
+  // Fit under the share limit up front when that still gives good quality (most short kids' videos).
+  const plan = () => { const { W, H } = outputSize(S.project.aspect, short); const fit = planBitrate(W, H, fps, D, SHARE_LIMIT());
+    return { W, H, maxBytes: shareOK && fit >= qualityFloor(W, H) ? SHARE_LIMIT() : null }; };
   v.innerHTML = `<div class="ex">
     <div class="ex-head"><button class="ib" id="exClose" aria-label="Close">${icon('x')}</button><b>Export video</b><span></span></div>
     <div class="ex-body">
@@ -272,45 +293,88 @@ function exportView() {
         <p class="hint">Keep this screen open while it exports.</p>
       </div>
       <div class="ex-prog" id="exProg" hidden><div class="ring"><b id="exPct">0%</b></div><div class="bar"><i id="exBar"></i></div><p id="exStatus">Preparing…</p><button class="btn ghost" id="exCancel">Cancel</button></div>
-      <div class="ex-done" id="exDone" hidden><video id="exVideo" controls playsinline></video><p class="ex-info" id="exDoneInfo"></p>
-        <div class="ex-actions"><a class="btn primary" id="exSave">${icon('save', 18)} Save to phone</a><button class="btn" id="exShare">${icon('share', 18)} Share</button></div>
-        <button class="btn ghost" id="exBack">Back to editing</button></div>
+      <div class="ex-done" id="exDone" hidden>
+        <video id="exVideo" controls playsinline></video>
+        <p class="ex-ready" id="exReady">${icon('check', 18)} Your video is ready!</p>
+        <button class="btn primary huge" id="exSave">${icon('save', 24)}<span>Save to Gallery</span></button>
+        <button class="btn huge post" id="exShare">${icon('share', 22)}<span>Post to…</span><small>TikTok · YouTube · Instagram · WhatsApp</small></button>
+        <div class="ex-msg" id="exMsg" hidden></div>
+        <p class="ex-info small" id="exDoneInfo"></p>
+        <div class="ex-links"><button class="link" id="exFile">Download file</button><button class="link" id="exBack">Back to editing</button></div>
+      </div>
     </div></div>`;
-  const info = async () => { const { W, H } = outputSize(S.project.aspect, short); const c = await pickCodecs(W, H, fps);
-    const mb = (Math.min(16e6, W * H * fps * 0.16) + 192000) * D / 8 / 1e6;
+  const info = async () => { const { W, H, maxBytes } = plan(); const vbr = planBitrate(W, H, fps, D, maxBytes); const c = await pickCodecs(W, H, fps, vbr);
+    const mb = (vbr + 192000) * D / 8 / 1e6;
     $('#exInfo').textContent = `${W} × ${H} · ${fmt(D)} · ${c ? 'MP4 (' + (c.video.mux === 'avc' ? 'H.264' : c.video.mux.toUpperCase()) + ')' : (recorderMime() || 'not supported').split(';')[0].replace('video/', '').toUpperCase() + ' (real-time)'} · about ${mb < 1 ? mb.toFixed(1) : Math.round(mb)} MB`; };
   $('#exRes').append(chips([{ value: 720, label: '720p' }, { value: 1080, label: '1080p' }], short, x => { short = x; localStorage.setItem('studio.res', x); info(); }));
   $('#exFps').append(chips([{ value: 24, label: '24' }, { value: 30, label: '30' }, { value: 60, label: '60' }], fps, x => { fps = x; localStorage.setItem('studio.fps', x); info(); }));
   info();
-  const close = () => { if (ctrl) ctrl.aborted = true; if (resultUrl) URL.revokeObjectURL(resultUrl); v.hidden = true; v.innerHTML = ''; document.body.classList.remove('exporting'); layoutPreview(); player.seek(player.t); };
+  const close = () => { if (ctrl) ctrl.aborted = true; if (result) URL.revokeObjectURL(result.url); if (small) URL.revokeObjectURL(small.url); v.hidden = true; v.innerHTML = ''; document.body.classList.remove('exporting'); layoutPreview(); player.seek(player.t); };
   $('#exClose').onclick = close;
-  $('#exGo').onclick = async () => {
-    $('#exSet').hidden = true; $('#exProg').hidden = false; ctrl = { aborted: false };
+  const msg = (html, kind = 'ok') => { const m = $('#exMsg'); m.className = 'ex-msg ' + kind; m.innerHTML = html; m.hidden = false; };
+  const run = async (maxBytes, label) => {
+    $('#exSet').hidden = true; $('#exDone').hidden = true; $('#exProg').hidden = false; ctrl = { aborted: false };
+    $('#exCancel').textContent = 'Cancel'; $('#exCancel').onclick = () => { ctrl.aborted = true; $('#exStatus').textContent = 'Cancelling…'; };
     let lock = null; try { lock = await navigator.wakeLock?.request('screen'); } catch (e) {}
-    $('#exCancel').onclick = () => { ctrl.aborted = true; $('#exStatus').textContent = 'Cancelling…'; };
     try {
       await save();
       const mode = new URLSearchParams(location.search).get('export');
-      const r = await exportVideo(S.project, { short, fps, signal: ctrl, mode, onProgress: pr => {
+      const r = await exportVideo(S.project, { short, fps, signal: ctrl, mode, maxBytes, onProgress: pr => {
         const pct = Math.floor(pr.p * 100); $('#exPct').textContent = pct + '%'; $('#exBar').style.width = pct + '%';
-        $('#exStatus').textContent = pr.phase === 'audio' ? 'Mixing sound…' : pr.phase === 'finishing' ? 'Finishing…' : pr.eta != null ? `About ${Math.max(1, Math.round(pr.eta))} s left` : 'Exporting…'; } });
-      window.studioLastExport = r;
-      const name = `Emmavengers-${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '')}.${r.ext}`;
-      resultUrl = URL.createObjectURL(r.blob);
-      $('#exProg').hidden = true; $('#exDone').hidden = false;
-      $('#exVideo').src = resultUrl; const a = $('#exSave'); a.href = resultUrl; a.download = name;
-      $('#exDoneInfo').textContent = `${r.W} × ${r.H} · ${fmt(r.duration)} · ${(r.blob.size / 1e6).toFixed(1)} MB · ready in ${Math.round(r.seconds)} s`;
-      const file = new File([r.blob], name, { type: r.mime });
-      const sh = $('#exShare');
-      if (navigator.canShare && navigator.canShare({ files: [file] })) sh.onclick = () => navigator.share({ files: [file], title: 'Emmavengers video' }).catch(() => {});
-      else sh.hidden = true;
-      $('#exBack').onclick = close;
-    } catch (e) {
-      if (e.name === 'AbortError') close();
-      else { console.error(e); $('#exStatus').textContent = 'Export failed: ' + (e.message || e); $('#exCancel').textContent = 'Close'; $('#exCancel').onclick = close; }
-    } finally { try { lock && lock.release(); } catch (e) {} }
+        $('#exStatus').textContent = (label ? label + ' · ' : '') + (pr.phase === 'audio' ? 'Mixing sound…' : pr.phase === 'finishing' ? 'Finishing…' : pr.eta != null ? `About ${Math.max(1, Math.round(pr.eta))} s left` : 'Exporting…'); } });
+      r.name = `Emmavengers-${stamp()}.${r.ext}`; r.url = URL.createObjectURL(r.blob);
+      return r;
+    } finally { try { lock && lock.release(); } catch (e) {} $('#exProg').hidden = true; }
   };
+  const fail = e => { if (e.name === 'AbortError') { close(); return; } console.error(e); $('#exProg').hidden = false; $('#exStatus').textContent = 'Export failed: ' + (e.message || e); $('#exCancel').textContent = 'Close'; $('#exCancel').onclick = close; };
+  const showDone = () => {
+    const r = result; window.studioLastExport = r;
+    $('#exDone').hidden = false; $('#exVideo').src = r.url;
+    $('#exDoneInfo').textContent = `${r.W} × ${r.H} · ${fmt(r.duration)} · ${(r.blob.size / 1e6).toFixed(1)} MB · ${r.name}`;
+    const post = $('#exShare'), postable = small || (r.blob.size <= SHARE_LIMIT() ? r : null);
+    if (!shareOK) post.hidden = true;
+    else if (!postable) { post.classList.add('warn'); post.querySelector('span').textContent = 'Make a smaller copy to post'; post.querySelector('small').textContent = `Phones can share up to 50 MB · this one is ${(r.blob.size / 1e6).toFixed(0)} MB`; }
+    else { post.classList.remove('warn'); post.querySelector('span').textContent = 'Post to…'; post.querySelector('small').textContent = 'TikTok · YouTube · Instagram · WhatsApp'; }
+  };
+  const where = () => isAndroid()
+    ? `<b>Saved to your phone!</b> Open <b>Gallery</b> → <b>Albums</b> → <b>Download</b> (or <b>Google Photos</b> → <b>Collections</b> → <b>Download</b>). If Chrome asks, tap <b>Download</b>.`
+    : `<b>Saved!</b> Look in your <b>Downloads</b> folder.`;
+  $('#exGo').onclick = async () => {
+    const { maxBytes } = plan();
+    try { result = await run(maxBytes); small = null; showDone(); } catch (e) { fail(e); }
+  };
+  $('#exSave').onclick = () => { if (!result) return; downloadBlob(result.blob, result.name); msg(where()); };
+  $('#exFile').onclick = async () => {
+    if (!result) return;
+    if (window.showSaveFilePicker && !isAndroid()) {
+      try { const h = await showSaveFilePicker({ suggestedName: result.name, types: [{ description: 'Video', accept: { [result.mime]: ['.' + result.ext] } }] });
+        const w = await h.createWritable(); await w.write(result.blob); await w.close(); msg(`<b>Saved</b> as ${h.name}.`); return; }
+      catch (e) { if (e.name === 'AbortError') return; }
+    }
+    downloadBlob(result.blob, result.name); msg(where());
+  };
+  $('#exShare').onclick = async () => {
+    if (!result) return;
+    const target = small || (result.blob.size <= SHARE_LIMIT() ? result : null);
+    if (!target) {   // too big for the share sheet: make a smaller copy, then the button posts it
+      try { small = await run(SHARE_LIMIT(), 'Making a copy for posting'); $('#exDone').hidden = false; showDone();
+        msg(small.blob.size <= SHARE_LIMIT() ? '<b>Ready to post!</b> Tap <b>Post to…</b> again and pick TikTok, YouTube, Instagram or WhatsApp.' : 'This video is too long to post straight from the phone. Tap <b>Save to Gallery</b>, then post it from the TikTok / YouTube app.', small.blob.size <= SHARE_LIMIT() ? 'ok' : 'warn');
+        if (small.blob.size > SHARE_LIMIT()) { URL.revokeObjectURL(small.url); small = null; }
+      } catch (e) { fail(e); }
+      return;
+    }
+    const file = fileFor(target);
+    if (!canShareVideo(file)) { downloadBlob(target.blob, target.name); msg('Sharing isn’t available here, so the video was saved instead. ' + where()); return; }
+    try { await navigator.share({ files: [file], title: 'Emmavengers video' }); msg('<b>Sent!</b> Finish posting in the app you picked.'); }
+    catch (e) {
+      if (e.name === 'AbortError') return;                 // closed the share sheet: nothing to do
+      console.warn('share failed', e); downloadBlob(target.blob, target.name);
+      msg('Couldn’t open the share menu, so the video was saved to your phone instead. ' + where(), 'warn');
+    }
+  };
+  $('#exBack').onclick = close;
 }
+const stamp = () => { const d = new Date(), z = n => String(n).padStart(2, '0'); return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}`; };
 
 /* ---------------- wiring ---------------- */
 function wireUI() {
