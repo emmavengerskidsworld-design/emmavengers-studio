@@ -2,6 +2,7 @@
    so what you see is exactly what you export. getSource(clip, t) supplies the pixels for a video/image clip:
    { img: CanvasImageSource, w, h, rot } (w/h = coded size, rot = display rotation in degrees). */
 import { TRACK_KINDS, propAt, filterCss, FONTS } from './registry.js';
+import { transitionById, helpers } from './transitions.js';
 import { clipEnd } from './project.js';
 
 export function visualTracks(p) {
@@ -10,18 +11,36 @@ export function visualTracks(p) {
 }
 export const activeAt = (track, t) => track.clips.filter(c => c.start <= t + 1e-9 && t < clipEnd(c) - 1e-9);
 
+const H_ = helpers(), layers = [];
+function layer(i, W, H) { let c = layers[i]; if (!c || c.width !== W || c.height !== H) c = layers[i] = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(W, H) : Object.assign(document.createElement('canvas'), { width: W, height: H }); return c; }
 export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.globalAlpha = 1; ctx.filter = 'none';
+  ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   ctx.fillStyle = p.bg || '#000'; ctx.fillRect(0, 0, W, H);
   const boxes = [];
-  for (const track of visualTracks(p)) for (const clip of activeAt(track, t)) {
+  const drawClip = (cx, track, clip) => {
     const local = t - clip.start;
     const tr = { x: propAt(clip, 'x', local), y: propAt(clip, 'y', local), scale: propAt(clip, 'scale', local), rotation: propAt(clip, 'rotation', local), opacity: propAt(clip, 'opacity', local) };
     let box = null;
-    if (clip.type === 'text') box = drawText(ctx, W, H, clip, tr);
-    else { const s = getSource(clip, t); if (s) box = drawVisual(ctx, W, H, s, clip, tr); }
+    if (clip.type === 'text') box = drawText(cx, W, H, clip, tr);
+    else { const s = getSource(clip, t); if (s) box = drawVisual(cx, W, H, s, clip, tr); }
     if (box) boxes.push({ id: clip.id, ...box, rotation: tr.rotation });
+  };
+  for (const track of visualTracks(p)) {
+    const act = activeAt(track, t);
+    if (TRACK_KINDS[track.kind].magnetic && act.length >= 2) {
+      // transition: draw both clips into full-frame layers, then let the transition blend them
+      const [a, b] = act.slice(-2), T = b.transitionIn && transitionById(b.transitionIn.id);
+      if (T) {
+        const LA = layer(0, W, H), LB = layer(1, W, H), bg = p.bg || '#000';
+        for (const [L, c] of [[LA, a], [LB, b]]) { const x = L.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.filter = 'none'; x.globalCompositeOperation = 'source-over'; x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.fillStyle = bg; x.fillRect(0, 0, W, H); drawClip(x, track, c); }
+        const pr = Math.max(0, Math.min(1, (t - b.start) / Math.max(1e-6, clipEnd(a) - b.start)));
+        ctx.save(); T.render(ctx, LA, LB, pr, W, H, H_); ctx.restore();
+        ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-over';
+        continue;
+      }
+    }
+    for (const clip of act) drawClip(ctx, track, clip);
   }
   if (opts.selectedId) { const b = boxes.find(b => b.id === opts.selectedId); if (b) drawSelection(ctx, b, Math.min(W, H) / 400); }
   ctx.restore();

@@ -3,7 +3,7 @@
    clock waits while a video is still buffering so picture and sound never drift apart. */
 import { media, bitmapOf } from './media.js';
 import { renderFrame } from './render.js';
-import { clipEnd, projectDuration, srcTime, hasSource } from './project.js';
+import { clipEnd, projectDuration, srcTime, hasSource, gainAt } from './project.js';
 
 const PRELOAD = 1.5, RESYNC = 0.3, MAX_EL = 10;
 
@@ -61,8 +61,8 @@ export class Player {
         s.clipId = id; this.slots.set(id, s);
       }
       const { c, active } = w, el = s.el, target = active ? srcTime(c, t) : c.in;
-      const vol = c.volume ?? 1;
-      if (s.gain) s.gain.gain.value = vol; else el.volume = Math.min(1, vol);
+      const vol = active ? gainAt(p, c, t) : 0;
+      if (s.gain) s.gain.gain.value = vol; else el.volume = Math.max(0, Math.min(1, vol));
       if (active && this.playing) {
         if (el.playbackRate !== c.speed) el.playbackRate = c.speed;
         if (el.paused) { if (Math.abs(el.currentTime - target) > 0.05) el.currentTime = target; el.play().catch(() => {}); }
@@ -88,10 +88,12 @@ export class Player {
     this.sync(this.t); this.loop(); this.o.onState && this.o.onState(true);
   }
   pause() {
-    if (!this.playing) return; this.playing = false; cancelAnimationFrame(this._raf);
+    this.stopAt = null; if (!this.playing) return; this.playing = false; cancelAnimationFrame(this._raf);
     for (const s of this.slots.values()) s.el.pause();
     this.sync(this.t); this.draw(); this.o.onState && this.o.onState(false);
   }
+  /** Play just a section (used to preview a transition), then stop. */
+  playRange(a, b) { this.pause(); this.seek(a); this.stopAt = b; this.play(); }
   toggle() { this.playing ? this.pause() : this.play(); }
   seek(t) {
     const d = this.duration; this.t = Math.max(0, Math.min(d || 0, t));
@@ -102,8 +104,8 @@ export class Player {
     const now = performance.now();
     if (this.stalled()) { this.t0 = this.t; this.n0 = now; }
     else this.t = this.t0 + (now - this.n0) / 1000;
-    const d = this.duration;
-    if (this.t >= d) { this.t = d; this.sync(this.t); this.draw(); this.o.onTime && this.o.onTime(this.t); this.pause(); this.o.onEnd && this.o.onEnd(); return; }
+    const d = this.stopAt != null ? Math.min(this.duration, this.stopAt) : this.duration;
+    if (this.t >= d) { this.stopAt = null; this.t = d; this.sync(this.t); this.draw(); this.o.onTime && this.o.onTime(this.t); this.pause(); this.o.onEnd && this.o.onEnd(); return; }
     this.sync(this.t); this.draw(); this.o.onTime && this.o.onTime(this.t);
     this._raf = requestAnimationFrame(() => this.loop());
   }

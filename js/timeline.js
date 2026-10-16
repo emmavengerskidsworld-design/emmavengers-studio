@@ -2,7 +2,8 @@
    Tap = select, drag edges = trim, long-press (touch) or drag (mouse) = move / reorder. */
 import { S, live, begin, end, select } from './store.js';
 import { TRACK_KINDS } from './registry.js';
-import { clipDur, clipEnd, projectDuration, hasSource, reorder, moveTo, trim, find } from './project.js';
+import { clipDur, clipEnd, projectDuration, hasSource, reorder, moveTo, trim, find, kfTimes } from './project.js';
+import { transitionById } from './transitions.js';
 import { media, TILE, PEAK_RATE } from './media.js';
 import { icon } from './icons.js';
 
@@ -61,6 +62,13 @@ export class Timeline {
       row.className = 'row k-' + t.kind; row.dataset.track = t.id; row.style.height = K.height + 'px'; row.style.width = w + 'px';
       if (t.kind === 'main' && !t.clips.length) { row.classList.add('hint'); row.innerHTML = `<button class="rowhint" data-add="main">${icon('plus', 16)} Add video or photo</button>`; }
       for (const c of t.clips) row.appendChild(this.clipEl(c, t, K));
+      if (K.magnetic) t.clips.forEach((b, i) => { if (!i) return; const a = t.clips[i - 1];
+        if (S.sel === a.id || S.sel === b.id) return;            // keep trim handles free on the selected clip
+        const x = (b.start + (clipEnd(a) - b.start) / 2) * this.pps, tr = b.transitionIn && transitionById(b.transitionIn.id);
+        const j = document.createElement('button'); j.className = 'joint' + (tr ? ' on' : ''); j.dataset.joint = b.id; j.style.left = (x - 12) + 'px';
+        j.title = tr ? tr.name : 'Add transition'; j.setAttribute('aria-label', j.title);
+        j.innerHTML = tr ? '<svg viewBox="0 0 24 24" width="14" height="14"><path d="M4 5l8 7-8 7zM20 5l-8 7 8 7z" fill="currentColor"/></svg>' : '<svg viewBox="0 0 24 24" width="12" height="12"><path d="M5 12h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
+        row.appendChild(j); });
       frag.appendChild(row);
     }
     if (!p.tracks.some(t => t.kind === 'audio')) { const row = document.createElement('div'); row.className = 'row hint k-audio'; row.style.height = TRACK_KINDS.audio.height + 'px'; row.innerHTML = `<button class="rowhint" data-add="audio">${icon('music', 16)} Add audio</button>`; frag.appendChild(row); }
@@ -86,6 +94,7 @@ export class Timeline {
     if (c.filter && c.filter.id) badges.push(`<span class="spd">FX</span>`);
     if (!rec && c.type !== 'text') badges.push('<span class="spd">missing</span>');
     el.insertAdjacentHTML('beforeend', `<div class="badges">${badges.join('')}</div>`);
+    const kts = kfTimes(c); if (kts.length) el.insertAdjacentHTML('beforeend', kts.filter(k => k <= d + 1e-6).map(k => `<i class="kfd" style="left:${(k * this.pps).toFixed(1)}px"></i>`).join(''));
     if (S.sel === c.id) el.insertAdjacentHTML('beforeend', '<div class="h l" data-edge="left"><i></i></div><div class="h r" data-edge="right"><i></i></div>');
     return el;
   }
@@ -123,6 +132,7 @@ export class Timeline {
   /* ---------- gestures ---------- */
   down(e) {
     const add = e.target.closest('[data-add]'); if (add) { this.o.onAdd(add.dataset.add); return; }
+    const jt = e.target.closest('[data-joint]'); if (jt) { e.preventDefault(); if (this.o.isPlaying()) this.o.pause(); this.o.onJoint(jt.dataset.joint); return; }
     if (e.button > 0) return;
     const clipEl = e.target.closest('.clip'), handle = e.target.closest('.h');
     if (this.o.isPlaying()) this.o.pause();

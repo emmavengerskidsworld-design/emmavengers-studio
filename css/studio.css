@@ -132,3 +132,20 @@ body.has-sel #addMainBtn{display:none}
 .ex-links{display:flex;justify-content:space-between;gap:12px;padding:0 4px}
 .link{color:#cfd3ff;font-weight:700;font-size:14px;text-decoration:underline;text-underline-offset:3px;padding:8px 2px}
 .btn.post span{text-align:left}
+/* transitions joint + keyframe diamonds */
+.joint{position:absolute;top:50%;width:24px;height:24px;margin-top:-12px;border-radius:7px;background:#f4f4f7;color:#222;display:grid;place-items:center;z-index:5;box-shadow:0 1px 4px #000b;touch-action:none}
+.joint.on{background:var(--accent);color:#231a00}
+.kfd{position:absolute;bottom:3px;width:9px;height:9px;margin-left:-4.5px;background:#fff;transform:rotate(45deg);border:1.5px solid #222;z-index:2;pointer-events:none;border-radius:1px}
+.clip.sel .kfd{background:var(--accent)}
+#kfBar{display:inline-flex;margin-right:4px;border-right:1px solid var(--line);padding-right:4px}
+#kfBar[hidden]{display:none!important}
+.ib.kb{width:34px;height:40px}.ib.kb.on{color:var(--accent)}
+.hist{display:flex;justify-content:flex-end;align-items:center}
+.hist .ib{width:36px}
+.chips.tabs .chipbtn{min-height:30px;font-size:12.5px}
+.trgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.trtile{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11px;color:#d8d8e0;min-width:0}
+.trtile canvas{width:100%;aspect-ratio:1;border-radius:12px;border:2px solid transparent;display:block}
+.trtile.on canvas{border-color:var(--accent)}.trtile.on span{color:var(--accent);font-weight:800}
+.trtile span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.chips.curves .chipbtn{min-height:40px}

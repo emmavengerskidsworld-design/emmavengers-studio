@@ -2,7 +2,8 @@
    Everything the editor knows lives in one plain JSON object (the "project"), so undo/redo, autosave and export
    all work from the same data. New features (transitions, keyframes, stickers, filters...) are new fields on a clip
    plus an entry in js/registry.js — no rewrite of the timeline or the renderer. */
-import { TRACK_KINDS, DEFAULT_TRANSFORM } from './registry.js';
+import { TRACK_KINDS, DEFAULT_TRANSFORM, propAt, kfPropsFor, KEYFRAME_PROPS } from './registry.js';
+import { MIN_TRANSITION, MAX_TRANSITION } from './transitions.js';
 
 export const uid = () => Math.random().toString(36).slice(2, 9) + (Date.now() % 1e6).toString(36);
 export const SCHEMA = 1;
@@ -45,7 +46,7 @@ export const trackOf = (p, id) => p.tracks.find(t => t.id === id);
 export function normalize(p) {
   if (!p.tracks.some(t => t.kind === 'main')) p.tracks.unshift(newTrack('main'));
   for (const t of p.tracks) {
-    if (TRACK_KINDS[t.kind].magnetic) { let s = 0; for (const c of t.clips) { c.start = round(s); s += clipDur(c); } }
+    if (TRACK_KINDS[t.kind].magnetic) { let s = 0; t.clips.forEach((c, i) => { const eff = i ? transEff(t.clips[i - 1], c) : 0; c.start = round(Math.max(0, s - eff)); s = c.start + clipDur(c); }); }
     else t.clips.sort((a, b) => a.start - b.start);
   }
   // drop empty secondary tracks (main always stays)
@@ -54,6 +55,11 @@ export function normalize(p) {
   const order = Object.keys(TRACK_KINDS);
   p.tracks.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind));
   return p;
+}
+/** Effective transition length between main clips a -> b (clips overlap by this much; at most half of either clip). */
+export function transEff(a, b) {
+  const tr = b.transitionIn; if (!tr || !tr.id) return 0;
+  return round(Math.max(0, Math.min(Math.max(MIN_TRANSITION, Math.min(MAX_TRANSITION, tr.dur)), clipDur(a) / 2, clipDur(b) / 2)));
 }
 const round = x => Math.round(x * 1e6) / 1e6;
 
@@ -89,7 +95,11 @@ export function split(p, clipId, t) {
   else { c.dur = round(local); b.dur = round(d - local); }
   // keyframes are clip-local: keep the ones before the cut on A, shift the rest onto B
   for (const k of Object.keys(c.keyframes || {})) {
-    const all = c.keyframes[k]; c.keyframes[k] = all.filter(x => x.t <= local); b.keyframes[k] = all.filter(x => x.t >= local).map(x => ({ ...x, t: round(x.t - local) }));
+    const all = c.keyframes[k]; if (!all.length) continue;
+    const v = propAt(c, k, local), prev = [...all].reverse().find(x => x.t <= local);
+    const A = all.filter(x => x.t < local - 1e-6), B = all.filter(x => x.t > local + 1e-6).map(x => ({ ...x, t: round(x.t - local) }));
+    A.push({ t: round(local), v, ease: 'linear' }); B.unshift({ t: 0, v, ease: prev ? prev.ease || 'linear' : 'linear' });
+    c.keyframes[k] = A; b.keyframes[k] = B;
   }
   f.track.clips.splice(f.index + 1, 0, b);
   normalize(p); return b;
@@ -118,6 +128,7 @@ export function moveTo(p, clipId, start, targetTrackId) {
 /** Trim an edge. `dt` = timeline seconds the edge moved (+ = right). mediaDur = length of the source file. */
 export function trim(p, clipId, edge, dt, mediaDur) {
   const f = find(p, clipId); if (!f) return; const c = f.clip, mag = TRACK_KINDS[f.track.kind].magnetic;
+  const off0 = hasSource(c) ? c.in / c.speed : 0;
   if (hasSource(c)) {
     if (edge === 'left') { const nIn = clamp(c.in + dt * c.speed, 0, c.out - MIN_CLIP * c.speed); if (!mag) c.start = round(c.start + (nIn - c.in) / c.speed); c.in = round(nIn); }
     else c.out = round(clamp(c.out + dt * c.speed, c.in + MIN_CLIP * c.speed, mediaDur ?? Infinity));
@@ -126,9 +137,62 @@ export function trim(p, clipId, edge, dt, mediaDur) {
     else c.dur = round(Math.max(MIN_CLIP, c.dur + dt));
   }
   if (c.start < 0) c.start = 0;
+  if (edge === 'left') { // keyframes stay attached to the picture, not to the clip edge
+    const shift = hasSource(c) ? c.in / c.speed - off0 : 0;
+    if (shift) shiftKeyframes(c, -shift);
+  }
   normalize(p);
 }
-export function setSpeed(p, clipId, speed) { const f = find(p, clipId); if (!f) return; f.clip.speed = clamp(speed, 0.25, 4); normalize(p); }
+export function shiftKeyframes(c, dt) { for (const k in c.keyframes || {}) c.keyframes[k] = c.keyframes[k].map(x => ({ ...x, t: round(x.t + dt) })); }
+export function setSpeed(p, clipId, speed) {
+  const f = find(p, clipId); if (!f) return; const c = f.clip, old = c.speed; c.speed = clamp(speed, 0.25, 4);
+  for (const k in c.keyframes || {}) c.keyframes[k] = c.keyframes[k].map(x => ({ ...x, t: round(x.t * old / c.speed) }));
+  normalize(p);
+}
+
+/* ---------- keyframes ---------- */
+export const KF_EPS = 1 / 60;
+export const kfTimes = c => [...new Set(Object.values(c.keyframes || {}).flat().map(x => x.t))].sort((a, b) => a - b).filter((t, i, a) => !i || t - a[i - 1] > KF_EPS / 2);
+export const hasKeyframes = c => Object.values(c.keyframes || {}).some(a => a.length);
+export const kfAt = (c, t) => kfTimes(c).find(x => Math.abs(x - t) <= KF_EPS);
+function upsert(c, prop, t, v, ease) {
+  const a = (c.keyframes[prop] ||= []), i = a.findIndex(x => Math.abs(x.t - t) <= KF_EPS);
+  if (i >= 0) { a[i].v = v; if (ease) a[i].ease = ease; } else { a.push({ t: round(t), v, ease: ease || 'linear' }); a.sort((x, y) => x.t - y.t); }
+}
+/** Add a keyframe for every animatable property at clip-local time t (CapCut-style "◆"). */
+export function addKeyframe(c, t) { c.keyframes ||= {}; for (const k of kfPropsFor(c)) upsert(c, k, t, propAt(c, k, t)); }
+export function removeKeyframe(c, t) { for (const k in c.keyframes || {}) { c.keyframes[k] = c.keyframes[k].filter(x => Math.abs(x.t - t) > KF_EPS); if (!c.keyframes[k].length) delete c.keyframes[k]; } }
+export function setEase(c, t, ease) { for (const k in c.keyframes || {}) for (const x of c.keyframes[k]) if (Math.abs(x.t - t) <= KF_EPS) x.ease = ease; }
+/** Change a property at clip-local time t: updates/creates a keyframe when the clip is animated, else the static value. */
+export function setProp(c, prop, v, t) {
+  if (hasKeyframes(c)) { c.keyframes ||= {}; upsert(c, prop, Math.max(0, Math.min(clipDur(c), t)), v); return; }
+  if (KEYFRAME_PROPS[prop]?.base === 'clip') c[prop] = v; else c.transform[prop] = v;
+}
+export const KEN_BURNS = {
+  zoomIn:  { name: 'Zoom in',  a: { scale: 1 },    b: { scale: 1.25 } },
+  zoomOut: { name: 'Zoom out', a: { scale: 1.25 }, b: { scale: 1 } },
+  panL:    { name: 'Pan left',  a: { scale: 1.2, x: .56 }, b: { scale: 1.2, x: .44 } },
+  panR:    { name: 'Pan right', a: { scale: 1.2, x: .44 }, b: { scale: 1.2, x: .56 } },
+  panU:    { name: 'Pan up',    a: { scale: 1.2, y: .56 }, b: { scale: 1.2, y: .44 } },
+  panD:    { name: 'Pan down',  a: { scale: 1.2, y: .44 }, b: { scale: 1.2, y: .56 } },
+};
+export function kenBurns(c, id) {
+  const kb = KEN_BURNS[id]; if (!kb) return; const d = clipDur(c);
+  for (const k of ['x', 'y', 'scale']) delete (c.keyframes ||= {})[k];
+  c.fit = 'cover';
+  for (const k of ['x', 'y', 'scale']) { const base = c.transform[k]; c.keyframes[k] = [{ t: 0, v: kb.a[k] ?? base, ease: 'inOut' }, { t: round(d), v: kb.b[k] ?? base, ease: 'linear' }]; }
+}
+
+/* ---------- audio gain (volume keyframes x transition crossfade) ---------- */
+/** Equal-power crossfade factor for a main-track clip at timeline time t. */
+export function xfadeAt(track, c, t) {
+  if (!track || !TRACK_KINDS[track.kind].magnetic) return 1;
+  const i = track.clips.indexOf(c); let g = 1;
+  if (i > 0 && c.transitionIn) { const e = clipEnd(track.clips[i - 1]) - c.start; if (e > 0 && t < c.start + e) g *= Math.sin(Math.max(0, (t - c.start) / e) * Math.PI / 2); }
+  const n = track.clips[i + 1]; if (n && n.transitionIn) { const e = clipEnd(c) - n.start; if (e > 0 && t > n.start) g *= Math.cos(Math.min(1, (t - n.start) / e) * Math.PI / 2); }
+  return g;
+}
+export function gainAt(p, c, t) { const f = find(p, c.id); return Math.max(0, propAt(c, 'volume', t - c.start)) * xfadeAt(f && f.track, c, t); }
 export const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 
 /** Remove references to media that no longer exist (e.g. storage was cleared). */

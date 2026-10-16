@@ -83,11 +83,10 @@ async def run():
         ok((await dl.value).suggested_filename.endswith('.mp4'), 'Download file link downloads the .mp4')
         ok(not pg.errs, f'no console errors {pg.errs[:3]}')
         await pg.click('#exBack'); await pg.wait_for_timeout(200); ok(await pg.evaluate("document.getElementById('exportView').hidden"), 'Back to editing closes the export screen')
-        # Pre-fit: export sized under the share limit when quality stays good
-        await pg.evaluate('window.__studioShareLimit=6e6')
+        # Sharpness first: the saved export always uses the full bitrate, even when sharing is possible
         r = await export(pg, 1080)
-        ok(r['size'] <= 6e6 and r['bitrate'] < 9.9e6, f'1080p export fitted under the share limit ({r["size"]/1e6:.2f} MB, {r["bitrate"]/1e6:.1f} Mbps)')
-        ok('Post to' in await pg.inner_text('#exShare'), 'fitted export can be posted directly')
+        ok(r['bitrate'] >= 14e6, f'1080p export uses the full high bitrate ({r["bitrate"]/1e6:.1f} Mbps, {r["size"]/1e6:.1f} MB)')
+        ok('Post to' in await pg.inner_text('#exShare'), 'export under 50 MB can be posted directly')
         await pg.click('#exBack')
         # Too big even for good quality -> "make a copy small enough to post"
         await pg.evaluate('window.__studioShareLimit=1.5e6; window.__shares=[]; window.__shareMode="ok"')

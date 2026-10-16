@@ -4,7 +4,7 @@
    Fallback: real-time MediaRecorder capture of the preview (WebM or MP4, whatever the browser records). */
 import { media, decodeAudio, dropAudioCache, loadBitmap } from './media.js';
 import { renderFrame, visualTracks, activeAt } from './render.js';
-import { projectDuration, clipEnd, srcTime, hasSource, ASPECTS } from './project.js';
+import { projectDuration, clipEnd, clipDur, srcTime, hasSource, ASPECTS, gainAt } from './project.js';
 import { openSource, dropDemuxCache } from './framesource.js';
 import { Player } from './player.js';
 
@@ -15,7 +15,9 @@ export function outputSize(aspect, short) {
 }
 const hasWebCodecs = () => typeof VideoEncoder !== 'undefined' && typeof AudioEncoder !== 'undefined' && typeof VideoFrame !== 'undefined' && typeof Mp4Muxer !== 'undefined';
 
-export const defaultBitrate = (W, H, fps) => Math.round(Math.min(16e6, W * H * fps * 0.16));
+/* Sharp exports: ~0.23 bits per pixel per frame (VBR, quality mode) -> 1080x1920@30 ≈ 14.3 Mbps, 720x1280@30 ≈ 6.4 Mbps,
+   1080p60 capped at 20 Mbps. Never below 4 Mbps. */
+export const defaultBitrate = (W, H, fps) => Math.round(Math.max(4e6, Math.min(20e6, W * H * fps * 0.23)));
 /** Lowest video bitrate we still call good quality (used when fitting a video under the share size limit). */
 export const qualityFloor = (W, H) => Math.round(W * H * 2.0);   // ~4.1 Mbps at 1080x1920, ~1.8 Mbps at 720x1280
 const AUDIO_BR = 192000;
@@ -31,7 +33,7 @@ export async function pickCodecs(W, H, fps, vbr) {
   const vc = [['avc1.6400' + lvl, 'avc'], ['avc1.4d00' + lvl, 'avc'], ['avc1.42e0' + lvl, 'avc'], ['vp09.00.40.08', 'vp9'], ['av01.0.08M.08', 'av1']];
   let video = null;
   for (const [codec, mux] of vc) {
-    const config = { codec, width: W, height: H, bitrate, framerate: fps, latencyMode: 'quality', ...(mux === 'avc' ? { avc: { format: 'avc' } } : {}) };
+    const config = { codec, width: W, height: H, bitrate, bitrateMode: 'variable', framerate: fps, latencyMode: 'quality', ...(mux === 'avc' ? { avc: { format: 'avc' } } : {}) };
     try { if ((await VideoEncoder.isConfigSupported(config)).supported) { video = { config, mux }; break; } } catch (e) {}
   }
   let audio = null;
@@ -54,7 +56,11 @@ export async function mixAudio(p, D) {
     const rec = media.get(c.mediaId); if (!rec || rec.hasAudio === false) continue;
     const buf = await decodeAudio(rec); if (!buf) continue;
     const src = oac.createBufferSource(); src.buffer = buf; src.playbackRate.value = c.speed;
-    const g = oac.createGain(); g.gain.value = c.volume ?? 1; src.connect(g).connect(oac.destination);
+    // gain curve = volume keyframes x transition crossfade (same function the preview uses)
+    const g = oac.createGain(), len = Math.min(clipDur(c), D - c.start), n = Math.max(2, Math.ceil(len * 100)), curve = new Float32Array(n);
+    for (let i = 0; i < n; i++) curve[i] = gainAt(p, c, c.start + len * i / (n - 1));
+    g.gain.value = curve[0]; if (len > 0.001) g.gain.setValueCurveAtTime(curve, c.start, len);
+    src.connect(g).connect(oac.destination);
     src.start(c.start, Math.min(c.in, buf.duration), Math.max(0, Math.min(c.out, buf.duration) - c.in)); src.stop(Math.min(D, clipEnd(c)));
   }
   return oac.startRendering();
@@ -96,7 +102,7 @@ async function encodeWebCodecs(p, D, W, H, fps, codecs, onProgress, signal) {
   // 2) pictures
   const N = Math.max(1, Math.round(D * fps));
   const canvas = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(W, H) : Object.assign(document.createElement('canvas'), { width: W, height: H });
-  const ctx = canvas.getContext('2d', { alpha: false });
+  const ctx = canvas.getContext('2d', { alpha: false }); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   const sources = new Map(), clips = new Map(), kinds = {};
   const vtracks = visualTracks(p);
   for (let i = 0; i < N; i++) {
@@ -137,7 +143,7 @@ async function encodeRecorder(p, D, W, H, fps, onProgress, signal, vbr) {
   player.ensureAudio();
   player.seek(0); await new Promise(r => setTimeout(r, 800)); player.draw();
   const stream = canvas.captureStream(fps); if (dest) dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
-  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: Math.round(Math.min(12e6, vbr || W * H * fps * 0.14)), audioBitsPerSecond: 160000 });
+  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: Math.round(Math.min(20e6, vbr || defaultBitrate(W, H, fps))), audioBitsPerSecond: 160000 });
   const chunks = []; rec.ondataavailable = e => e.data.size && chunks.push(e.data);
   const stopped = new Promise(r => rec.onstop = r);
   await new Promise(res => {

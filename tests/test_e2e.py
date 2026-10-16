@@ -118,7 +118,7 @@ async def run():
         img = mc[2]['id']; await P(pg, 'studio.select(null)'); await pg.wait_for_timeout(100)
         await P(pg, 'studio.timeline.setZoom(20)'); await set_time(pg, 0)
         bi = await clip_box(pg, img); b0 = await clip_box(pg, mc[0]['id'])
-        await mouse_drag(pg, bi['x'] + 10, bi['y'] + bi['height'] / 2, b0['x'] - 20, bi['y'] + bi['height'] / 2, steps=25)
+        await mouse_drag(pg, bi['x'] + bi['width'] / 2, bi['y'] + bi['height'] / 2, b0['x'] - 20, bi['y'] + bi['height'] / 2, steps=25)
         mc = await main_clips(pg); ok(mc[0]['id'] == img, f'reorder: image moved to the front ({[c["type"] for c in mc]})')
         # speed 2x on the second video part
         part2 = [c for c in mc if c['type'] == 'video'][1]; await P(pg, f'studio.select("{part2["id"]}")'); await pg.wait_for_timeout(150)

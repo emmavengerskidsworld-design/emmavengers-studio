@@ -1,11 +1,12 @@
 /* Emmavengers Studio — app shell: wires the store, preview player, timeline, toolbars, panels and export. */
 import { S, act, live, load, save, on, undo, redo, canUndo, canRedo, select, selected, reset, begin, end } from './store.js';
-import { newClip, addToMain, addToKind, split, remove, duplicate, setSpeed, projectDuration, clipDur, clipEnd, hasSource, find, ASPECTS, mediaIds } from './project.js';
+import { newClip, addToMain, addToKind, split, remove, duplicate, setSpeed, projectDuration, clipDur, clipEnd, hasSource, find, ASPECTS, mediaIds, kfTimes, kfAt, hasKeyframes, addKeyframe, removeKeyframe, setEase, setProp, kenBurns, KEN_BURNS, transEff, KF_EPS } from './project.js';
+import { TRANSITIONS, TRANSITION_CATS, transitionById, helpers as trHelpers, DEFAULT_TRANSITION_DUR, MIN_TRANSITION, MAX_TRANSITION } from './transitions.js';
 import { media, importFile, loadAll, onMediaUpdate, kindOf } from './media.js';
 import { Player } from './player.js';
 import { Timeline, fmtS } from './timeline.js';
 import { openSheet, closeSheet, sheetOpen, slider, chips, swatches } from './panels.js';
-import { FILTERS, FONTS, COLORS, BG_COLORS, SPEED_PRESETS, KEYFRAME_PROPS, DEFAULT_TRANSFORM, TRACK_KINDS } from './registry.js';
+import { FILTERS, FONTS, COLORS, BG_COLORS, SPEED_PRESETS, KEYFRAME_PROPS, DEFAULT_TRANSFORM, TRACK_KINDS, propAt, kfPropsFor, EASING_LIST, TRANSFORM_PROPS } from './registry.js';
 import { exportVideo, outputSize, pickCodecs, recorderMime, planBitrate, qualityFloor } from './export.js';
 import { hitTest } from './render.js';
 import { icon } from './icons.js';
@@ -16,20 +17,20 @@ let player, timeline;
 
 /* ---------------- boot ---------------- */
 async function boot() {
-  for (const [id, n] of [['menuBtn', 'menu'], ['undoBtn', 'undo'], ['redoBtn', 'redo'], ['zoomIn', 'zoomin'], ['zoomOut', 'zoomout']]) $('#' + id).innerHTML = icon(n);
+  for (const [id, n] of [['menuBtn', 'menu'], ['undoBtn', 'undo'], ['redoBtn', 'redo'], ['zoomIn', 'zoomin'], ['zoomOut', 'zoomout'], ['kfPrev', 'kfprev'], ['kfNext', 'kfnext'], ['kfBtn', 'kf']]) $('#' + id).innerHTML = icon(n);
   $('#addMainBtn').innerHTML = icon('plus', 26);
   $('#exportBtn').innerHTML = icon('export', 18) + '<span>Export</span>';
   await load();
   await loadAll(mediaIds(S.project));
-  player = new Player($('#preview'), { getProject: () => S.project, selected: () => S.sel, onTime: t => { timeline.setTime(t); showTime(); }, onState: setPlayIcon });
-  timeline = new Timeline({ getTime: () => player.t, seek: t => { player.seek(t); showTime(); }, isPlaying: () => player.playing, pause: () => player.pause(), onAdd: k => pick(k), afterEdit: afterEdit });
-  on('change', () => { timeline.render(); player.seek(player.t); showTime(); refreshToolbar(); updateEmpty(); });
-  on('select', () => { document.body.classList.toggle('has-sel', !!S.sel); timeline.render(); refreshToolbar(); player.requestDraw(); if (sheetOpen()) closeSheet(); });
+  player = new Player($('#preview'), { getProject: () => S.project, selected: () => S.sel, onTime: t => { timeline.setTime(t); showTime(); updateKf(); }, onState: setPlayIcon });
+  timeline = new Timeline({ getTime: () => player.t, seek: t => { player.seek(t); showTime(); updateKf(); }, onJoint: id => transitionSheet(id), isPlaying: () => player.playing, pause: () => player.pause(), onAdd: k => pick(k), afterEdit: afterEdit });
+  on('change', () => { timeline.render(); player.seek(player.t); showTime(); refreshToolbar(); updateEmpty(); updateKf(); });
+  on('select', () => { document.body.classList.toggle('has-sel', !!S.sel); timeline.render(); refreshToolbar(); player.requestDraw(); if (sheetOpen()) closeSheet(); updateKf(); });
   on('history', updateUndo);
   onMediaUpdate(() => { timeline.render(); player.requestDraw(); });
   wireUI(); layoutPreview(); timeline.fitZoom(); timeline.render(); refreshToolbar(); updateUndo(); updateEmpty(); showTime(); setPlayIcon(false);
   player.seek(0);
-  window.studio = { S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, ready: true };
+  window.studio = { S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, ready: true };
   document.body.classList.add('ready');
 }
 function afterEdit() { player.seek(Math.min(player.t, projectDuration(S.project))); showTime(); refreshToolbar(); }
@@ -60,9 +61,9 @@ function previewGestures() {
       tap = { x: e.clientX, y: e.clientY, hit: hit && hit.id };
       const f = S.sel && find(S.project, S.sel);
       const id = f && player.boxes.some(b => b.id === S.sel) ? S.sel : hit && hit.id;
-      if (id) { const ff = find(S.project, id); g = { id, x0: e.clientX, y0: e.clientY, tr: { ...ff.clip.transform }, r: pos.r, started: false }; }
+      if (id) { const ff = find(S.project, id); g = { id, x0: e.clientX, y0: e.clientY, tr: trAt(ff.clip), r: pos.r, started: false }; }
     } else if (pts.size === 2 && g) {
-      const [a, b] = [...pts.values()]; g.pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), ang: Math.atan2(b.y - a.y, b.x - a.x), tr: { ...find(S.project, g.id).clip.transform } };
+      const [a, b] = [...pts.values()]; g.pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), ang: Math.atan2(b.y - a.y, b.x - a.x), tr: trAt(find(S.project, g.id).clip) };
     }
   });
   cv.addEventListener('pointermove', e => {
@@ -72,12 +73,13 @@ function previewGestures() {
     if (!g.started) { g.started = true; begin(); if (S.sel !== g.id) select(g.id); }
     live(p => { const c = find(p, g.id)?.clip; if (!c) return;
       if (pts.size >= 2 && g.pinch) { const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y), ang = Math.atan2(b.y - a.y, b.x - a.x);
-        c.transform.scale = Math.max(0.05, Math.min(8, g.pinch.tr.scale * d / g.pinch.d));
-        let rot = g.pinch.tr.rotation + (ang - g.pinch.ang) * 180 / Math.PI; for (const s of [-180, -90, 0, 90, 180]) if (Math.abs(rot - s) < 3) rot = s; c.transform.rotation = Math.round(rot * 10) / 10;
+        const L = player.t - c.start;
+        setProp(c, 'scale', Math.max(0.05, Math.min(8, g.pinch.tr.scale * d / g.pinch.d)), L);
+        let rot = g.pinch.tr.rotation + (ang - g.pinch.ang) * 180 / Math.PI; for (const s of [-180, -90, 0, 90, 180]) if (Math.abs(rot - s) < 3) rot = s; setProp(c, 'rotation', Math.round(rot * 10) / 10, L);
       } else if (pts.size === 1) {
         let x = g.tr.x + (e.clientX - g.x0) / g.r.width, y = g.tr.y + (e.clientY - g.y0) / g.r.height;
         if (Math.abs(x - .5) < .015) x = .5; if (Math.abs(y - .5) < .015) y = .5;
-        c.transform.x = Math.round(x * 1000) / 1000; c.transform.y = Math.round(y * 1000) / 1000;
+        const L = player.t - c.start; setProp(c, 'x', Math.round(x * 1000) / 1000, L); setProp(c, 'y', Math.round(y * 1000) / 1000, L);
       } });
   });
   const upH = e => {
@@ -86,9 +88,120 @@ function previewGestures() {
       if (g && g.started) end();
       else if (tap && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 6) select(tap.hit || null);
       g = null; tap = null;
-    } else if (g) { const ff = find(S.project, g.id); const [p0] = [...pts.values()]; g.x0 = p0.x; g.y0 = p0.y; g.tr = { ...ff.clip.transform }; g.pinch = null; }
+    } else if (g) { const ff = find(S.project, g.id); const [p0] = [...pts.values()]; g.x0 = p0.x; g.y0 = p0.y; g.tr = trAt(ff.clip); g.pinch = null; }
   };
   cv.addEventListener('pointerup', upH); cv.addEventListener('pointercancel', upH);
+}
+
+const localT = c => Math.max(0, Math.min(clipDur(c), player.t - c.start));
+const trAt = c => { const L = localT(c), o = {}; for (const k of TRANSFORM_PROPS) o[k] = propAt(c, k, L); return o; };
+
+/* ---------------- keyframes ---------------- */
+function kfTarget() { const f = selected(); return f && f.clip; }
+function updateKf() {
+  const c = kfTarget(), bar = $('#kfBar'); if (!bar) return;
+  bar.hidden = !c; if (!c) return;
+  const L = player.t - c.start, inside = L >= -1e-6 && L <= clipDur(c) + 1e-6, ts = kfTimes(c), on = inside && kfAt(c, L) != null;
+  const b = $('#kfBtn'); b.innerHTML = icon(on ? 'kfon' : 'kf'); b.classList.toggle('on', on); b.disabled = !inside;
+  b.setAttribute('aria-label', on ? 'Remove keyframe' : 'Add keyframe');
+  $('#kfPrev').disabled = !ts.some(x => x < L - KF_EPS); $('#kfNext').disabled = !ts.some(x => x > L + KF_EPS);
+}
+function toggleKf() {
+  const c = kfTarget(); if (!c) return; const L = Math.round((player.t - c.start) * S.project.fps) / S.project.fps;
+  const had = kfAt(c, player.t - c.start);
+  act(p => { const cc = find(p, c.id).clip; if (had != null) removeKeyframe(cc, had); else addKeyframe(cc, Math.max(0, Math.min(clipDur(cc), L))); });
+  toast(had != null ? 'Keyframe removed' : 'Keyframe added — move the playhead and change position, size, turn, opacity or volume');
+}
+function jumpKf(dir) {
+  const c = kfTarget(); if (!c) return; const L = player.t - c.start, ts = kfTimes(c);
+  const t = dir < 0 ? [...ts].reverse().find(x => x < L - KF_EPS) : ts.find(x => x > L + KF_EPS); if (t == null) return;
+  player.pause(); player.seek(c.start + t + 1e-4); timeline.setTime(player.t); showTime(); updateKf();
+}
+function curveSheet() {
+  const c = selected().clip, ts = kfTimes(c), L = player.t - c.start;
+  const at = kfAt(c, L) ?? [...ts].reverse().find(x => x <= L) ?? ts[0];
+  const cur = Object.values(c.keyframes).flat().find(x => Math.abs(x.t - at) <= KF_EPS)?.ease || 'linear';
+  openSheet('Keyframe curve', body => {
+    const tip = document.createElement('p'); tip.className = 'hint'; tip.textContent = `How the movement starts from the keyframe at ${fmtS(at)} (to the next one).`;
+    body.append(tip, chips(EASING_LIST.map(e => ({ value: e.id, html: `${curveIcon(e.id)}<span>${e.name}</span>` })), cur, v => editSel(cl => setEase(cl, at, v)), 'curves'));
+    const row = document.createElement('div'); row.className = 'toggles';
+    const del = document.createElement('button'); del.className = 'chipbtn'; del.textContent = 'Delete this keyframe'; del.onclick = () => { editSel(cl => removeKeyframe(cl, at)); closeSheet(); };
+    const clr = document.createElement('button'); clr.className = 'chipbtn'; clr.textContent = 'Delete all keyframes'; clr.onclick = () => { editSel(cl => { cl.keyframes = {}; }); closeSheet(); };
+    row.append(del, clr); body.append(row);
+  });
+}
+function curveIcon(id) { const f = { linear: t => t, in: t => t * t * t, out: t => 1 - Math.pow(1 - t, 3), inOut: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2, bounce: t => { const n = 7.5625, d = 2.75; if (t < 1 / d) return n * t * t; if (t < 2 / d) return n * (t -= 1.5 / d) * t + .75; if (t < 2.5 / d) return n * (t -= 2.25 / d) * t + .9375; return n * (t -= 2.625 / d) * t + .984375; } }[id];
+  let d = ''; for (let i = 0; i <= 20; i++) d += (i ? 'L' : 'M') + (2 + i).toFixed(1) + ' ' + (22 - f(i / 20) * 18).toFixed(1); return `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${''}<path d="${d}"/></svg>`; }
+function kenBurnsSheet() {
+  const c = selected().clip;
+  openSheet('Ken Burns', body => {
+    const tip = document.createElement('p'); tip.className = 'hint'; tip.textContent = 'A slow, smooth camera move over the photo. Pick one, then press play.';
+    body.append(tip, chips(Object.entries(KEN_BURNS).map(([k, v]) => ({ value: k, label: v.name })), null, v => { editSel(cl => kenBurns(cl, v)); player.playRange(c.start, clipEnd(selected().clip)); }));
+  });
+}
+
+/* ---------------- transitions ---------------- */
+let thumbLoop = 0;
+function sampleArt(W, H) {
+  const mk = () => Object.assign(document.createElement('canvas'), { width: W, height: H });
+  const a = mk(), b = mk(), x = a.getContext('2d'), y = b.getContext('2d');
+  let g = x.createLinearGradient(0, 0, W, H); g.addColorStop(0, '#ffcf3d'); g.addColorStop(1, '#ff7a1a'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#fff8'; x.beginPath(); x.arc(W * .32, H * .34, W * .17, 0, 7); x.fill(); x.fillStyle = '#7a3d00'; x.fillRect(0, H * .72, W, H * .28);
+  g = y.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#3b5bff'); g.addColorStop(1, '#1fb6ff'); y.fillStyle = g; y.fillRect(0, 0, W, H);
+  y.fillStyle = '#fff'; y.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? W * .1 : W * .24, an = -Math.PI / 2 + i * Math.PI / 5; y.lineTo(W * .62 + r * Math.cos(an), H * .45 + r * Math.sin(an)); } y.fill();
+  return [a, b];
+}
+function transitionSheet(clipId) {
+  const f0 = find(S.project, clipId); if (!f0) return;
+  select(null);
+  const track = f0.track, idx = track.clips.indexOf(f0.clip); if (idx < 1) return;
+  const cur = f0.clip.transitionIn || null; let cat = cur && transitionById(cur.id) ? transitionById(cur.id).cat : TRANSITION_CATS[0];
+  const preview = () => { const f = find(S.project, clipId); if (!f) return; const i = f.track.clips.indexOf(f.clip), a = f.track.clips[i - 1]; player.playRange(Math.max(0, f.clip.start - 0.4), Math.min(projectDuration(S.project), clipEnd(a) + 0.4)); };
+  openSheet('Transition', body => {
+    const tabs = chips(TRANSITION_CATS.map(c => ({ value: c, label: c })), cat, v => { cat = v; fill(); }, 'tabs');
+    const grid = document.createElement('div'); grid.className = 'trgrid';
+    const dpr = Math.min(2, devicePixelRatio || 1), TW = Math.round(64 * dpr), TH = Math.round(64 * dpr), [SA, SB] = sampleArt(TW, TH), hh = trHelpers();
+    const curId = () => find(S.project, clipId)?.clip.transitionIn?.id || null;
+    const fill = () => {
+      grid.innerHTML = '';
+      const items = [{ id: null, name: 'None' }, ...TRANSITIONS.filter(t => t.cat === cat)];
+      for (const t of items) {
+        const b = document.createElement('button'); b.className = 'trtile' + (t.id === curId() ? ' on' : ''); b.dataset.tr = t.id || 'none';
+        b.innerHTML = `<canvas width="${TW}" height="${TH}"></canvas><span>${t.name}</span>`;
+        if (!t.id) { const x = b.querySelector('canvas').getContext('2d'); x.fillStyle = '#2a2a33'; x.fillRect(0, 0, TW, TH); x.strokeStyle = '#777'; x.lineWidth = 3 * dpr; x.beginPath(); x.arc(TW / 2, TH / 2, TW * .22, 0, 7); x.moveTo(TW * .34, TH * .66); x.lineTo(TW * .66, TH * .34); x.stroke(); }
+        b.onclick = () => { live(p => { const c = find(p, clipId).clip; c.transitionIn = t.id ? { id: t.id, dur: c.transitionIn?.dur || dur.v } : null; });
+          grid.querySelectorAll('.trtile').forEach(x => x.classList.toggle('on', x === b)); info(); if (t.id) preview(); };
+        grid.appendChild(b);
+      }
+    };
+    const dur = { v: cur?.dur || DEFAULT_TRANSITION_DUR };
+    const sl = slider('Duration', { min: MIN_TRANSITION, max: MAX_TRANSITION, step: 0.1, value: dur.v, fmt: v => v.toFixed(1) + 's', id: 'trDur', onInput: v => { dur.v = v; live(p => { const c = find(p, clipId).clip; if (c.transitionIn) c.transitionIn.dur = v; }); info(); } });
+    sl.querySelector('input').addEventListener('change', () => curId() && preview());
+    const note = document.createElement('p'); note.className = 'hint';
+    const info = () => { const f = find(S.project, clipId); if (!f) return; const i = f.track.clips.indexOf(f.clip), eff = transEff(f.track.clips[i - 1], f.clip);
+      note.textContent = !f.clip.transitionIn ? 'Pick a transition for this cut.' : eff + 1e-6 < f.clip.transitionIn.dur ? `Plays for ${eff.toFixed(1)}s — the clips are short, so it can’t be longer.` : `Plays for ${eff.toFixed(1)}s. The clips overlap during the transition.`; };
+    const row = document.createElement('div'); row.className = 'toggles';
+    const all = document.createElement('button'); all.className = 'chipbtn'; all.id = 'trAll'; all.textContent = 'Apply to all';
+    all.onclick = () => { const tr = find(S.project, clipId).clip.transitionIn; if (!tr) { toast('Pick a transition first'); return; }
+      live(p => { const t = p.tracks.find(x => x.kind === 'main'); t.clips.forEach((c, i) => { if (i) c.transitionIn = { ...tr }; }); }); toast('Transition added to every cut'); };
+    const rm = document.createElement('button'); rm.className = 'chipbtn'; rm.id = 'trRemove'; rm.textContent = 'Remove';
+    rm.onclick = () => { live(p => { find(p, clipId).clip.transitionIn = null; }); grid.querySelectorAll('.trtile').forEach(x => x.classList.toggle('on', x.dataset.tr === 'none')); info(); };
+    row.append(all, rm);
+    body.append(tabs, grid, sl, note, row); fill(); info();
+    cancelAnimationFrame(thumbLoop);
+    const loop = now => { if (!document.body.contains(grid)) return;
+      const p = Math.min(1, ((now / 1500) % 1.3) / 1.1);
+      grid.querySelectorAll('.trtile').forEach(b => { const T = transitionById(b.dataset.tr); if (!T) return; const x = b.querySelector('canvas').getContext('2d'); x.save(); x.clearRect(0, 0, TW, TH); T.render(x, SA, SB, p, TW, TH, hh); x.restore(); });
+      thumbLoop = requestAnimationFrame(loop); };
+    thumbLoop = requestAnimationFrame(loop);
+  }, { className: 'tall' });
+}
+/** Test hook: every transition must look like A at p=0 and like B at p=1. Returns mean colour per p. */
+function testTransitions(ps = [0, 0.5, 1]) {
+  const W = 90, H = 160, mk = c => { const k = Object.assign(document.createElement('canvas'), { width: W, height: H }); const x = k.getContext('2d'); x.fillStyle = c; x.fillRect(0, 0, W, H); return k; };
+  const A = mk('#ff0000'), B = mk('#0000ff'), out = Object.assign(document.createElement('canvas'), { width: W, height: H }), x = out.getContext('2d', { willReadFrequently: true }), hh = trHelpers(), res = {};
+  for (const T of TRANSITIONS) { res[T.id] = ps.map(p => { x.save(); x.clearRect(0, 0, W, H); T.render(x, A, B, p, W, H, hh); x.restore(); const d = x.getImageData(0, 0, W, H).data; let r = 0, g = 0, b = 0; for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; } const n = d.length / 4; return [r / n, g / n, b / n].map(Math.round); }); }
+  return res;
 }
 
 /* ---------------- import ---------------- */
@@ -145,13 +258,16 @@ const CLIP_TOOLS = [
   { id: 'adjust', icon: 'adjust', label: 'Adjust', when: isVisualClip, run: adjustSheet },
   { id: 'filters', icon: 'filter', label: 'Filters', when: c => c.type === 'video' || c.type === 'image', run: filterSheet },
   { id: 'fit', icon: 'fit', label: 'Fit / Fill', when: c => c.type === 'video' || c.type === 'image', run: toggleFit },
+  { id: 'curve', icon: 'curve', label: 'Curve', when: c => hasKeyframes(c), run: curveSheet },
+  { id: 'kenburns', icon: 'kenburns', label: 'Ken Burns', when: c => c.type === 'image', run: kenBurnsSheet },
+  { id: 'transition', icon: 'transition', label: 'Transition', when: c => { const f = find(S.project, c.id); return f && TRACK_KINDS[f.track.kind].magnetic && f.track.clips.length > 1; }, run: () => { const f = selected(); const i = f.track.clips.indexOf(f.clip); transitionSheet(f.track.clips[Math.max(1, i)].id); } },
   { id: 'duplicate', icon: 'copy', label: 'Duplicate', run: () => { const b = act(p => duplicate(p, S.sel)); b && select(b.id); } },
   { id: 'delete', icon: 'trash', label: 'Delete', run: () => { const id = S.sel; select(null); act(p => remove(p, id)); player.gc(); } },
 ];
 function refreshToolbar() {
   const bar = $('#toolbar'), f = selected();
   const tools = f ? CLIP_TOOLS.filter(t => !t.when || t.when(f.clip)) : ROOT_TOOLS;
-  const key = (f ? f.clip.type + ':' : 'root:') + tools.map(t => t.id).join(',');
+  const key = (f ? f.clip.id + ':' : 'root:') + tools.map(t => t.id).join(',');
   if (bar.dataset.key === key) return; bar.dataset.key = key;
   bar.innerHTML = (f ? `<button class="tool back" data-tool="back">${icon('back')}<span>Back</span></button>` : '') +
     tools.map(t => `<button class="tool" data-tool="${t.id}">${icon(t.icon)}<span>${t.label}</span></button>`).join('');
@@ -186,8 +302,10 @@ function speedSheet() {
 function volumeSheet() {
   const c = selected().clip;
   openSheet('Volume', body => {
-    body.append(slider('Volume', { min: 0, max: 2, step: 0.01, value: c.volume ?? 1, fmt: v => Math.round(v * 100) + '%', id: 'volRange', onInput: v => editSel(cl => { cl.volume = v; }) }));
-    body.append(chips([{ value: 0, label: 'Mute' }, { value: 0.5, label: '50%' }, { value: 1, label: '100%' }, { value: 1.5, label: '150%' }, { value: 2, label: '200%' }], c.volume, v => { editSel(cl => { cl.volume = v; }); body.querySelector('label.ctl').set(v); }));
+    const L = localT(c), cur = propAt(c, 'volume', L);
+    body.append(slider('Volume', { min: 0, max: 2, step: 0.01, value: cur, fmt: v => Math.round(v * 100) + '%', id: 'volRange', onInput: v => editSel(cl => setProp(cl, 'volume', v, L)) }));
+    body.append(chips([{ value: 0, label: 'Mute' }, { value: 0.5, label: '50%' }, { value: 1, label: '100%' }, { value: 1.5, label: '150%' }, { value: 2, label: '200%' }], cur, v => { editSel(cl => setProp(cl, 'volume', v, L)); body.querySelector('label.ctl').set(v); }));
+    if (hasKeyframes(c)) body.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: `Animated clip: this sets the volume at ${fmtS(L)} (a keyframe).` }));
   });
 }
 function durationSheet() {
@@ -198,9 +316,11 @@ function adjustSheet() {
   const c = selected().clip;
   openSheet('Adjust', body => {
     const sls = {};
-    for (const [k, d] of Object.entries(KEYFRAME_PROPS)) body.append(sls[k] = slider(d.label, { min: d.min, max: d.max, step: d.step, value: c.transform[k], fmt: d.fmt, onInput: v => editSel(cl => { cl.transform[k] = v; }) }));
+    const L = localT(c);
+    for (const k of TRANSFORM_PROPS) { const d = KEYFRAME_PROPS[k]; body.append(sls[k] = slider(d.label, { min: d.min, max: d.max, step: d.step, value: propAt(c, k, L), fmt: d.fmt, id: 'adj-' + k, onInput: v => editSel(cl => setProp(cl, k, v, L)) })); }
+    if (hasKeyframes(c)) body.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: `Animated clip: changes here set a keyframe at ${fmtS(L)}.` }));
     const r = document.createElement('button'); r.className = 'btn ghost'; r.textContent = 'Reset';
-    r.onclick = () => { const def = c.type === 'video' || c.type === 'image' ? (find(S.project, c.id).track.kind === 'overlay' ? { ...DEFAULT_TRANSFORM, scale: .55 } : DEFAULT_TRANSFORM) : DEFAULT_TRANSFORM; editSel(cl => { cl.transform = { ...def }; }); for (const k in sls) sls[k].set(def[k]); };
+    r.onclick = () => { const def = c.type === 'video' || c.type === 'image' ? (find(S.project, c.id).track.kind === 'overlay' ? { ...DEFAULT_TRANSFORM, scale: .55 } : DEFAULT_TRANSFORM) : DEFAULT_TRANSFORM; editSel(cl => { cl.transform = { ...def }; for (const k of TRANSFORM_PROPS) delete (cl.keyframes || {})[k]; }); for (const k in sls) sls[k].set(def[k]); };
     const tip = document.createElement('p'); tip.className = 'hint'; tip.textContent = 'Tip: drag on the picture to move it, pinch with two fingers to resize and turn it.';
     body.append(r, tip);
   });
@@ -279,9 +399,8 @@ function exportView() {
   const v = $('#exportView'); v.hidden = false; document.body.classList.add('exporting'); $('#toast').classList.remove('show');
   let short = +(localStorage.getItem('studio.res') || 1080), fps = +(localStorage.getItem('studio.fps') || 30), ctrl = null, result = null, small = null;
   const D = projectDuration(S.project), shareOK = canShareVideo();
-  // Fit under the share limit up front when that still gives good quality (most short kids' videos).
-  const plan = () => { const { W, H } = outputSize(S.project.aspect, short); const fit = planBitrate(W, H, fps, D, SHARE_LIMIT());
-    return { W, H, maxBytes: shareOK && fit >= qualityFloor(W, H) ? SHARE_LIMIT() : null }; };
+  // The saved video is always full quality (sharpness first). Only a "copy for posting" is ever made smaller.
+  const plan = () => { const { W, H } = outputSize(S.project.aspect, short); return { W, H, maxBytes: null }; };
   v.innerHTML = `<div class="ex">
     <div class="ex-head"><button class="ib" id="exClose" aria-label="Close">${icon('x')}</button><b>Export video</b><span></span></div>
     <div class="ex-body">
@@ -304,8 +423,8 @@ function exportView() {
       </div>
     </div></div>`;
   const info = async () => { const { W, H, maxBytes } = plan(); const vbr = planBitrate(W, H, fps, D, maxBytes); const c = await pickCodecs(W, H, fps, vbr);
-    const mb = (vbr + 192000) * D / 8 / 1e6;
-    $('#exInfo').textContent = `${W} × ${H} · ${fmt(D)} · ${c ? 'MP4 (' + (c.video.mux === 'avc' ? 'H.264' : c.video.mux.toUpperCase()) + ')' : (recorderMime() || 'not supported').split(';')[0].replace('video/', '').toUpperCase() + ' (real-time)'} · about ${mb < 1 ? mb.toFixed(1) : Math.round(mb)} MB`; };
+    const mb = (vbr + 192000) * D / 8 / 1e6 * 0.85;
+    $('#exInfo').textContent = `${W} × ${H} · ${fmt(D)} · ${c ? 'MP4 (' + (c.video.mux === 'avc' ? 'H.264' : c.video.mux.toUpperCase()) + ')' : (recorderMime() || 'not supported').split(';')[0].replace('video/', '').toUpperCase() + ' (real-time)'} · ${(vbr / 1e6).toFixed(1)} Mbps · up to ${mb < 1 ? mb.toFixed(1) : Math.round(mb)} MB`; };
   $('#exRes').append(chips([{ value: 720, label: '720p' }, { value: 1080, label: '1080p' }], short, x => { short = x; localStorage.setItem('studio.res', x); info(); }));
   $('#exFps').append(chips([{ value: 24, label: '24' }, { value: 30, label: '30' }, { value: 60, label: '60' }], fps, x => { fps = x; localStorage.setItem('studio.fps', x); info(); }));
   info();
@@ -381,6 +500,7 @@ function wireUI() {
   $('#playBtn').onclick = () => player.toggle();
   $('#undoBtn').onclick = () => { player.pause(); undo(); };
   $('#redoBtn').onclick = () => { player.pause(); redo(); };
+  $('#kfBtn').onclick = () => { player.pause(); toggleKf(); }; $('#kfPrev').onclick = () => jumpKf(-1); $('#kfNext').onclick = () => jumpKf(1);
   $('#zoomIn').onclick = () => timeline.zoomBy(1.6); $('#zoomOut').onclick = () => timeline.zoomBy(1 / 1.6);
   $('#addMainBtn').onclick = () => pick('main');
   $('#emptyAdd').onclick = () => pick('main');

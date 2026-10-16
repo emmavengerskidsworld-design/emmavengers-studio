@@ -2,7 +2,7 @@
    To add a feature, add an entry here; the timeline, panels, renderer and exporter read these tables.
    - TRACK_KINDS: what kinds of tracks exist, what they accept, how they stack.
    - FILTERS: colour looks, drawn with canvas ctx.filter (works in preview and export identically).
-   - TRANSITIONS: (next step) how clip A blends into clip B on the main track; render(ctx, drawA, drawB, progress).
+   - TRANSITIONS (js/transitions.js): how clip A blends into clip B on the main track; render(ctx, A, B, p, W, H).
    - KEYFRAME_PROPS: animatable transform properties; the renderer already evaluates clip.keyframes[prop]. */
 
 export const TRACK_KINDS = {
@@ -20,18 +20,23 @@ export const KEYFRAME_PROPS = {
   scale:    { label: 'Scale',      min: 0.05, max: 5,   step: 0.01,  fmt: v => Math.round(v * 100) + '%' },
   rotation: { label: 'Rotate',     min: -180, max: 180, step: 1,     fmt: v => Math.round(v) + '°' },
   opacity:  { label: 'Opacity',    min: 0,    max: 1,   step: 0.01,  fmt: v => Math.round(v * 100) + '%' },
+  volume:   { label: 'Volume',     min: 0,    max: 2,   step: 0.01,  fmt: v => Math.round(v * 100) + '%', base: 'clip' },
 };
-export const EASINGS = {
-  linear: t => t,
-  inOut: t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
-};
-/** Value of a transform property at clip-local time t: keyframes win over the static transform. */
+export const TRANSFORM_PROPS = ['x', 'y', 'scale', 'rotation', 'opacity'];
+/** Which properties a clip type can animate. */
+export const kfPropsFor = c => c.type === 'audio' ? ['volume'] : c.type === 'video' ? [...TRANSFORM_PROPS, 'volume'] : TRANSFORM_PROPS;
+export { E as EASINGS } from './transitions.js';
+import { E } from './transitions.js';
+export const EASING_LIST = [{ id: 'linear', name: 'Linear' }, { id: 'in', name: 'Ease in' }, { id: 'out', name: 'Ease out' }, { id: 'inOut', name: 'Ease in-out' }, { id: 'bounce', name: 'Bounce' }];
+const baseOf = (clip, prop) => KEYFRAME_PROPS[prop]?.base === 'clip' ? (clip[prop] ?? 1) : clip.transform[prop];
+/** Value of an animatable property at clip-local time t. Keyframes win over the static value.
+    The easing stored on a keyframe shapes the movement that LEAVES it (towards the next keyframe). */
 export function propAt(clip, prop, t) {
   const kf = clip.keyframes && clip.keyframes[prop];
-  if (!kf || !kf.length) return clip.transform[prop];
+  if (!kf || !kf.length) return baseOf(clip, prop);
   if (t <= kf[0].t) return kf[0].v;
   for (let i = 1; i < kf.length; i++) if (t <= kf[i].t) {
-    const a = kf[i - 1], b = kf[i], e = EASINGS[b.ease || 'linear'] || EASINGS.linear;
+    const a = kf[i - 1], b = kf[i], e = E[a.ease || 'linear'] || E.linear;
     return a.v + (b.v - a.v) * e((t - a.t) / Math.max(1e-6, b.t - a.t));
   }
   return kf[kf.length - 1].v;
@@ -49,11 +54,7 @@ export const FILTERS = [
 ];
 export const filterCss = f => { if (!f || !f.id) return ''; const d = FILTERS.find(x => x.id === f.id); return d ? d.css(f.amount ?? 1) : ''; };
 
-/* Transitions: next step. A transition sits on clip.transitionIn = {id, dur}; renderer will call render() while
-   the previous main clip and this one overlap. Kept here so the data shape is fixed from day one. */
-export const TRANSITIONS = [
-  { id: null, name: 'None' },
-];
+export { TRANSITIONS, TRANSITION_CATS, transitionById } from './transitions.js';
 
 export const FONTS = {
   bold:    { name: 'Bold',    css: '800 SIZEpx system-ui, "Segoe UI", Roboto, sans-serif' },
