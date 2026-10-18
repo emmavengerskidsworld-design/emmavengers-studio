@@ -245,7 +245,7 @@ async def test_speech(b):
     ok(voices == ['mia', 'lily', 'zara', 'sam', 'leo', 'max'], f'six kid voices {voices}')
     await pg.fill('#ttsText', 'Hello friends! God made the stars and the sea.'); await pg.click('.fxgrid.voices .chipbtn[data-v="sam"]')
     if not await pg.locator('#ttsCaption.on').count(): await pg.click('#ttsCaption')
-    await pg.screenshot(path=str(SHOTS / 'audio-add-speech-390.png')); log('  shot audio-add-speech-390.png')
+    await pg.wait_for_timeout(2300); await pg.screenshot(path=str(SHOTS / 'audio-add-speech-390.png')); log('  shot audio-add-speech-390.png')
     t = time.time(); await pg.click('#ttsAdd')
     try: await pg.wait_for_function('studio.S.project.tracks.some(t=>t.kind==="audio"&&t.clips.length)', timeout=300000)
     except Exception as e: log('       ', await P(pg, 'document.querySelector("#ttsStatus").textContent')); raise

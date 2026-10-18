@@ -1,1 +1,104 @@
-{"version":1,"packs":[]}
+{
+ "version": 1,
+ "note": "Each pack: lib/sounds/<dir>/pack.json. Add a pack = add one entry here.",
+ "packs": [
+  {
+   "dir": "emmavengers-originals-music",
+   "name": "Emmavengers Originals (music)",
+   "kind": "music",
+   "license": "CC0-1.0",
+   "count": 17
+  },
+  {
+   "dir": "kenney-music-jingles",
+   "name": "Kenney — Music Jingles",
+   "kind": "music",
+   "license": "CC0-1.0",
+   "count": 85
+  },
+  {
+   "dir": "emmavengers-originals",
+   "name": "Emmavengers Originals (sound effects)",
+   "kind": "sfx",
+   "license": "CC0-1.0",
+   "count": 159
+  },
+  {
+   "dir": "bible-ambience",
+   "name": "Bible-story ambiences",
+   "kind": "sfx",
+   "license": "CC0-1.0",
+   "count": 15
+  },
+  {
+   "dir": "commons-cc0",
+   "name": "Wikimedia Commons (CC0 / public domain)",
+   "kind": "sfx",
+   "license": "CC0-1.0 or Public domain (per file, see LICENSES.md)",
+   "count": 97
+  },
+  {
+   "dir": "nps-yellowstone",
+   "name": "Yellowstone Sound Library (U.S. National Park Service)",
+   "kind": "sfx",
+   "license": "Public domain",
+   "count": 38
+  },
+  {
+   "dir": "kenney-casino-audio",
+   "name": "Kenney — Casino Audio",
+   "kind": "sfx",
+   "license": "CC0-1.0",
+   "count": 54
+  },
+  {
+   "dir": "kenney-digital-audio",
+   "name": "Kenney — Digital Audio",
+   "kind": "sfx",
+   "license": "CC0-1.0",
+   "count": 62
+  },
+  {
+   "dir": "kenney-impact-sounds",
+   "name": "Kenney — Impact Sounds",
+   "kind": "sfx",
+   "license": "CC0-1.0",
+   "count": 130
+  },
+  {
+   "dir": "kenney-interface-sounds",
+   "name": "Kenney — Interface Sounds",
+   "kind": "sfx",
+   "license": "CC0-1.0",
+   "count": 88
+  },
+  {
+   "dir": "kenney-rpg-audio",
+   "name": "Kenney — RPG Audio",
+   "kind": "sfx",
+   "license": "CC0-1.0",
+   "count": 44
+  },
+  {
+   "dir": "kenney-sci-fi-sounds",
+   "name": "Kenney — Sci-fi Sounds",
+   "kind": "sfx",
+   "license": "CC0-1.0",
+   "count": 73
+  },
+  {
+   "dir": "kenney-ui-audio",
+   "name": "Kenney — UI Audio",
+   "kind": "sfx",
+   "license": "CC0-1.0",
+   "count": 47
+  },
+  {
+   "dir": "kenney-voiceover-pack",
+   "name": "Kenney — Voiceover Pack",
+   "kind": "sfx",
+   "license": "CC0-1.0",
+   "count": 63
+  }
+ ]
+}

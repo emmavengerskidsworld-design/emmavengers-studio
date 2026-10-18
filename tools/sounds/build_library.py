@@ -62,6 +62,8 @@ def loudnorm(x, kind, cat):
     if pk > lim: g *= lim / pk          # never clip: peaks stay at or below -1 dBFS
     return x * g
 def process(path, kind, cat, out, maxdur=None):
+    if os.path.exists(out) and os.path.getmtime(out) > os.path.getmtime(path) and os.environ.get('REBUILD') != '1':   # already built: reuse
+        x = decode(out); return round(x.shape[1] / SR, 2), round(integrated(x), 1), round(20 * np.log10(np.max(np.abs(x)) + 1e-12), 1)
     x = decode(path)
     if x.size == 0: raise ValueError('empty')
     x = trim(x)
@@ -102,6 +104,7 @@ def kenney_items():
                     if pk == 'voiceover-pack': name = ('Female: ' if 'emale' in sub else 'Male: ' if 'ale' in sub else '') + (name if not name.isdigit() else 'Number ' + name)
                     if pk == 'music-jingles': name = 'Jingle ' + name.replace('jingles ', '').title()
                     name = re.sub(r'\s+', ' ', name).strip(); name = name[0].upper() + name[1:]
+                    if pk == 'voiceover-pack' and re.search(r'congratulations|you_win|new_highscore|level_up|correct|mission_completed|objective_achieved', base): cat = 'cheers'
                     out.append(dict(pack='kenney-' + pk, src=f, kind=kind, cat=cat, name=name, tags=tags + [w.lower() for w in re.findall(r'[A-Za-z]+', base)][:3]))
                     break
     return out
@@ -151,7 +154,24 @@ COMMONS = {
  'Baby sneeze.ogg': ('Baby sneeze', 'voices', ['baby', 'sneeze', 'cute']), 'Soft whistle.ogg': ('Soft whistle', 'voices', ['whistle']), 'Human whistling.ogg': ('Whistle', 'voices', ['whistle', 'hey']),
  'Burp.ogg': ('Burp', 'voices', ['burp', 'funny']), 'Woman humming a nondescript tune.wav': ('Humming', 'voices', ['humming', 'happy']),
  'Shopping mall less crowded.ogg': ('Crowd murmur', 'bible', ['crowd', 'people', 'market', 'murmur']),
+ 'sandermotions applause-2.wav': ('Applause and cheers', 'cheers', ['applause', 'clap', 'cheer', 'yay']), 'Applause i.ogg': ('Applause 1', 'cheers', ['applause', 'clap']),
+ 'Applause ii.ogg': ('Applause 2', 'cheers', ['applause', 'clap']), 'Clapping hurray (cropped).oga': ('Clapping and hooray', 'cheers', ['hooray', 'hurray', 'clap', 'cheer', 'yay']),
+ 'Slow starting applause.ogg': ('Applause building up', 'cheers', ['applause', 'clap', 'audience']), 'Sound Effects - Applause after a concert.ogg': ('Concert applause', 'cheers', ['applause', 'audience', 'concert']),
+ 'Clapping for Carers in Oxford, April 2020.opus': ('Street clapping', 'cheers', ['clap', 'applause', 'neighbours']), 'Ohhh ahhh.ogg': ('Crowd ooh and aah', 'cheers', ['ooh', 'aah', 'crowd', 'wow']),
 }
+EXTRA_COMMONS = [k for k in ['File:277021 sandermotions applause-2.wav', 'File:Applause i.ogg', 'File:Applause ii.ogg', 'File:Clapping hurray (cropped).oga', 'File:Slow starting applause.ogg',
+                 'File:Sound Effects - Applause after a concert.ogg', 'File:Clapping for Carers in Oxford, April 2020.opus', 'File:Ohhh ahhh.ogg']]
+def extra_commons(cand):
+    """Add hand-picked files found after the category crawl (licence read from Commons metadata the same way)."""
+    have = {c['title'] for c in cand}; todo = [t for t in EXTRA_COMMONS if t not in have]
+    if not todo: return cand
+    r = requests.get('https://commons.wikimedia.org/w/api.php', params=dict(action='query', format='json', titles='|'.join(todo), prop='imageinfo', iiprop='url|extmetadata', iiextmetadatafilter='License|Artist|AttributionRequired'), headers=UA, timeout=60).json()
+    for pg in r['query']['pages'].values():
+        ii = pg['imageinfo'][0]; md = ii.get('extmetadata', {}); lic = md.get('License', {}).get('value', '').lower()
+        if not (lic == 'cc0' or lic.startswith('pd')) or md.get('AttributionRequired', {}).get('value', 'false') == 'true': print('  not CC0/PD, skipped:', pg['title'], lic); continue
+        artist = re.sub(r'<[^>]+>', '', md.get('Artist', {}).get('value', '')).strip()
+        cand.append(dict(cat='cheers', stem='extra', title=pg['title'], url=ii['url'], page=ii['descriptionurl'], license=lic, artist=artist, len=0))
+    json.dump(cand, open(f'{SRC}/commons/candidates.json', 'w'), indent=1); return cand
 NPS = {  # file name fragment -> (name, cat, tags)
  'YELLWolves20160111': ('Wolf pack howling', 'animals', ['wolf', 'howl', 'night']), 'YELLWolvesDec252013': ('Wolves howling', 'animals', ['wolf', 'howl']),
  'yell-Coyotes.mp3': ('Coyotes yipping', 'animals', ['coyote', 'night']), 'ElkBugle1': ('Elk bugle', 'animals', ['elk', 'deer', 'call']), 'YELLBisonEating': ('Bison grazing', 'animals', ['bison', 'buffalo']),
@@ -178,7 +198,7 @@ def fetch(url, dest):
         r.raise_for_status(); open(dest, 'wb').write(r.content); return dest
     raise RuntimeError('rate limited')
 def commons_items():
-    cand = json.load(open(f'{SRC}/commons/candidates.json')); os.makedirs(f'{SRC}/commons/files', exist_ok=True); out = []
+    cand = extra_commons(json.load(open(f'{SRC}/commons/candidates.json'))); os.makedirs(f'{SRC}/commons/files', exist_ok=True); out = []
     for c in cand:
         key = next((k for k in COMMONS if k in c['title']), None)
         if not key: continue
