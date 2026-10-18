@@ -24,7 +24,7 @@ export function loadCatalog() {
     const idx = await (await fetch(BASE + 'index.json')).json(), items = [], packs = [];
     await Promise.all(idx.packs.map(async p => { try {
       const m = await (await fetch(BASE + p.dir + '/pack.json')).json(); packs.push({ ...p, ...m, items: undefined });
-      for (const it of m.items) items.push({ id: p.dir + '/' + it.f, url: BASE + p.dir + '/' + it.f, name: it.n, cat: it.c, tags: it.t || [], dur: it.d, kind: m.kind || p.kind, pack: p.dir, bpm: it.b || 0, meter: it.m || 4, beat0: it.o || 0, drops: it.dr || [], secs: it.sec || [], author: it.a || m.author, license: it.l || m.license, src: it.s || m.source });
+      for (const it of m.items) items.push({ id: p.dir + '/' + it.f, url: BASE + p.dir + '/' + it.f, name: it.n, cat: it.c, tags: it.t || [], dur: it.d, kind: m.kind || p.kind, pack: p.dir, bpm: it.b || 0, meter: it.m || 4, beat0: it.o || 0, drops: it.dr || [], secs: it.sec || [], nb: it.nb || 0, author: it.a || m.author, license: it.l || m.license, src: it.s || m.source });
     } catch (e) { console.warn('sound pack failed', p.dir, e); } }));
     items.sort((a, b) => a.name.localeCompare(b.name));
     return { packs, items };

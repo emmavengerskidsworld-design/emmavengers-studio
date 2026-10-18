@@ -32,6 +32,9 @@ import { icon } from './icons.js';
 import * as pro from './protools.js';
 import * as speedcurve from './speedcurve.js';
 import * as projectApi from './project.js';
+import * as admaker from './admaker.js';
+import * as beats from './beats.js';
+import { adSheet, shuffleAd, make as makeAd } from './adpanel.js';
 
 const $ = s => document.querySelector(s);
 const fmt = t => { const m = Math.floor(t / 60), s = t - m * 60; return String(m).padStart(2, '0') + ':' + s.toFixed(1).padStart(4, '0'); };
@@ -56,13 +59,13 @@ async function boot() {
   onBaked(() => { timeline.render(); if (player.playing) player.sync(player.t); });
   wireUI(); layoutPreview(); timeline.fitZoom(); timeline.render(); refreshToolbar(); updateUndo(); updateEmpty(); showTime(); setPlayIcon(false);
   player.seek(0);
-  initHome({ toast, busy, menuSheet, templatesSheet, afterSwitch, leaveProject, deliver });
+  initHome({ toast, busy, menuSheet, templatesSheet, adSheet: () => adSheet(adCtx()), afterSwitch, leaveProject, deliver });
   on('change', () => { clearTimeout(thumbTimer); thumbTimer = setTimeout(makeThumb, 4000); });
   addEventListener('pagehide', () => makeThumb());
   setTimeout(async () => { try { await projects.askPersist(); await projects.cleanUp(); if (!(await projects.getThumb(S.project.id))) makeThumb(); } catch (e) { console.warn('clean-up', e); } }, 2500);
   const qs = new URLSearchParams(location.search);
   if (qs.has('home') || (matchMedia('(display-mode: standalone)').matches && !qs.has('editor'))) showHome();
-  window.studio = { projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, caps, stickers, fx, ready: true };
+  window.studio = { projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, ready: true };
   document.body.classList.add('ready');
 }
 /* ---------------- projects ---------------- */
@@ -372,7 +375,10 @@ async function onFiles(files, kind) {
 const isVisualClip = c => c.type !== 'audio' && c.type !== 'effect';
 const ROOT_TOOLS = [
   { id: 'media', icon: 'media', label: 'Media', run: () => pick('main') },
+  { id: 'adshuffle', icon: 'shuffle', label: 'Shuffle ad', when: () => !!(S.project && S.project.ad), run: () => shuffleAd(adCtx()) },
+  { id: 'adedit', icon: 'beat', label: 'Edit ad', when: () => !!(S.project && S.project.ad), run: () => adSheet(adCtx(), S.project.ad) },
   { id: 'templates', icon: 'templates', label: 'Templates', run: () => templatesSheet() },
+  { id: 'admaker', icon: 'beat', label: 'Beat ad', when: () => !(S.project && S.project.ad), run: () => adSheet(adCtx()) },
   { id: 'audio', icon: 'music', label: 'Audio', run: () => pick('audio') },
   { id: 'sounds', icon: 'sounds', label: 'Sounds', run: () => soundsSheet({ player, timeline, toast }) },
   { id: 'record', icon: 'mic', label: 'Record', run: recordSheet },
@@ -426,7 +432,7 @@ const CLIP_TOOLS = [
 ];
 function refreshToolbar() {
   const bar = $('#toolbar'), f = selected();
-  const tools = f ? CLIP_TOOLS.filter(t => !t.when || t.when(f.clip)) : ROOT_TOOLS;
+  const tools = f ? CLIP_TOOLS.filter(t => !t.when || t.when(f.clip)) : ROOT_TOOLS.filter(t => !t.when || t.when());
   const key = (f ? f.clip.id + ':' : 'root:') + tools.map(t => t.id).join(',');
   if (bar.dataset.key === key) return; bar.dataset.key = key;
   bar.innerHTML = (f ? `<button class="tool back" data-tool="back">${icon('back')}<span>Back</span></button>` : '') +
@@ -750,6 +756,12 @@ function ratioSheet() {
   });
 }
 function bgSheet() { openSheet('Background', body => body.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: 'Colour' }), swatches(BG_COLORS, S.project.bg, v => live(p => { p.bg = v; })), pro.bgBlurControls())); }
+/* ---------------- Beat Ad Maker ---------------- */
+function adCtx() {
+  return { media, importFile, mediaFor: templates.mediaFor, toast, busy, S, act,
+    openProject: async p => { player.pause(); if (S.project) await leaveProject(); await ensureProjectFonts(p); await projects.addProject(p); hideHome(); afterSwitch(); },
+    afterEdit: () => { $('#ratioBtn').textContent = S.project.aspect; layoutPreview(); timeline.render(); afterEdit(); } };
+}
 /* ---------------- Templates ---------------- */
 function templatesSheet() {
   let cat = '';

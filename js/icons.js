@@ -1,5 +1,7 @@
 /* Inline SVG icon set (stroke icons, 24px grid). */
 const P = {
+  beat: '<path d="M3 12h2l2-6 3 12 3-9 2 5 2-2h4"/>',
+  shuffle: '<path d="M3 7h3.5a4 4 0 0 1 3.2 1.6l4.6 6.8a4 4 0 0 0 3.2 1.6H21"/><path d="M3 17h3.5a4 4 0 0 0 3.2-1.6l.6-.9M14.3 8.6l.6-.9A4 4 0 0 1 18.1 6H21"/><path d="m18 3 3 3-3 3M18 15l3 3-3 3"/>',
   home: '<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/>',
   more: '<circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/>',
   backup: '<path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5"/><path d="M12 12v9M8.5 15.5 12 12l3.5 3.5"/>',

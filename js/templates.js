@@ -91,7 +91,7 @@ export async function templateAssets(T) {
   return [...out];
 }
 /** Import (or re-use) one file into the media store. */
-async function mediaFor(X, url, name) {
+export async function mediaFor(X, url, name) {
   const map = JSON.parse(localStorage.getItem(MEDIA) || '{}'); let rec = map[url] && X.media.get(map[url]);
   if (rec) return rec;
   const r = await fetch(url); if (!r.ok) throw new Error('download failed ' + url); const blob = await r.blob();

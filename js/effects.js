@@ -187,6 +187,10 @@ export const EFFECTS = [
   fx('lensblur', 'Lens blur', 'motion', `vec4 fx(vec2 u){ return blurD(u, .035 * A); }`),
   fx('zoomblur', 'Zoom blur', 'motion', `vec4 fx(vec2 u){ vec4 s = vec4(0.); for (int i = 0; i < 24; i++){ float k = float(i) / 23.; s += src(.5 + (u - .5) * (1. - k * .14 * A)); } return s / 24.; }`),
   fx('swingcam', 'Swing', 'motion', `vec4 fx(vec2 u){ float a = sin(t * 2.2) * .07 * A; vec2 p = rot(a) * ((u - .5) * ASP) / ASP; return src(p / (1. + .1 * A) + .5); }`),
+  // beat accents: strongest at the clip's first frame, then decay (put the effect clip on the beat)
+  fx('beatpunch', 'Zoom punch (beat)', 'motion', `vec4 fx(vec2 u){ float z = 1. + .2 * A * exp(-t * 7.); return src((u - .5) / z + .5); }`),
+  fx('beatshake', 'Hit shake (beat)', 'motion', `vec4 fx(vec2 u){ float e = exp(-t * 5.); vec2 o = (vec2(noise(vec2(t * 26., S)), noise(vec2(S + 5., t * 26.))) - .5) * .09 * A * e; return src((u - .5) / (1. + .1 * A * e) + .5 + o); }`),
+  fx('beatrgb', 'RGB hit (beat)', 'motion', `vec4 fx(vec2 u){ float e = exp(-t * 6.) * A; vec2 d = (u - .5) * .04 * e; vec4 c = src(u); float r = src(u + d).r, b = src(u - d).b; float z = 1. + .08 * e; vec4 m = src((u - .5) / z + .5); return vec4(r, m.g, b, c.a); }`),
   fx('slowzoom', 'Slow zoom', 'motion', `vec4 fx(vec2 u){ float z = 1. + .25 * A * clamp(t / max(D, .1), 0., 1.); return src((u - .5) / z + .5); }`),
   fx('wobble', 'Wobble', 'motion', `vec4 fx(vec2 u){ vec2 o = vec2(sin(u.y * 10. + t * 4.), cos(u.x * 10. + t * 3.)) * .01 * A; return src(u + o); }`),
   // distort

@@ -1,2 +1,4 @@
 tests/*.log
 __pycache__/
+tests/fixtures/click100.wav
+tests/fixtures/motionhalf.mp4

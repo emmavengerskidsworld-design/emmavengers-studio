@@ -18,6 +18,7 @@ export function initHome(ctx) {
   h.innerHTML = `<header class="hm-top"><div class="brand">Emmavengers <b>Studio</b></div><button class="ib" id="homeMenu" aria-label="Settings">${icon('menu')}</button></header>
   <div class="hm-body">
     <div class="hm-new"><button class="btn primary big" id="newProjBtn">${icon('plus', 20)} New project</button><button class="btn big ghost" id="homeTemplates">${icon('templates', 20)} Templates</button></div>
+    <button class="btn big hm-ad" id="homeAd">${icon('beat', 20)} <span><b>Beat Ad Maker</b><small>Photos + music → a video cut on the beat</small></span></button>
     <div class="hm-tools"><label class="sndsearch hm-search">${icon('search', 18)}<input id="homeSearch" type="search" placeholder="Search my projects" autocomplete="off"></label></div>
     <div id="homeSort"></div>
     <div class="hm-grid" id="homeGrid"></div>
@@ -28,6 +29,7 @@ export function initHome(ctx) {
   $('#homeMenu').onclick = () => X.menuSheet();
   $('#newProjBtn').onclick = newSheet;
   $('#homeTemplates').onclick = () => X.templatesSheet();
+  $('#homeAd').onclick = () => X.adSheet();
   $('#homeSort').append(chips([{ value: 'edited', label: 'Last edited' }, { value: 'name', label: 'Name' }, { value: 'created', label: 'Newest' }, { value: 'length', label: 'Longest' }], sort, v => { sort = v; localStorage.setItem('studio.homeSort', v); render(); }, 'tabs hmsort'));
   let tm = 0; $('#homeSearch').oninput = e => { clearTimeout(tm); tm = setTimeout(() => { q = e.target.value; render(); }, 120); };
   $('#homeBackupAll').onclick = () => backup('all');
