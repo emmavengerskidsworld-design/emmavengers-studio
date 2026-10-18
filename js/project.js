@@ -276,4 +276,4 @@ export function extractAudio(p, clipId) {
 export const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 
 /** Remove references to media that no longer exist (e.g. storage was cleared). */
-export function mediaIds(p) { const s = new Set(); for (const t of p.tracks) for (const c of t.clips) if (c.mediaId) s.add(c.mediaId); return s; }
+export function mediaIds(p) { const s = new Set(); for (const t of p.tracks) for (const c of t.clips) if (c.mediaId) s.add(c.mediaId); if (p.canvas && p.canvas.mediaId) s.add(p.canvas.mediaId); return s; }

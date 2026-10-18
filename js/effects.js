@@ -26,6 +26,7 @@ vec4 over(vec4 c, vec3 col, float a){ a = clamp(a, 0., 1.); return c * (1. - a) 
 vec4 addl(vec4 c, vec3 col){ vec3 r = c.rgb + col; float a = max(c.a, clamp(max(col.r, max(col.g, col.b)), 0., 1.)); return vec4(min(r, vec3(a)), a); }
 mat2 rot(float a){ float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
 vec4 blurD(vec2 u, float r){ vec4 s = vec4(0.); vec2 k = r / ASP; for (int i = 0; i < 32; i++){ float fi = float(i) + .5, a = fi * 2.39996; s += src(u + vec2(cos(a), sin(a)) * sqrt(fi / 32.) * k); } return s / 32.; }
+vec2 KAL(vec2 u, float n){ vec2 p = (u - .5) * ASP; float r = length(p), a = atan(p.y, p.x), s = 2. * PI / n; a = mod(a, s); a = abs(a - s * .5); return clamp(vec2(cos(a), sin(a)) * r / ASP + .5, 0., 1.); }
 vec4 blurDir(vec2 u, vec2 d){ vec4 s = vec4(0.); for (int i = 0; i < 24; i++){ s += src(u + d * (float(i) / 23. - .5)); } return s / 24.; }
 float glint(vec2 d, float s){ d /= s; float c = exp(-dot(d, d) * 30.); float r = exp(-abs(d.x) * 40.) * exp(-abs(d.y) * 3.) + exp(-abs(d.y) * 40.) * exp(-abs(d.x) * 3.); return c + .8 * r; }
 float sdHeart(vec2 p){ p.x = abs(p.x); if (p.y + p.x > 1.) return sqrt(dot(p - vec2(.25, .75), p - vec2(.25, .75))) - sqrt(2.) / 4.;
@@ -90,7 +91,7 @@ vec4 fx(vec2 u){ vec4 C = src(u); vec3 c = unpm(C), c0 = c;
 
 /* ---------------- effects (our own designs) ---------------- */
 const fx = (id, name, cat, body, extra = {}) => ({ id, name, cat, body, ...extra });
-export const EFFECT_CATS = [['magic', 'Magic'], ['party', 'Party'], ['weather', 'Weather'], ['light', 'Light'], ['retro', 'Retro'], ['motion', 'Motion'], ['distort', 'Distort'], ['art', 'Art']];
+export const EFFECT_CATS = [['magic', 'Magic'], ['party', 'Party'], ['weather', 'Weather'], ['light', 'Light'], ['retro', 'Retro'], ['motion', 'Motion'], ['distort', 'Distort'], ['mirror', 'Mirror'], ['art', 'Art']];
 export const EFFECTS = [
   // magic
   fx('sparkle', 'Sparkle', 'magic', `vec4 fx(vec2 u){ vec4 c = src(u); vec2 q = u * ASP; float g = 0.;
@@ -236,10 +237,22 @@ export const EFFECTS = [
   fx('swirl', 'Swirl', 'distort', `vec4 fx(vec2 u){ vec2 p = (u - .5) * ASP; float d = length(p); float a = (1. - smoothstep(0., .7, d)) * 2.5 * A * sin(t * 1.2); p = rot(a) * p; return src(p / ASP + .5); }`),
   fx('fisheye', 'Fisheye', 'distort', `vec4 fx(vec2 u){ vec2 p = (u - .5) * 2.; float r = length(p); vec2 q = p * mix(1., .55 + .45 * r * r, A * .9); vec2 uu = q * .5 + .5; float m = step(0., uu.x) * step(uu.x, 1.) * step(0., uu.y) * step(uu.y, 1.); return src(uu) * m; }`),
   fx('bulge', 'Bulge pulse', 'distort', `vec4 fx(vec2 u){ vec2 p = (u - .5) * ASP; float d = length(p); float k = .35 * A * (.5 + .5 * sin(t * 3.)); vec2 q = p * (1. - k * smoothstep(.6, 0., d)); return src(q / ASP + .5); }`),
-  fx('mirror', 'Mirror', 'distort', `vec4 fx(vec2 u){ vec2 m = vec2(u.x < .5 ? u.x : 1. - u.x, u.y); return mix(src(u), src(m), step(.001, A)); }`),
-  fx('mirror4', 'Mirror ×4', 'distort', `vec4 fx(vec2 u){ return src(abs(u * 2. - 1.) * .5 + .25); }`),
-  fx('kaleidoscope', 'Kaleidoscope', 'distort', `vec4 fx(vec2 u){ vec2 p = (u - .5) * ASP; float r = length(p), a = atan(p.y, p.x) + t * .2; float n = 6., s = 2. * PI / n; a = mod(a, s); a = abs(a - s * .5);
+  fx('mirror', 'Mirror', 'mirror', `vec4 fx(vec2 u){ vec2 m = vec2(u.x < .5 ? u.x : 1. - u.x, u.y); return mix(src(u), src(m), step(.001, A)); }`),
+  fx('mirror4', 'Mirror ×4', 'mirror', `vec4 fx(vec2 u){ return src(abs(u * 2. - 1.) * .5 + .25); }`),
+  fx('kaleidoscope', 'Kaleidoscope', 'mirror', `vec4 fx(vec2 u){ vec2 p = (u - .5) * ASP; float r = length(p), a = atan(p.y, p.x) + t * .2; float n = 6., s = 2. * PI / n; a = mod(a, s); a = abs(a - s * .5);
     vec2 q = vec2(cos(a), sin(a)) * r; return mix(src(u), src(q / ASP + .5), step(.001, A) * clamp(A * 1.5, 0., 1.)); }`),
+  // mirror (Batch 10)
+  fx('mirrorv', 'Mirror top', 'mirror', `vec4 fx(vec2 u){ vec2 m = vec2(u.x, u.y > .5 ? u.y : 1. - u.y);   /* GL v runs bottom -> top */ return mix(src(u), src(m), step(.001, A)); }`),
+  fx('mirrorr', 'Mirror right', 'mirror', `vec4 fx(vec2 u){ vec2 m = vec2(u.x > .5 ? u.x : 1. - u.x, u.y); return mix(src(u), src(m), step(.001, A)); }`),
+  fx('mirrorb', 'Mirror bottom', 'mirror', `vec4 fx(vec2 u){ vec2 m = vec2(u.x, u.y < .5 ? u.y : 1. - u.y); return mix(src(u), src(m), step(.001, A)); }`),
+  fx('kaleido4', 'Kaleido 4', 'mirror', `vec4 fx(vec2 u){ return mix(src(u), src(KAL(u, 4.)), step(.001, A)); }`),
+  fx('kaleido8', 'Kaleido 8', 'mirror', `vec4 fx(vec2 u){ return mix(src(u), src(KAL(u, 8.)), step(.001, A)); }`),
+  fx('kaleido12', 'Kaleido 12', 'mirror', `vec4 fx(vec2 u){ return mix(src(u), src(KAL(u, 12.)), step(.001, A)); }`),
+  fx('kaleidospin', 'Kaleido spin', 'mirror', `vec4 fx(vec2 u){ vec2 p = (u - .5) * ASP; float r = length(p), a = atan(p.y, p.x) + t * .6; float s = 2. * PI / 8.; a = mod(a, s); a = abs(a - s * .5);
+    vec2 q = vec2(cos(a), sin(a)) * r; return mix(src(u), src(clamp(q / ASP + .5, 0., 1.)), step(.001, A)); }`),
+  fx('tile4', 'Tiles 2×2', 'mirror', `vec4 fx(vec2 u){ return mix(src(u), src(fract(u * 2.)), step(.001, A)); }`),
+  fx('tile9', 'Tiles 3×3', 'mirror', `vec4 fx(vec2 u){ return mix(src(u), src(fract(u * 3.)), step(.001, A)); }`),
+  fx('mirrortile', 'Mirror tiles', 'mirror', `vec4 fx(vec2 u){ vec2 g = u * 3., f = fract(g), k = floor(g); f = mix(f, 1. - f, mod(k, 2.)); return mix(src(u), src(f), step(.001, A)); }`),
   fx('pixel', 'Pixel', 'distort', `vec4 fx(vec2 u){ float n = mix(min(R.x, R.y), 24., A); vec2 g = vec2(n) * ASP; return src((floor(u * g) + .5) / g); }`),
   // art
   fx('cartoon', 'Cartoon', 'art', `vec4 fx(vec2 u){ vec4 c = src(u); vec3 b = unpm(blurD(u, .006)); b = floor(b * 6. + .5) / 6.; vec2 px = 1.5 / R;

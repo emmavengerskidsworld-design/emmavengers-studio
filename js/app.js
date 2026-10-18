@@ -17,6 +17,8 @@ import * as fx from './effects.js';
 import { FILTER_CATS } from './registry.js';
 import { ensureFont, ensureProjectFonts, onFontLoad } from './fonts.js';
 import { onLut } from './colorpro.js';
+import { canvasClip } from './canvasbg.js';
+import { initLayoutPanel, canvasSheet, layoutSheet, mirrorSheet, applyLayout, fillCells, clearLayout } from './layoutpanel.js';
 import { initColorPanel, colorSheet as colorProSheet, addAdjustmentLayer, isAdjLayer, pickWhite } from './colorpanel.js';
 import { TEXT_STYLES, BUBBLES, TITLES, applyStyle, applyTitle } from './textstyles.js';
 import { FILTERS, FONTS, COLORS, BG_COLORS, SPEED_PRESETS, KEYFRAME_PROPS, DEFAULT_TRANSFORM, TRACK_KINDS, propAt, kfPropsFor, EASING_LIST, TRANSFORM_PROPS } from './registry.js';
@@ -59,6 +61,7 @@ async function boot() {
   initAudioPanels({ player, timeline, toast });
   pro.initProTools({ player, timeline, toast, speedSheet });
   initColorPanel({ player, timeline, toast });
+  initLayoutPanel({ player, timeline, toast, busy: (on, txt) => { $('#busy').hidden = !on; if (txt) $('#busyText').textContent = txt; } });
   onBaked(() => { timeline.render(); if (player.playing) player.sync(player.t); });
   wireUI(); layoutPreview(); timeline.fitZoom(); timeline.render(); refreshToolbar(); updateUndo(); updateEmpty(); showTime(); setPlayIcon(false);
   player.seek(0);
@@ -68,7 +71,7 @@ async function boot() {
   setTimeout(async () => { try { await projects.askPersist(); await projects.cleanUp(); if (!(await projects.getThumb(S.project.id))) makeThumb(); } catch (e) { console.warn('clean-up', e); } }, 2500);
   const qs = new URLSearchParams(location.search);
   if (qs.has('home') || (matchMedia('(display-mode: standalone)').matches && !qs.has('editor'))) showHome();
-  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, ready: true };
+  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, layout: { apply: (id, o) => applyLayout(id, o), fill: (f, id, o) => fillCells(f, id, o), clear: () => clearLayout(), sheet: () => layoutSheet(), canvas: t => canvasSheet(t) }, ready: true };
   document.body.classList.add('ready');
 }
 /* ---------------- projects ---------------- */
@@ -391,11 +394,12 @@ const ROOT_TOOLS = [
   { id: 'captions', icon: 'captions', label: 'Captions', run: captionsSheet },
   { id: 'stickers', icon: 'sticker', label: 'Stickers', run: () => stickers.stickerSheet({ player, toast, media, importFile, act, newClip, addToKind, DEFAULT_TRANSFORM, select }) },
   { id: 'effects', icon: 'effects', label: 'Effects', run: () => { select(null); effectsSheet('track'); } },
-  { id: 'adjlayer', icon: 'adjust', label: 'Adjust layer', run: () => addAdjustmentLayer() },
+  { id: 'adjlayer', icon: 'layers', label: 'Adjust layer', run: () => addAdjustmentLayer() },
   { id: 'overlay', icon: 'overlay', label: 'Overlay', run: () => pick('overlay') },
   { id: 'split', icon: 'split', label: 'Split', run: doSplit },
   { id: 'ratio', icon: 'ratio', label: 'Ratio', run: ratioSheet },
-  { id: 'bg', icon: 'bg', label: 'Background', run: bgSheet },
+  { id: 'bg', icon: 'bg', label: 'Canvas', run: () => canvasSheet() },
+  { id: 'layout', icon: 'layout', label: 'Layout', run: () => layoutSheet() },
   { id: 'guides', icon: 'safe', label: 'Safe area', run: pro.guidesSheet },
 ];
 const CLIP_TOOLS = [
@@ -423,11 +427,12 @@ const CLIP_TOOLS = [
   { id: 'duration', icon: 'clock', label: 'Duration', when: c => !hasSource(c), run: durationSheet },
   { id: 'hd', icon: 'hd', label: 'HD Enhance', when: c => c.type === 'video' || c.type === 'image', run: hdSheet },
   { id: 'adjust', icon: 'adjust', label: 'Adjust', when: c => c.type === 'video' || c.type === 'image', run: colorSheet },
-  { id: 'colorpro', icon: 'filter', label: 'Colour', when: c => c.type === 'video' || c.type === 'image' || isAdjLayer(c), run: () => colorProSheet() },
+  { id: 'colorpro', icon: 'wheel', label: 'Colour', when: c => c.type === 'video' || c.type === 'image' || isAdjLayer(c), run: () => colorProSheet() },
   { id: 'transform', icon: 'move', label: 'Transform', when: isVisualClip, run: transformSheet },
   { id: 'effect', icon: 'effects', label: 'Effect', when: c => c.type === 'effect' && !isAdjLayer(c), run: () => effectsSheet('track') },
   { id: 'clipfx', icon: 'effects', label: 'Effects', when: c => c.type === 'video' || c.type === 'image' || isAdjLayer(c), run: () => effectsSheet('clip') },
   { id: 'filters', icon: 'filter', label: 'Filters', when: c => c.type === 'video' || c.type === 'image' || isAdjLayer(c), run: filterSheet },
+  { id: 'mirror', icon: 'mirror', label: 'Mirror', when: c => c.type === 'video' || c.type === 'image', run: () => mirrorSheet() },
   { id: 'fit', icon: 'fit', label: 'Fit / Fill', when: c => c.type === 'video' || c.type === 'image', run: toggleFit },
   { id: 'curve', icon: 'curve', label: 'Curve', when: c => hasKeyframes(c), run: curveSheet },
   { id: 'kenburns', icon: 'kenburns', label: 'Ken Burns', when: c => c.type === 'image', run: kenBurnsSheet },
@@ -575,6 +580,7 @@ async function renderStill({ t = 0, W, H, plain = false, fast = false, type = 'i
   if (!W) ({ W, H } = outputSize(S.project.aspect, 1080));
   const { loadBitmap } = await import('./media.js');
   const cv = new OffscreenCanvas(W, H), ctx = cv.getContext('2d', { alpha: false }), frames = new Map();
+  { const cc = canvasClip(S.project); if (cc && media.get(cc.mediaId)) { const bm = await loadBitmap(media.get(cc.mediaId)); frames.set(cc.id, { img: bm, w: bm.width, h: bm.height }); } }
   for (const tr of S.project.tracks) for (const c of tr.clips) if (c.type === 'image' && c.start <= t && t < clipEnd(c)) { const bm = await loadBitmap(media.get(c.mediaId)); frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); }
   player.seek(t); await new Promise(r => setTimeout(r, 300));
   renderFrame(ctx, W, H, S.project, t, c => frames.get(c.id) || player.source(c), { plain, fast });

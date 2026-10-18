@@ -74,7 +74,7 @@ export async function cleanUp() {
   for (const r of recs.sort((a, b) => a.added - b.added)) { if (!r.hash) continue; const k = keepFor.get(r.hash); if (k) remap.set(r.id, k); else keepFor.set(r.hash, r.id); }
   let merged = 0;
   if (remap.size) {
-    const fix = p => { let n = 0; for (const t of p.tracks) for (const c of t.clips) if (remap.has(c.mediaId)) { c.mediaId = remap.get(c.mediaId); n++; } return n; };
+    const fix = p => { let n = 0; for (const t of p.tracks) for (const c of t.clips) if (remap.has(c.mediaId)) { c.mediaId = remap.get(c.mediaId); n++; } if (p.canvas && remap.has(p.canvas.mediaId)) { p.canvas.mediaId = remap.get(p.canvas.mediaId); n++; } return n; };
     for (const p of await db.all('projects')) if (S.project && p.id === S.project.id) continue; else if (fix(p)) await db.put('projects', p);
     if (S.project && fix(S.project)) { await useMedia(mediaIds(S.project)); await save(); }
     merged = remap.size;

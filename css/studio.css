@@ -349,3 +349,14 @@ body.home-open .sheet{position:fixed;z-index:35}
 .wheel .ctl .cl, .wheel .ctl output { font-size: 11px; }
 .wheel .ctl input { order: 3; width: 100%; }
 .curvepre { flex-wrap: wrap; }
+/* ---------- Batch 10: canvas & layout ---------- */
+.cangrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.cangrid .chipbtn { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; padding: 6px 4px; }
+.gradgrid .chipbtn i { display: block; width: 100%; height: 34px; border-radius: 8px; }
+.patcols .chipbtn i { width: 26px; height: 26px; }
+.laygroups { display: flex; flex-direction: column; gap: 6px; }
+.layrow { display: flex; align-items: center; gap: 8px; }
+.layrow > b { font-size: 11px; width: 44px; flex: none; opacity: .75; font-weight: 600; }
+.laygrid { flex-wrap: nowrap; overflow-x: auto; }
+.laygrid .chipbtn { padding: 5px 8px; line-height: 0; }
+.mirgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }

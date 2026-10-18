@@ -85,5 +85,19 @@ const P = {
   move: '<path d="M12 2v20M2 12h20M12 2l-3 3M12 2l3 3M12 22l-3-3M12 22l3-3M2 12l3-3M2 12l3 3M22 12l-3-3M22 12l-3 3"/>',
   compare: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 2v20"/><path d="M12 4h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7z" fill="currentColor" stroke="none" opacity=".45"/>',
   share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',
+  // Batch 10
+  layout: '<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M12 3v18M12 12h9"/>',
+  mirror: '<path d="M12 2v20" stroke-dasharray="2 2"/><path d="M9 6 3 18h6z"/><path d="M15 6l6 12h-6z" fill="currentColor" opacity=".5"/>',
+  wheel: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5" fill="currentColor"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/>',
+  layers: '<path d="M12 3 2 8l10 5 10-5z"/><path d="M2 13l10 5 10-5" opacity=".6"/>',
+  stab: '<rect x="5" y="6" width="14" height="12" rx="2"/><path d="M2 9v6M22 9v6M9 12h6M12 9v6"/>',
+  track: '<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="7" stroke-dasharray="3 3"/>',
+  graph: '<path d="M3 21h18M3 3v18"/><path d="M5 18C9 18 9 6 13 6s5 6 7 6"/><circle cx="13" cy="6" r="1.6" fill="currentColor"/>',
+  slowmo: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/>',
+  eq: '<path d="M5 21v-7M5 10V3M12 21v-9M12 8V3M19 21v-5M19 12V3"/><path d="M2 14h6M9 8h6M16 16h6"/>',
+  duck: '<path d="M3 17c3 0 3-6 6-6s3 6 6 6 3-4 6-4"/><path d="M3 7h6" /><path d="M15 5v4M18 3v8M21 6v2"/>',
+  marks: '<path d="M4 20h16"/><path d="M7 20V8M12 20V4M17 20v-9"/><circle cx="12" cy="4" r="1.6" fill="currentColor"/>',
+  prompter: '<rect x="3" y="3" width="18" height="18" rx="2.5"/><path d="M7 8h10M7 12h10M7 16h6"/>',
+  loud: '<path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 8a5 5 0 0 1 0 8M19 5a9 9 0 0 1 0 14"/>',
 };
 export const icon = (n, s = 22) => `<svg class="ico" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || ''}</svg>`;

@@ -3,12 +3,14 @@
    { img: CanvasImageSource, w, h, rot } (w/h = coded size, rot = display rotation in degrees). */
 import { TRACK_KINDS, propAt, filterCss, FONTS } from './registry.js';
 import { transitionById, helpers } from './transitions.js';
-import { clipEnd, clipDur } from './project.js';
+import { clipEnd, clipDur, srcTime } from './project.js';
 import { clipAnimState, textAnimPlan, unitQ } from './animations.js';
 import { processImage, hasAdjust, enhanceOn, maxSide, DEFAULT_STRENGTH } from './enhance.js';
 import { ensureFont, fontsVersion } from './fonts.js';
 import { applyChain, fxAvailable, DEFAULT_EFFECT_AMOUNT } from './effects.js';
 import { hasColor, colorParams } from './colorpro.js';
+import { drawCanvasBg, cellPath } from './canvasbg.js';
+import { stabAt } from './motion.js';
 import { isPro, cropAt, maskAt, keyOn, straightenZoom, scratch, maskPath, blendOp, drawBgBlur } from './pro.js';
 
 export function visualTracks(p) {
@@ -22,11 +24,8 @@ function layer(i, W, H) { let c = layers[i]; if (!c || c.width !== W || c.height
 export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-  ctx.fillStyle = p.bg || '#000'; ctx.fillRect(0, 0, W, H);
-  if (p.bgBlur > 0) {   // blurred copy of the main clip fills the letterbox bars
-    const mt = p.tracks.find(x => x.kind === 'main'), act = mt ? activeAt(mt, t) : [], c = act[act.length - 1];
-    if (c && c.type !== 'text') { const s = getSource(c, t); if (s) drawBgBlur(ctx, W, H, s, c, p.bgBlur); }
-  }
+  // canvas: colour, then gradient / pattern / image, or a blurred copy of the main clip in the letterbox bars
+  { const mt = p.tracks.find(x => x.kind === 'main'), act = mt ? activeAt(mt, t) : []; drawCanvasBg(ctx, W, H, p, t, getSource, act[act.length - 1]); }
   const boxes = [];
   const drawClip = (cx, track, clip) => {
     const local = t - clip.start;
@@ -44,7 +43,7 @@ export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
       const [a, b] = act.slice(-2), T = b.transitionIn && transitionById(b.transitionIn.id);
       if (T) {
         const LA = layer(0, W, H), LB = layer(1, W, H), bg = p.bg || '#000';
-        for (const [L, c] of [[LA, a], [LB, b]]) { const x = L.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.filter = 'none'; x.globalCompositeOperation = 'source-over'; x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.fillStyle = bg; x.fillRect(0, 0, W, H); if (p.bgBlur > 0) { const s = getSource(c, t); if (s) drawBgBlur(x, W, H, s, c, p.bgBlur); } drawClip(x, track, c); }
+        for (const [L, c] of [[LA, a], [LB, b]]) { const x = L.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.filter = 'none'; x.globalCompositeOperation = 'source-over'; x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; drawCanvasBg(x, W, H, p, t, getSource, c); drawClip(x, track, c); }
         const pr = Math.max(0, Math.min(1, (t - b.start) / Math.max(1e-6, clipEnd(a) - b.start)));
         ctx.save(); T.render(ctx, LA, LB, pr, W, H, H_); ctx.restore();
         ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-over';
@@ -80,6 +79,7 @@ export function adjustChain(clip, local) {
 }
 export function clipChain(clip, local) {
   const ch = [];
+  if (clip.mirror && clip.mirror.id) ch.push({ kind: 'effect', id: clip.mirror.id, amount: 1, t: local || 0, dur: clipDur(clip), seed: clip.id });
   if (hasColor(clip)) ch.push({ kind: 'color', id: 'color', amount: 1, p: colorParams(clip.color), t: local || 0, seed: clip.id });
   if (clip.filter && clip.filter.id) ch.push({ kind: 'filter', id: clip.filter.id, amount: clip.filter.amount ?? 1 });
   for (const e of clip.effects || []) if (e && e.id) ch.push({ kind: 'effect', id: e.id, amount: e.amount ?? DEFAULT_EFFECT_AMOUNT, t: local || 0, dur: clipDur(clip), seed: clip.id });
@@ -97,8 +97,11 @@ export function drawVisual(ctx, W, H, s, clip, tr, local, opts = {}) {
   if (!dw || !dh) return null;
   const pro = isPro(clip), crEdit = opts.cropEdit === clip.id, cr0 = cropAt(clip, local || 0), cr = crEdit ? null : cr0, mk = opts.noMask ? null : maskAt(clip, local || 0);
   const cw = cr ? dw * cr.w : dw, ch = cr ? dh * cr.h : dh;   // size after crop
-  const fit = clip.fit === 'cover' ? Math.max(W / cw, H / ch) : Math.min(W / cw, H / ch);
-  const k = fit * tr.scale, cx = tr.x * W, cy = tr.y * H, box = { cx, cy, w: cw * k, h: ch * k };
+  // layout cell (split screen / collage): the clip covers its cell, x / y / scale pan and zoom inside it
+  if (clip.cell && clip.cell.off) return null;   // waiting outside a layout with fewer cells
+  const cel = clip.cell, FW = cel ? cel.w * W : W, FH = cel ? cel.h * H : H, OX = cel ? cel.x * W : 0, OY = cel ? cel.y * H : 0;
+  const fit = (cel ? clip.fit !== 'contain' : clip.fit === 'cover') ? Math.max(FW / cw, FH / ch) : Math.min(FW / cw, FH / ch);
+  const k = fit * tr.scale, cx = OX + tr.x * FW, cy = OY + tr.y * FH, box = { cx, cy, w: cw * k, h: ch * k };
   // clip animation (In / Out / Combo) on top of the transform; the HD pipeline still works at the clip's own size
   const st = clip.anim ? clipAnimState(clip, local || 0, clipDur(clip)) : null;
   const alpha = Math.max(0, Math.min(1, tr.opacity * (st ? st.a : 1)));
@@ -109,6 +112,7 @@ export function drawVisual(ctx, W, H, s, clip, tr, local, opts = {}) {
   if (mk) { target.setTransform(1, 0, 0, 1, 0, 0); target.globalAlpha = 1; target.filter = 'none'; target.globalCompositeOperation = 'source-over'; target.imageSmoothingEnabled = true; target.imageSmoothingQuality = 'high'; target.clearRect(0, 0, W, H); }
   const g = target;
   g.save();
+  if (cel) { cellPath(g, cel, W, H); g.clip(); }
   g.globalAlpha = mk ? 1 : alpha;
   if (!mk && clip.blend && clip.blend !== 'normal') g.globalCompositeOperation = blendOp(clip.blend);
   const chain = clipChain(clip, local), glFx = chain.length && fxAvailable();
@@ -133,7 +137,8 @@ export function drawVisual(ctx, W, H, s, clip, tr, local, opts = {}) {
     let iw = out ? ow : s.w, ih = out ? oh : s.h; if (!out && kk < 1) { iw = Math.max(2, Math.round(s.w * kk)); ih = Math.max(2, Math.round(s.h * kk)); }
     const r = applyChain(img, iw, ih, chain); if (r) img = r;
   }
-  if (!pro && !st && out && !s.rot && Math.abs(tr.rotation % 360) < 1e-6 && Math.abs(ow - s.w * k) < 0.75 && Math.abs(oh - s.h * k) < 0.75) {
+  const sb = clip.stab && clip.type === 'video' ? stabAt(clip.stab, srcTime(clip, clip.start + (local || 0))) : null;
+  if (!pro && !st && !sb && out && !s.rot && Math.abs(tr.rotation % 360) < 1e-6 && Math.abs(ow - s.w * k) < 0.75 && Math.abs(oh - s.h * k) < 0.75) {
     g.drawImage(img, Math.round(cx - ow / 2), Math.round(cy - oh / 2));   // pixel-exact, no second resample
   } else {
     g.translate(cx + (st ? st.dx * W : 0), cy + (st ? st.dy * H : 0)); g.rotate((tr.rotation + (st ? st.rot : 0)) * Math.PI / 180);
@@ -145,6 +150,7 @@ export function drawVisual(ctx, W, H, s, clip, tr, local, opts = {}) {
       g.translate(-(cr.x + cr.w / 2 - 0.5) * dw, -(cr.y + cr.h / 2 - 0.5) * dh); }
     if (clip.flipH || clip.flipV) g.scale(clip.flipH ? -1 : 1, clip.flipV ? -1 : 1);
     if (rot) g.rotate(rot * Math.PI / 180);
+    if (sb) { g.scale(sb.z, sb.z); g.translate(sb.x * s.w, sb.y * s.h); g.rotate(sb.a); g.scale(sb.s, sb.s); }   // stabilisation (raw frame space)
     g.drawImage(img, -s.w / 2, -s.h / 2, s.w, s.h);
   }
   g.restore();

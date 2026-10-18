@@ -8,6 +8,7 @@ import { projectDuration, clipEnd, clipDur, srcTime, hasSource, ASPECTS, gainAt 
 import { openSource, dropDemuxCache } from './framesource.js';
 import { Player } from './player.js';
 import { ensureProjectFonts } from './fonts.js';
+import { canvasClip } from './canvasbg.js';
 import { needsBake, ensureBaked, bakedPos, bakedRate } from './audio.js';
 import { encodeWav } from './wav.js';
 import { GifWriter, buildPalette, indexFrame } from './gif.js';
@@ -163,6 +164,7 @@ export async function exportAudio(p, { format = 'm4a', range, onProgress = () =>
 /** Frame-exact picture of time t at full export resolution (same decoders as the video export). */
 async function framesAt(p, t, sources, clips) {
   const frames = new Map();
+  for (const c of canvasClip(p) ? [canvasClip(p)] : []) { const r = media.get(c.mediaId); if (r) { const bm = await loadBitmap(r); frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); } }
   for (const tr of visualTracks(p)) for (const c of activeAt(tr, t)) {
     if (c.type === 'image') { const r = media.get(c.mediaId); if (r) { const bm = await loadBitmap(r); frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); } continue; }
     if (c.type !== 'video') continue;
@@ -235,6 +237,7 @@ async function encodeWebCodecs(p, D, W, H, fps, codecs, onProgress, signal, tSta
     if (signal.aborted) throw new DOMException('Export cancelled', 'AbortError');
     if (fail) throw fail;
     const t = tStart + i / fps, frames = new Map();
+    for (const c of canvasClip(p) ? [canvasClip(p)] : []) { const r = media.get(c.mediaId); if (r) { const bm = await loadBitmap(r); frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); } }
     for (const tr of vtracks) for (const c of activeAt(tr, t)) {
       if (c.type === 'image') { const r = media.get(c.mediaId); if (r) { const bm = await loadBitmap(r); frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); } continue; }
       if (c.type !== 'video') continue;

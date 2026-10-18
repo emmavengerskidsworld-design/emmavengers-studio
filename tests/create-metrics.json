@@ -26,7 +26,7 @@
   "shapes": 18
  },
  "animatedStickers": 106,
- "effects": 69,
+ "effects": 79,
  "filters": 52,
  "effectCats": {
   "magic": 8,
@@ -35,7 +35,8 @@
   "light": 8,
   "retro": 8,
   "motion": 13,
-  "distort": 10,
+  "distort": 7,
+  "mirror": 13,
   "art": 8
  },
  "filterCats": {
