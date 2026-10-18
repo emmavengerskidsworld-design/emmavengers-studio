@@ -1,0 +1,434 @@
+[
+ {
+  "family": "Luckiest Guy",
+  "id": "luckiestguy",
+  "group": "kids",
+  "file": "luckiestguy.woff2",
+  "licence": "Apache License 2.0",
+  "source": "https://github.com/google/fonts/tree/main/apache/luckiestguy",
+  "bytes": 27008
+ },
+ {
+  "family": "Fredoka",
+  "id": "fredoka",
+  "group": "kids",
+  "file": "fredoka.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/fredoka",
+  "bytes": 22240
+ },
+ {
+  "family": "Baloo 2",
+  "id": "baloo2",
+  "group": "kids",
+  "file": "baloo2.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/baloo2",
+  "bytes": 96160
+ },
+ {
+  "family": "Bubblegum Sans",
+  "id": "bubblegumsans",
+  "group": "kids",
+  "file": "bubblegumsans.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/bubblegumsans",
+  "bytes": 15972
+ },
+ {
+  "family": "Chewy",
+  "id": "chewy",
+  "group": "kids",
+  "file": "chewy.woff2",
+  "licence": "Apache License 2.0",
+  "source": "https://github.com/google/fonts/tree/main/apache/chewy",
+  "bytes": 21116
+ },
+ {
+  "family": "Lilita One",
+  "id": "lilitaone",
+  "group": "kids",
+  "file": "lilitaone.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/lilitaone",
+  "bytes": 11940
+ },
+ {
+  "family": "Titan One",
+  "id": "titanone",
+  "group": "kids",
+  "file": "titanone.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/titanone",
+  "bytes": 18188
+ },
+ {
+  "family": "Bangers",
+  "id": "bangers",
+  "group": "kids",
+  "file": "bangers.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/bangers",
+  "bytes": 37024
+ },
+ {
+  "family": "Sniglet",
+  "id": "sniglet",
+  "group": "kids",
+  "file": "sniglet.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/sniglet",
+  "bytes": 27776
+ },
+ {
+  "family": "Boogaloo",
+  "id": "boogaloo",
+  "group": "kids",
+  "file": "boogaloo.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/boogaloo",
+  "bytes": 13472
+ },
+ {
+  "family": "Carter One",
+  "id": "carterone",
+  "group": "kids",
+  "file": "carterone.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/carterone",
+  "bytes": 31568
+ },
+ {
+  "family": "Bowlby One",
+  "id": "bowlbyone",
+  "group": "kids",
+  "file": "bowlbyone.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/bowlbyone",
+  "bytes": 28736
+ },
+ {
+  "family": "Paytone One",
+  "id": "paytoneone",
+  "group": "kids",
+  "file": "paytoneone.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/paytoneone",
+  "bytes": 38424
+ },
+ {
+  "family": "Passion One",
+  "id": "passionone",
+  "group": "kids",
+  "file": "passionone.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/passionone",
+  "bytes": 9668
+ },
+ {
+  "family": "Modak",
+  "id": "modak",
+  "group": "kids",
+  "file": "modak.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/modak",
+  "bytes": 189084
+ },
+ {
+  "family": "Londrina Solid",
+  "id": "londrinasolid",
+  "group": "kids",
+  "file": "londrinasolid.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/londrinasolid",
+  "bytes": 36820
+ },
+ {
+  "family": "Grandstander",
+  "id": "grandstander",
+  "group": "kids",
+  "file": "grandstander.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/grandstander",
+  "bytes": 45940
+ },
+ {
+  "family": "Mochiy Pop One",
+  "id": "mochiypopone",
+  "group": "kids",
+  "file": "mochiypopone.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/mochiypopone",
+  "bytes": 2240032
+ },
+ {
+  "family": "DynaPuff",
+  "id": "dynapuff",
+  "group": "kids",
+  "file": "dynapuff.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/dynapuff",
+  "bytes": 36684
+ },
+ {
+  "family": "Gluten",
+  "id": "gluten",
+  "group": "kids",
+  "file": "gluten.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/gluten",
+  "bytes": 41420
+ },
+ {
+  "family": "Kavoon",
+  "id": "kavoon",
+  "group": "kids",
+  "file": "kavoon.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/kavoon",
+  "bytes": 30212
+ },
+ {
+  "family": "Concert One",
+  "id": "concertone",
+  "group": "kids",
+  "file": "concertone.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/concertone",
+  "bytes": 26096
+ },
+ {
+  "family": "Coiny",
+  "id": "coiny",
+  "group": "kids",
+  "file": "coiny.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/coiny",
+  "bytes": 50568
+ },
+ {
+  "family": "Rammetto One",
+  "id": "rammettoone",
+  "group": "kids",
+  "file": "rammettoone.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/rammettoone",
+  "bytes": 27296
+ },
+ {
+  "family": "Sigmar One",
+  "id": "sigmarone",
+  "group": "kids",
+  "file": "sigmarone.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/sigmarone",
+  "bytes": 70040
+ },
+ {
+  "family": "Galindo",
+  "id": "galindo",
+  "group": "kids",
+  "file": "galindo.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/galindo",
+  "bytes": 26536
+ },
+ {
+  "family": "Rubik Bubbles",
+  "id": "rubikbubbles",
+  "group": "kids",
+  "file": "rubikbubbles.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/rubikbubbles",
+  "bytes": 93124
+ },
+ {
+  "family": "Comic Neue",
+  "id": "comicneue",
+  "group": "kids",
+  "file": "comicneue.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/comicneue",
+  "bytes": 23608
+ },
+ {
+  "family": "Patrick Hand",
+  "id": "patrickhand",
+  "group": "hand",
+  "file": "patrickhand.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/patrickhand",
+  "bytes": 62720
+ },
+ {
+  "family": "Gochi Hand",
+  "id": "gochihand",
+  "group": "hand",
+  "file": "gochihand.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/gochihand",
+  "bytes": 21388
+ },
+ {
+  "family": "Permanent Marker",
+  "id": "permanentmarker",
+  "group": "hand",
+  "file": "permanentmarker.woff2",
+  "licence": "Apache License 2.0",
+  "source": "https://github.com/google/fonts/tree/main/apache/permanentmarker",
+  "bytes": 30856
+ },
+ {
+  "family": "Caveat",
+  "id": "caveat",
+  "group": "hand",
+  "file": "caveat.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/caveat",
+  "bytes": 108572
+ },
+ {
+  "family": "Pacifico",
+  "id": "pacifico",
+  "group": "script",
+  "file": "pacifico.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/pacifico",
+  "bytes": 105096
+ },
+ {
+  "family": "Lobster",
+  "id": "lobster",
+  "group": "script",
+  "file": "lobster.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/lobster",
+  "bytes": 103016
+ },
+ {
+  "family": "Dancing Script",
+  "id": "dancingscript",
+  "group": "script",
+  "file": "dancingscript.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/dancingscript",
+  "bytes": 36568
+ },
+ {
+  "family": "Poppins",
+  "id": "poppins",
+  "group": "clean",
+  "file": "poppins.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/poppins",
+  "bytes": 49724
+ },
+ {
+  "family": "Montserrat",
+  "id": "montserrat",
+  "group": "clean",
+  "file": "montserrat.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/montserrat",
+  "bytes": 107108
+ },
+ {
+  "family": "Nunito",
+  "id": "nunito",
+  "group": "clean",
+  "file": "nunito.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/nunito",
+  "bytes": 45380
+ },
+ {
+  "family": "Quicksand",
+  "id": "quicksand",
+  "group": "clean",
+  "file": "quicksand.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/quicksand",
+  "bytes": 29612
+ },
+ {
+  "family": "Anton",
+  "id": "anton",
+  "group": "clean",
+  "file": "anton.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/anton",
+  "bytes": 57468
+ },
+ {
+  "family": "Bebas Neue",
+  "id": "bebasneue",
+  "group": "clean",
+  "file": "bebasneue.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/bebasneue",
+  "bytes": 21592
+ },
+ {
+  "family": "Oswald",
+  "id": "oswald",
+  "group": "clean",
+  "file": "oswald.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/oswald",
+  "bytes": 34116
+ },
+ {
+  "family": "Righteous",
+  "id": "righteous",
+  "group": "clean",
+  "file": "righteous.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/righteous",
+  "bytes": 16804
+ },
+ {
+  "family": "Bungee",
+  "id": "bungee",
+  "group": "display",
+  "file": "bungee.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/bungee",
+  "bytes": 40632
+ },
+ {
+  "family": "Press Start 2P",
+  "id": "pressstart2p",
+  "group": "display",
+  "file": "pressstart2p.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/pressstart2p",
+  "bytes": 29716
+ },
+ {
+  "family": "Abril Fatface",
+  "id": "abrilfatface",
+  "group": "display",
+  "file": "abrilfatface.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/abrilfatface",
+  "bytes": 20788
+ },
+ {
+  "family": "Playfair Display",
+  "id": "playfairdisplay",
+  "group": "display",
+  "file": "playfairdisplay.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/playfairdisplay",
+  "bytes": 66556
+ },
+ {
+  "family": "Amatic SC",
+  "id": "amaticsc",
+  "group": "hand",
+  "file": "amaticsc.woff2",
+  "licence": "SIL Open Font License 1.1",
+  "source": "https://github.com/google/fonts/tree/main/ofl/amaticsc",
+  "bytes": 67988
+ }
+]

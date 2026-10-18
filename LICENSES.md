@@ -179,3 +179,59 @@ Wikimedia Commons: each file’s licence was read from Commons’ own file metad
 
 - mp4-muxer (js/vendor/mp4-muxer.js) — MIT
 - mp4box.js (js/vendor/mp4box.all.min.js) — BSD-3-Clause
+
+
+## Fonts (lib/fonts/)
+
+48 font families from the Google Fonts repository (https://github.com/google/fonts), bundled as WOFF2 by tools/fonts/fetch_fonts.py. Variable fonts are pinned to one display weight (an allowed modification; the fonts keep their names only inside our app as "EVF-<id>", Reserved Font Names are not used for a renamed font). Each font’s own licence text ships next to it. SIL Open Font License 1.1 and Apache License 2.0 both allow bundling, embedding and use in monetised videos.
+
+| Font | Licence | Source | Licence text |
+|---|---|---|---|
+| Luckiest Guy | Apache License 2.0 | https://github.com/google/fonts/tree/main/apache/luckiestguy | lib/fonts/luckiestguy.LICENSE.txt |
+| Fredoka | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/fredoka | lib/fonts/fredoka.LICENSE.txt |
+| Baloo 2 | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/baloo2 | lib/fonts/baloo2.LICENSE.txt |
+| Bubblegum Sans | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/bubblegumsans | lib/fonts/bubblegumsans.LICENSE.txt |
+| Chewy | Apache License 2.0 | https://github.com/google/fonts/tree/main/apache/chewy | lib/fonts/chewy.LICENSE.txt |
+| Lilita One | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/lilitaone | lib/fonts/lilitaone.LICENSE.txt |
+| Titan One | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/titanone | lib/fonts/titanone.LICENSE.txt |
+| Bangers | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/bangers | lib/fonts/bangers.LICENSE.txt |
+| Sniglet | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/sniglet | lib/fonts/sniglet.LICENSE.txt |
+| Boogaloo | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/boogaloo | lib/fonts/boogaloo.LICENSE.txt |
+| Carter One | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/carterone | lib/fonts/carterone.LICENSE.txt |
+| Bowlby One | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/bowlbyone | lib/fonts/bowlbyone.LICENSE.txt |
+| Paytone One | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/paytoneone | lib/fonts/paytoneone.LICENSE.txt |
+| Passion One | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/passionone | lib/fonts/passionone.LICENSE.txt |
+| Modak | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/modak | lib/fonts/modak.LICENSE.txt |
+| Londrina Solid | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/londrinasolid | lib/fonts/londrinasolid.LICENSE.txt |
+| Grandstander | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/grandstander | lib/fonts/grandstander.LICENSE.txt |
+| Mochiy Pop One | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/mochiypopone | lib/fonts/mochiypopone.LICENSE.txt |
+| DynaPuff | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/dynapuff | lib/fonts/dynapuff.LICENSE.txt |
+| Gluten | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/gluten | lib/fonts/gluten.LICENSE.txt |
+| Kavoon | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/kavoon | lib/fonts/kavoon.LICENSE.txt |
+| Concert One | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/concertone | lib/fonts/concertone.LICENSE.txt |
+| Coiny | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/coiny | lib/fonts/coiny.LICENSE.txt |
+| Rammetto One | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/rammettoone | lib/fonts/rammettoone.LICENSE.txt |
+| Sigmar One | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/sigmarone | lib/fonts/sigmarone.LICENSE.txt |
+| Galindo | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/galindo | lib/fonts/galindo.LICENSE.txt |
+| Rubik Bubbles | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/rubikbubbles | lib/fonts/rubikbubbles.LICENSE.txt |
+| Comic Neue | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/comicneue | lib/fonts/comicneue.LICENSE.txt |
+| Patrick Hand | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/patrickhand | lib/fonts/patrickhand.LICENSE.txt |
+| Gochi Hand | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/gochihand | lib/fonts/gochihand.LICENSE.txt |
+| Permanent Marker | Apache License 2.0 | https://github.com/google/fonts/tree/main/apache/permanentmarker | lib/fonts/permanentmarker.LICENSE.txt |
+| Caveat | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/caveat | lib/fonts/caveat.LICENSE.txt |
+| Pacifico | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/pacifico | lib/fonts/pacifico.LICENSE.txt |
+| Lobster | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/lobster | lib/fonts/lobster.LICENSE.txt |
+| Dancing Script | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/dancingscript | lib/fonts/dancingscript.LICENSE.txt |
+| Poppins | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/poppins | lib/fonts/poppins.LICENSE.txt |
+| Montserrat | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/montserrat | lib/fonts/montserrat.LICENSE.txt |
+| Nunito | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/nunito | lib/fonts/nunito.LICENSE.txt |
+| Quicksand | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/quicksand | lib/fonts/quicksand.LICENSE.txt |
+| Anton | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/anton | lib/fonts/anton.LICENSE.txt |
+| Bebas Neue | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/bebasneue | lib/fonts/bebasneue.LICENSE.txt |
+| Oswald | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/oswald | lib/fonts/oswald.LICENSE.txt |
+| Righteous | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/righteous | lib/fonts/righteous.LICENSE.txt |
+| Bungee | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/bungee | lib/fonts/bungee.LICENSE.txt |
+| Press Start 2P | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/pressstart2p | lib/fonts/pressstart2p.LICENSE.txt |
+| Abril Fatface | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/abrilfatface | lib/fonts/abrilfatface.LICENSE.txt |
+| Playfair Display | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/playfairdisplay | lib/fonts/playfairdisplay.LICENSE.txt |
+| Amatic SC | SIL Open Font License 1.1 | https://github.com/google/fonts/tree/main/ofl/amaticsc | lib/fonts/amaticsc.LICENSE.txt |

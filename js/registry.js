@@ -6,6 +6,7 @@
    - KEYFRAME_PROPS: animatable transform properties; the renderer already evaluates clip.keyframes[prop]. */
 
 export const TRACK_KINDS = {
+  caption: { label: 'Captions', visual: true,  magnetic: false, accepts: ['text'],           z: 4, height: 30 },
   text:    { label: 'Text',    visual: true,  magnetic: false, accepts: ['text'],           z: 3, height: 34 },
   overlay: { label: 'Overlay', visual: true,  magnetic: false, accepts: ['video', 'image'], z: 2, height: 44 },
   main:    { label: 'Main',    visual: true,  magnetic: true,  accepts: ['video', 'image'], z: 1, height: 58 },
@@ -78,6 +79,10 @@ export const FONTS = {
   clean:   { name: 'Clean',   css: '500 SIZEpx system-ui, "Segoe UI", Roboto, sans-serif' },
   mono:    { name: 'Mono',    css: '700 SIZEpx ui-monospace, "Roboto Mono", monospace' },
 };
+/* bundled open-licence fonts (js/fontlist.js, lib/fonts); variable fonts are pinned to one display weight, so every face is 400 */
+import { FONT_LIST } from './fontlist.js';
+for (const [id, family, group, licence] of FONT_LIST) FONTS[id] = { name: family, group, licence, bundled: true, css: `400 SIZEpx "EVF-${id}", system-ui, sans-serif` };
+export const FONT_GROUPS = [['kids', 'Kids'], ['hand', 'Hand'], ['script', 'Script'], ['clean', 'Clean'], ['display', 'Display'], ['system', 'System']];
 export const COLORS = ['#ffffff', '#000000', '#ffcc33', '#ff4d4d', '#ff8a00', '#ffe600', '#3ddc84', '#1fb6ff', '#3b5bff', '#a259ff', '#ff5fa2', '#8b5a2b'];
 export const BG_COLORS = ['#000000', '#ffffff', '#1b1b2f', '#ffcc33', '#1fb6ff', '#3ddc84', '#ff5fa2'];
 export const SPEED_PRESETS = [0.25, 0.5, 1, 1.5, 2, 3, 4];

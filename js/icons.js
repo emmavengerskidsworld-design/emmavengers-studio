@@ -1,5 +1,15 @@
 /* Inline SVG icon set (stroke icons, 24px grid). */
 const P = {
+  titles: '<path d="M3 6h11M8.5 6v12"/><path d="M15 11l1.2 2.6 2.8.9-2.8.9L15 18l-1.2-2.6-2.8-.9 2.8-.9z" fill="currentColor"/><path d="M19 3l.7 1.5 1.5.7-1.5.7L19 7.4l-.7-1.5-1.5-.7 1.5-.7z"/>',
+  textstyle: '<path d="M5 19 10 5h1l5 14M7 14h7"/><path d="M15 9l4 4M17 6l4 4" opacity=".6"/>',
+  captions: '<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M6 12h4M12 12h6M6 15.5h8M16 15.5h2"/>',
+  sticker: '<path d="M14 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h8l7-7V6a3 3 0 0 0-3-3h-4"/><path d="M14 21v-4a3 3 0 0 1 3-3h4"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="14" cy="10" r="1" fill="currentColor"/><path d="M8.5 14c1.5 1.3 3.5 1.3 5 0"/>',
+  effects: '<path d="M12 2l2.2 5.3L20 8l-4.4 3.8L17 18l-5-3-5 3 1.4-6.2L4 8l5.8-.7z"/><path d="M20 16l.6 1.4 1.4.6-1.4.6L20 20l-.6-1.4-1.4-.6 1.4-.6z" fill="currentColor"/>',
+  templates: '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/>',
+  heart: '<path d="M12 21s-8-5.2-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.8-8 11-8 11z"/>',
+  import: '<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 17v3h16v-3"/>',
+  download: '<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/>',
+  paste: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8.5 10h7M8.5 13.5h7M8.5 17h4"/>',
   crop: '<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>',
   rotate: '<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
   fliph: '<path d="M12 3v18"/><path d="M9 7 4 12l5 5z"/><path d="M15 7l5 5-5 5z" fill="currentColor"/>',

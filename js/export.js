@@ -7,6 +7,7 @@ import { renderFrame, visualTracks, activeAt } from './render.js';
 import { projectDuration, clipEnd, clipDur, srcTime, hasSource, ASPECTS, gainAt } from './project.js';
 import { openSource, dropDemuxCache } from './framesource.js';
 import { Player } from './player.js';
+import { ensureProjectFonts } from './fonts.js';
 import { needsBake, ensureBaked, bakedPos, bakedRate } from './audio.js';
 
 const SR = 48000;
@@ -104,6 +105,7 @@ export async function mixAudio(p, D, onProgress) {
 export async function exportVideo(p, opt) {
   const { short = 1080, fps = 30, onProgress = () => {}, signal = {}, mode, maxBytes, quality = 'high' } = opt;
   const D = projectDuration(p); if (!D) throw new Error('Nothing to export yet');
+  await ensureProjectFonts(p);
   const { W, H } = outputSize(p.aspect, short), vbr = planBitrate(W, H, fps, D, maxBytes, quality);
   const codecs = mode === 'recorder' ? null : await pickCodecs(W, H, fps, vbr);
   try {

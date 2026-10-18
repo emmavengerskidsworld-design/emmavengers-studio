@@ -6,6 +6,10 @@ import { media, importFile, loadAll, onMediaUpdate, kindOf } from './media.js';
 import { Player } from './player.js';
 import { Timeline, fmtS } from './timeline.js';
 import { openSheet, closeSheet, sheetOpen, slider, chips, swatches } from './panels.js';
+import { FONT_GROUPS } from './registry.js';
+import * as caps from './captions.js';
+import { ensureFont, ensureProjectFonts, onFontLoad } from './fonts.js';
+import { TEXT_STYLES, BUBBLES, TITLES, applyStyle, applyTitle } from './textstyles.js';
 import { FILTERS, FONTS, COLORS, BG_COLORS, SPEED_PRESETS, KEYFRAME_PROPS, DEFAULT_TRANSFORM, TRACK_KINDS, propAt, kfPropsFor, EASING_LIST, TRANSFORM_PROPS } from './registry.js';
 import { exportVideo, outputSize, pickCodecs, recorderMime, planBitrate, qualityFloor, QUALITY, RESOLUTIONS, supportedResolutions, estimateBytes, bitrateFor } from './export.js';
 import { ADJUST, DEFAULT_STRENGTH, enhanceOn, glAvailable } from './enhance.js';
@@ -39,12 +43,13 @@ async function boot() {
   on('select', () => { document.body.classList.toggle('has-sel', !!S.sel); timeline.render(); refreshToolbar(); player.requestDraw(); if (sheetOpen()) closeSheet(); updateKf(); });
   on('history', updateUndo);
   onMediaUpdate(() => { timeline.render(); player.requestDraw(); });
+  onFontLoad(() => player.requestDraw()); ensureProjectFonts(S.project);
   initAudioPanels({ player, timeline, toast });
   pro.initProTools({ player, timeline, toast, speedSheet });
   onBaked(() => { timeline.render(); if (player.playing) player.sync(player.t); });
   wireUI(); layoutPreview(); timeline.fitZoom(); timeline.render(); refreshToolbar(); updateUndo(); updateEmpty(); showTime(); setPlayIcon(false);
   player.seek(0);
-  window.studio = { S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, ready: true };
+  window.studio = { S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, caps, ready: true };
   document.body.classList.add('ready');
 }
 function afterEdit() { player.seek(Math.min(player.t, projectDuration(S.project))); showTime(); refreshToolbar(); }
@@ -320,6 +325,8 @@ const ROOT_TOOLS = [
   { id: 'record', icon: 'mic', label: 'Record', run: recordSheet },
   { id: 'speech', icon: 'speech', label: 'Add speech', run: speechSheet },
   { id: 'text', icon: 'text', label: 'Text', run: addText },
+  { id: 'titles', icon: 'titles', label: 'Titles', run: addTitle },
+  { id: 'captions', icon: 'captions', label: 'Captions', run: captionsSheet },
   { id: 'overlay', icon: 'overlay', label: 'Overlay', run: () => pick('overlay') },
   { id: 'split', icon: 'split', label: 'Split', run: doSplit },
   { id: 'ratio', icon: 'ratio', label: 'Ratio', run: ratioSheet },
@@ -328,7 +335,9 @@ const ROOT_TOOLS = [
 ];
 const CLIP_TOOLS = [
   { id: 'split', icon: 'split', label: 'Split', run: doSplit },
-  { id: 'edit', icon: 'edit', label: 'Edit text', when: c => c.type === 'text', run: textSheet },
+  { id: 'edit', icon: 'edit', label: 'Edit text', when: c => c.type === 'text', run: () => textSheet('edit') },
+  { id: 'captions', icon: 'captions', label: 'Captions', when: c => !!c.caption, run: captionsSheet },
+  { id: 'textstyle', icon: 'textstyle', label: 'Text style', when: c => c.type === 'text', run: () => textSheet('style') },
   { id: 'anim', icon: 'anim', label: 'Animation', when: isVisualClip, run: () => animSheet() },
   { id: 'speed', icon: 'speed', label: 'Speed', when: hasSource, run: () => selected().clip.curve ? pro.curveSpeedSheet() : speedSheet() },
   { id: 'crop', icon: 'crop', label: 'Crop', when: c => isPic(c), run: pro.cropSheet },
@@ -378,10 +387,10 @@ function doSplit() {
   if (!f) { toast('Move the white line onto a clip to split it'); return; }
   const b = act(p => split(p, f.clip.id, t)); if (!b) toast('Too close to the edge to split'); else select(b.id);
 }
-function addText() {
+function addText(quiet) {
   const c = newClip('text', { dur: 3, transform: { ...DEFAULT_TRANSFORM, y: 0.5 } });
   act(p => addToKind(p, 'text', c, Math.min(player.t, Math.max(0, projectDuration(p) - 0.1))));
-  select(c.id); textSheet();
+  select(c.id); if (quiet !== true) textSheet('edit');
 }
 function toggleFit() { const f = selected(); act(p => { const c = find(p, f.clip.id).clip; c.fit = c.fit === 'cover' ? 'contain' : 'cover'; }); toast(selected().clip.fit === 'cover' ? 'Fill: covers the whole frame' : 'Fit: shows the whole picture'); }
 
@@ -493,6 +502,7 @@ function compareUI() {
 }
 /** Test/metrics hook: render the project at time t into a W x H canvas exactly like the exporter does. */
 async function renderStill({ t = 0, W, H, plain = false, fast = false, type = 'image/png' } = {}) {
+  await ensureProjectFonts(S.project);
   if (!W) ({ W, H } = outputSize(S.project.aspect, 1080));
   const { loadBitmap } = await import('./media.js');
   const cv = new OffscreenCanvas(W, H), ctx = cv.getContext('2d', { alpha: false }), frames = new Map();
@@ -510,23 +520,111 @@ function filterSheet() {
     body.append(chips(FILTERS.map(f => ({ value: f.id, label: f.name })), c.filter?.id ?? null, id => editSel(cl => { cl.filter = id ? { id, amount: cl.filter?.amount ?? 1 } : null; })), amt);
   });
 }
-function textSheet() {
-  const c = selected().clip, T = c.text;
+/* text sheet: Edit / Font / Styles / Bubble / Titles. Tiles are drawn by the real drawText (same as preview + export). */
+let textTab = 'edit';
+function textTile(x, TW, TH, clip, t = clip.anim ? (clip.dur || 3) / 2 : 0) {
+  x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.filter = 'none'; x.fillStyle = '#23232d'; x.fillRect(0, 0, TW, TH);
+  const b = drawText(x, TW, TH, clip, { ...DEFAULT_TRANSFORM, opacity: 0 }, 99), k = Math.min(0.86 * TW / Math.max(1, b.w), 0.8 * TH / Math.max(1, b.h), 3);
+  drawText(x, TW, TH, clip, { ...DEFAULT_TRANSFORM, scale: k }, t); x.restore();
+}
+function textSheet(startTab) {
+  const f0 = selected(); if (!f0) return; const id = f0.clip.id; textTab = startTab || textTab || 'edit';
+  const clipNow = () => find(S.project, id)?.clip;
   openSheet('Text', body => {
+    const T = clipNow().text;
     const ta = document.createElement('textarea'); ta.id = 'textInput'; ta.rows = 2; ta.value = T.content === 'Your text' ? '' : T.content; ta.placeholder = 'Type your text';
-    ta.oninput = () => editSel(cl => { cl.text.content = ta.value || ' '; }); body.append(ta);
-    body.append(chips(Object.entries(FONTS).map(([k, f]) => ({ value: k, html: `<span style="font:${f.css.replace('SIZE', '15')}">${f.name}</span>` })), T.font, v => editSel(cl => { cl.text.font = v; })));
-    body.append(swatches(COLORS, T.color, v => editSel(cl => { cl.text.color = v; })));
-    body.append(slider('Size', { min: 24, max: 260, step: 1, value: T.size, fmt: v => Math.round(v), id: 'textSize', onInput: v => editSel(cl => { cl.text.size = v; }) }));
-    const row = document.createElement('div'); row.className = 'toggles';
-    const tog = (label, key) => { const b = document.createElement('button'); b.className = 'chipbtn' + (T[key] ? ' on' : ''); b.textContent = label; b.onclick = () => { editSel(cl => { cl.text[key] = !cl.text[key]; }); b.classList.toggle('on', selected().clip.text[key]); }; return b; };
-    row.append(tog('Outline', 'outline'), tog('Background', 'box'));
-    for (const a of ['left', 'center', 'right']) { const b = document.createElement('button'); b.className = 'chipbtn al' + (T.align === a ? ' on' : ''); b.textContent = a[0].toUpperCase() + a.slice(1); b.onclick = () => { editSel(cl => { cl.text.align = a; }); row.querySelectorAll('.al').forEach(x => x.classList.toggle('on', x === b)); }; row.append(b); }
-    body.append(row);
-    const sub = document.createElement('div'); sub.className = 'sub'; sub.innerHTML = '<span class="cl">Outline / background colour</span>';
-    sub.append(swatches(['#000000', '#ffffff', '#ffcc33', '#1b1b2f', '#ff4d4d', '#1fb6ff'], T.outlineColor, v => editSel(cl => { cl.text.outlineColor = v; cl.text.boxColor = v; })));
-    body.append(sub);
-    setTimeout(() => ta.focus(), 50);
+    ta.oninput = () => { editSel(cl => { cl.text.content = ta.value || ' '; }); }; body.append(ta);
+    const pane = document.createElement('div'); pane.className = 'textpane';
+    const tabEl = chips([['edit', 'Edit'], ['font', 'Font'], ['style', 'Styles'], ['bubble', 'Bubble'], ['title', 'Titles']].map(([value, label]) => ({ value, label })), textTab, v => { textTab = v; show(); }, 'tabs texttabs');
+    body.append(tabEl, pane);
+    const dpr = Math.min(2, devicePixelRatio || 1), TW = Math.round(76 * dpr), TH = Math.round(54 * dpr);
+    let unsub = null;
+    const tileGrid = (items, cur, mk, onPick, cls) => {
+      const g = document.createElement('div'); g.className = 'trgrid txgrid ' + cls;
+      const draw = () => g.querySelectorAll('.trtile').forEach((b, i) => textTile(b.querySelector('canvas').getContext('2d'), TW, TH, mk(items[i])));
+      items.forEach(it => { const b = document.createElement('button'); b.className = 'trtile' + (it.id === cur ? ' on' : ''); b.dataset.v = it.id; b.innerHTML = `<canvas width="${TW}" height="${TH}"></canvas><span>${it.name}</span>`;
+        b.onclick = () => { g.querySelectorAll('.trtile').forEach(x => x.classList.toggle('on', x === b)); onPick(it); }; g.append(b); });
+      setTimeout(draw, 0); unsub && unsub(); unsub = onFontLoad(() => document.body.contains(g) && draw());
+      return g;
+    };
+    const show = () => {
+      pane.innerHTML = ''; const T = clipNow().text;
+      if (textTab === 'edit') {
+        pane.append(swatches(COLORS, T.color, v => editSel(cl => { cl.text.color = v; cl.text.fill = null; })));
+        pane.append(slider('Size', { min: 24, max: 300, step: 1, value: T.size, fmt: v => Math.round(v), id: 'textSize', onInput: v => editSel(cl => { cl.text.size = v; }) }));
+        pane.append(slider('Curve', { min: -1, max: 1, step: 0.01, value: T.curve || 0, fmt: v => Math.round(v * 100) + '%', id: 'textCurve', onInput: v => editSel(cl => { cl.text.curve = Math.abs(v) < 0.02 ? 0 : v; }) }));
+        const row = document.createElement('div'); row.className = 'toggles';
+        const tog = (label, key) => { const b = document.createElement('button'); b.className = 'chipbtn' + (T[key] ? ' on' : ''); b.textContent = label; b.onclick = () => { editSel(cl => { cl.text[key] = !cl.text[key]; if (key === 'box' && !cl.text.box) cl.text.bubble = null; }); b.classList.toggle('on', !!clipNow().text[key]); }; return b; };
+        row.append(tog('Outline', 'outline'), tog('Background', 'box'));
+        for (const a of ['left', 'center', 'right']) { const b = document.createElement('button'); b.className = 'chipbtn al' + (T.align === a ? ' on' : ''); b.textContent = a[0].toUpperCase() + a.slice(1); b.onclick = () => { editSel(cl => { cl.text.align = a; }); row.querySelectorAll('.al').forEach(x => x.classList.toggle('on', x === b)); }; row.append(b); }
+        pane.append(row);
+        pane.append(slider('Outline width', { min: 0.02, max: 0.4, step: 0.01, value: T.outlineW ?? 0.14, fmt: v => Math.round(v * 100) + '%', id: 'textOutlineW', onInput: v => editSel(cl => { cl.text.outlineW = v; }) }));
+        const sub = document.createElement('div'); sub.className = 'sub'; sub.innerHTML = '<span class="cl">Outline / background colour</span>';
+        sub.append(swatches(['#000000', '#ffffff', '#ffcc33', '#1b1b2f', '#ff4d4d', '#1fb6ff', '#3ddc84', '#ff5fa2'], T.outlineColor, v => editSel(cl => { cl.text.outlineColor = v; cl.text.boxColor = v; })));
+        pane.append(sub);
+      } else if (textTab === 'font') {
+        let grp = (FONTS[T.font] && FONTS[T.font].group) || (FONTS[T.font] && !FONTS[T.font].bundled ? 'system' : 'kids');
+        const list = document.createElement('div');
+        const fill = () => { const ids = Object.keys(FONTS).filter(k => (FONTS[k].group || 'system') === grp); ids.forEach(ensureFont);
+          list.innerHTML = ''; list.append(chips(ids.map(k => ({ value: k, html: `<span style="font:${FONTS[k].css.replace('SIZE', '17')}">${FONTS[k].name}</span>` })), clipNow().text.font, v => { ensureFont(v); editSel(cl => { cl.text.font = v; }); }, 'fontchips')); };
+        pane.append(chips(FONT_GROUPS.map(([value, label]) => ({ value, label })), grp, v => { grp = v; fill(); }, 'tabs fontgroups'), list); fill();
+      } else if (textTab === 'style') {
+        ensureFont(T.font);
+        pane.append(tileGrid(TEXT_STYLES, T.styleId, st => { const c = { ...clipNow(), anim: null, text: applyStyle({ ...clipNow().text, content: 'Abc', curve: 0, size: 160 }, st.id) }; return c; },
+          st => editSel(cl => { const keep = { box: cl.text.box && !st.s.bubble }; applyStyle(cl.text, st.id); if (keep.box && !cl.text.bubble) cl.text.box = false; }), 'stylegrid'));
+      } else if (textTab === 'bubble') {
+        pane.append(chips(BUBBLES.map(b => ({ value: b.id, label: b.name })), T.bubble || (T.box ? 'box' : null), v => editSel(cl => { cl.text.bubble = v; cl.text.box = !!v; }), 'bubblechips'));
+        const sub = document.createElement('div'); sub.className = 'sub'; sub.innerHTML = '<span class="cl">Bubble colour</span>';
+        sub.append(swatches(['#ffffff', '#000000', '#ffcc33', '#ffe600', '#ff4d4d', '#1fb6ff', '#3ddc84', '#ff5fa2', '#a259ff', '#1b1b2f'], T.boxColor, v => editSel(cl => { cl.text.boxColor = v; if (!cl.text.bubble && !cl.text.box) { cl.text.box = true; cl.text.bubble = 'box'; } })));
+        const sub2 = document.createElement('div'); sub2.className = 'sub'; sub2.innerHTML = '<span class="cl">Border</span>';
+        sub2.append(swatches(['none', '#000000', '#ffffff', '#1b1b2f', '#e01e37', '#1f7bff'], T.bubbleBorder ? T.bubbleBorder.color : 'none', v => editSel(cl => { cl.text.bubbleBorder = v === 'none' ? null : { color: v, w: 0.07 }; })));
+        pane.append(sub, sub2);
+      } else if (textTab === 'title') {
+        pane.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: 'A title sets the font, the look and the animation in one tap.' }));
+        TITLES.forEach(t => ensureFont(t.font));
+        pane.append(tileGrid(TITLES, clipNow().titleId, t => applyTitle({ id: 'tile', type: 'text', start: 0, dur: 3, transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, text: { ...clipNow().text } }, t.id),
+          t => { ensureFont(t.font); const typed = ta.value.trim() && !TITLES.some(x => x.content === ta.value); editSel(cl => { applyTitle(cl, t.id, typed); }); if (!typed) ta.value = clipNow().text.content; timeline.render(); }, 'titlegrid'));
+      }
+    };
+    show();
+    if (textTab === 'edit') setTimeout(() => ta.focus(), 50);
+  }, { className: 'tall' });
+}
+function addTitle() { addText(true); textSheet('title'); }
+/* ---------------- captions (manual: type, paste or import SRT) ---------------- */
+function captionsSheet() {
+  const f = selected(), sel = f && !f.clip.caption ? f.clip : null, D = projectDuration(S.project);
+  const r0 = sel ? sel.start : 0, r1 = sel ? clipEnd(sel) : (D || 10);
+  openSheet('Captions', body => {
+    const n = () => caps.captions(S.project).length;
+    const info = Object.assign(document.createElement('p'), { className: 'hint', id: 'capInfo' });
+    const upd = () => { info.textContent = n() ? `${n()} caption line${n() === 1 ? '' : 's'}. Drag a line on the blue Captions track to move it, drag its ends to change the timing.` : 'No captions yet. Add a line at the white playhead, or paste your words below.'; };
+    const btns = document.createElement('div'); btns.className = 'capbtns';
+    const btn = (id, ic, label, fn) => { const b = document.createElement('button'); b.className = 'chipbtn'; b.id = id; b.innerHTML = icon(ic, 18) + label; b.onclick = fn; btns.append(b); return b; };
+    btn('capAdd', 'plus', 'Line at playhead', () => { const c = act(p => caps.addCaptionAt(p, player.t)); closeSheet(); select(c.id); textSheet('edit'); });
+    const fileIn = Object.assign(document.createElement('input'), { type: 'file', accept: '.srt,.vtt,text/plain,application/x-subrip', id: 'capFile', hidden: true });
+    fileIn.onchange = async () => { const fl = fileIn.files[0]; if (!fl) return; const txt = await fl.text(); let k = 0; live(p => { k = caps.importSRT(p, txt); }); toast(k ? `Imported ${k} caption lines` : 'No captions found in that file'); upd(); timeline.render(); };
+    btn('capImport', 'import', 'Import SRT', () => { fileIn.value = ''; fileIn.click(); });
+    btn('capExport', 'download', 'Export SRT', () => { if (!n()) { toast('No captions to export yet'); return; } downloadBlob(new Blob([caps.projectSRT(S.project)], { type: 'application/x-subrip' }), (S.project.name || 'captions').replace(/[^\w\- ]+/g, '') + '.srt'); });
+    body.append(info, btns, fileIn);
+    const h = Object.assign(document.createElement('p'), { className: 'hint', textContent: 'Paste your words: every line becomes one caption, spread evenly over the time below.' });
+    const ta = document.createElement('textarea'); ta.id = 'capBulk'; ta.placeholder = 'One caption per line';
+    const rg = document.createElement('div'); rg.className = 'caprange';
+    rg.innerHTML = `From <input id="capFrom" type="number" min="0" step="0.1" value="${r0.toFixed(1)}"> to <input id="capTo" type="number" min="0" step="0.1" value="${r1.toFixed(1)}"> s`;
+    const mk = document.createElement('button'); mk.className = 'chipbtn on'; mk.id = 'capMake'; mk.textContent = 'Make captions';
+    mk.onclick = () => { const a = +rg.querySelector('#capFrom').value, b = +rg.querySelector('#capTo').value; let made = [];
+      if (!caps.splitLines(ta.value).length) { toast('Paste some lines first'); return; } if (!(b > a)) { toast('The end time must be after the start'); return; }
+      live(p => { made = caps.bulkCaptions(p, ta.value, a, b, true); }); toast(`Made ${made.length} caption lines`); upd(); timeline.render(); };
+    rg.append(mk); body.append(h, ta, rg);
+    body.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: 'Caption style (changes every line)' }));
+    const dpr = Math.min(2, devicePixelRatio || 1), TW = Math.round(76 * dpr), TH = Math.round(54 * dpr);
+    const g = document.createElement('div'); g.className = 'trgrid txgrid capstyles'; g.id = 'capStyles';
+    const draw = () => g.querySelectorAll('.trtile').forEach(b => { const s = b.dataset.v, c = caps.styleCaption({ id: 'tile', type: 'text', start: 0, dur: 3, transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, text: { ...newClip('text').text, content: 'Caption' } }, s); textTile(b.querySelector('canvas').getContext('2d'), TW, TH, c); });
+    for (const s of caps.CAPTION_STYLES) { ensureFont(s.font); const b = document.createElement('button'); b.className = 'trtile' + ((S.project.captionStyle || caps.DEFAULT_CAPTION_STYLE) === s.id ? ' on' : ''); b.dataset.v = s.id;
+      b.innerHTML = `<canvas width="${TW}" height="${TH}"></canvas><span>${s.name}</span>`; b.onclick = () => { g.querySelectorAll('.trtile').forEach(x => x.classList.toggle('on', x === b)); live(p => caps.setCaptionStyleAll(p, s.id)); }; g.append(b); }
+    body.append(g); setTimeout(draw, 0); onFontLoad(() => document.body.contains(g) && draw());
+    body.append(slider('Position', { min: 0.05, max: 0.95, step: 0.01, value: S.project.captionY ?? 0.8, fmt: v => Math.round(v * 100) + '%', id: 'capY', onInput: v => live(p => { p.captionY = v; for (const c of caps.captions(p)) c.transform.y = v; }) }));
+    upd();
   }, { className: 'tall' });
 }
 function ratioSheet() {
