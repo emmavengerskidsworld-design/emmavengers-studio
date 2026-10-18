@@ -17,10 +17,24 @@ export function kindOf(file) {
   return null;
 }
 
-/** Import a File: store the original blob, read metadata, then build thumbs/waveform in the background. */
-export async function importFile(file) {
+/** Content id of a file: SHA-256 of the bytes (files over 256 MB: size + first and last 4 MB), so the same photo or
+    video added to several projects is stored once. */
+const HASH_FULL = 256 * 1024 * 1024, HASH_PART = 4 * 1024 * 1024;
+export async function hashBlob(blob) {
+  const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+  if (!crypto.subtle) return 'n:' + blob.size + ':' + (blob.name || '');
+  if (blob.size <= HASH_FULL) return 's:' + hex(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer()));
+  const parts = await new Blob([blob.slice(0, HASH_PART), blob.slice(blob.size - HASH_PART)]).arrayBuffer();
+  return 'p:' + blob.size + ':' + hex(await crypto.subtle.digest('SHA-256', parts));
+}
+/** Import a File: store the original blob, read metadata, then build thumbs/waveform in the background.
+    The same bytes already stored (in any project) are re-used instead of stored twice. opts.id: keep this id when it is free (backup restore). */
+export async function importFile(file, opts = {}) {
   const type = kindOf(file); if (!type) throw new Error('Unsupported file: ' + file.name);
-  const rec = { id: 'm_' + uid(), name: file.name || type, type, mime: file.type, size: file.size, added: Date.now(), blob: file };
+  const hash = await hashBlob(file).catch(() => null);
+  if (hash) { const old = await db.byHash(hash).catch(() => null); if (old && old.type === type) return media.get(old.id) || await hydrateStored(old); }
+  const id = opts.id && !media.has(opts.id) && !(await db.get('media', opts.id)) ? opts.id : 'm_' + uid();
+  const rec = { id, name: opts.name || file.name || type, type, mime: file.type, size: file.size, added: opts.added || Date.now(), blob: file, hash };
   await hydrate(rec);
   if (type === 'video' && !(rec.duration > 0)) throw new Error('Could not read this video: ' + rec.name);
   await db.put('media', strip(rec));
@@ -28,6 +42,7 @@ export async function importFile(file) {
   background(rec);
   return rec;
 }
+async function hydrateStored(rec) { await hydrate(rec); media.set(rec.id, rec); background(rec); return rec; }
 const strip = r => { const { url, bitmap, thumbBitmap, audioBuffer, _bmp, ...keep } = r; return keep; };
 export const save = rec => db.put('media', strip(rec));
 
@@ -75,14 +90,32 @@ export const once = (el, ev, ms = 8000) => new Promise((res, rej) => {
   el.addEventListener(ev, ok); el.addEventListener('error', bad);
 });
 
-/** Load every stored media record (on app start). Only ids in `keep` are loaded; others are deleted. */
-export async function loadAll(keep) {
-  for (const [id, r] of [...media]) if (!keep.has(id)) { try { r.url && URL.revokeObjectURL(r.url); } catch (e) {} media.delete(id); }   // forget records of a deleted project
-  for (const rec of await db.all('media')) {
-    if (!keep.has(rec.id)) { db.del('media', rec.id); continue; }
-    try { await hydrate(rec); media.set(rec.id, rec); background(rec); } catch (e) { console.warn('media load failed', rec.name, e); }
+/** Make exactly these media ids available (the open project): loads the missing ones from storage and lets go of
+    the others (they stay stored for the other projects). */
+export async function useMedia(keep) {
+  for (const [id, r] of [...media]) if (!keep.has(id)) unload(r);
+  for (const id of keep) {
+    if (media.has(id)) continue;
+    const rec = await db.get('media', id); if (!rec) { console.warn('media missing', id); continue; }
+    try { await hydrateStored(rec); } catch (e) { console.warn('media load failed', rec.name, e); }
   }
 }
+function unload(r) { try { r.url && URL.revokeObjectURL(r.url); } catch (e) {} try { r.bitmap && r.bitmap.close(); r.thumbBitmap && r.thumbBitmap.close(); } catch (e) {} const i = lru.indexOf(r); if (i >= 0) lru.splice(i, 1); media.delete(r.id); }
+export const loadAll = useMedia;   // older name
+/** Delete stored files no project uses any more. Returns the number of files removed. */
+export async function gcMedia(used) {
+  let n = 0; for (const id of await db.keys('media')) if (!used.has(id)) { await db.del('media', id); const r = media.get(id); if (r) unload(r); n++; }
+  return n;
+}
+/** Give older files (stored before content ids) their hash, so they can be shared too. Small files only, in the background. */
+export async function backfillHashes(limit = 64 * 1024 * 1024) {
+  const out = [];
+  for (const id of await db.keys('media')) { const rec = await db.get('media', id); if (!rec || rec.hash || !rec.blob || rec.size > limit) continue;
+    rec.hash = await hashBlob(rec.blob).catch(() => null); if (rec.hash) { await db.put('media', rec); const m = media.get(id); if (m) m.hash = rec.hash; out.push(rec); } }
+  return out.length;
+}
+/** Plain stored record (blob + metadata) without loading it for playback. */
+export const storedMedia = id => media.get(id) || db.get('media', id);
 
 /* ---------- background: thumbnails + waveform ---------- */
 let queue = Promise.resolve();

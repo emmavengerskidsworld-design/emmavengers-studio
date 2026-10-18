@@ -1,5 +1,14 @@
 /* Inline SVG icon set (stroke icons, 24px grid). */
 const P = {
+  home: '<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/>',
+  more: '<circle cx="5" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="19" cy="12" r="1.4" fill="currentColor"/>',
+  backup: '<path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5"/><path d="M12 12v9M8.5 15.5 12 12l3.5 3.5"/>',
+  restore: '<path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.5a4 4 0 0 1-.5 9.5"/><path d="M12 21v-9M8.5 17.5 12 21l3.5-3.5"/>',
+  image: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/>',
+  audio: '<path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
+  gif: '<rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M9.5 10H8a1.5 1.5 0 0 0-1.5 1.5v1A1.5 1.5 0 0 0 8 14h1.5v-1.6H8.6M12.5 10v4M15.5 14v-4h2.5M15.5 12h2"/>',
+  range: '<path d="M4 4v16M20 4v16M4 12h16"/><path d="m8 9-3 3 3 3M16 9l3 3-3 3"/>',
+  storage: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
   titles: '<path d="M3 6h11M8.5 6v12"/><path d="M15 11l1.2 2.6 2.8.9-2.8.9L15 18l-1.2-2.6-2.8-.9 2.8-.9z" fill="currentColor"/><path d="M19 3l.7 1.5 1.5.7-1.5.7L19 7.4l-.7-1.5-1.5-.7 1.5-.7z"/>',
   textstyle: '<path d="M5 19 10 5h1l5 14M7 14h7"/><path d="M15 9l4 4M17 6l4 4" opacity=".6"/>',
   captions: '<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M6 12h4M12 12h6M6 15.5h8M16 15.5h2"/>',

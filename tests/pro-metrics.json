@@ -12,7 +12,7 @@
   0,
   8
  ],
- "key_export_psnr": 44.5,
+ "key_export_psnr": 44.6,
  "blend_max_err": {
   "normal": 0.0,
   "multiply": 0.5,
@@ -27,7 +27,7 @@
   "dodge": 0.4,
   "burn": 0.5
  },
- "reverse_seconds_3s_clip": 0.4,
+ "reverse_seconds_3s_clip": 0.3,
  "reverse_chirp_hz": [
   1095,
   435
@@ -47,7 +47,7 @@
   0.4,
   0.2
  ],
- "bgblur_export_psnr": 46.6,
+ "bgblur_export_psnr": 46.5,
  "all_tools_export_psnr": [
   38.5,
   38.6,

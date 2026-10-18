@@ -2,7 +2,7 @@
 import { S, act, live, load, save, on, undo, redo, canUndo, canRedo, select, selected, reset, begin, end, useProject } from './store.js';
 import { newClip, addToMain, addToKind, split, remove, duplicate, setSpeed, projectDuration, clipDur, clipEnd, hasSource, find, ASPECTS, mediaIds, kfTimes, kfAt, hasKeyframes, addKeyframe, removeKeyframe, setEase, setProp, kenBurns, KEN_BURNS, transEff, KF_EPS } from './project.js';
 import { TRANSITIONS, TRANSITION_CATS, transitionById, helpers as trHelpers, DEFAULT_TRANSITION_DUR, MIN_TRANSITION, MAX_TRANSITION } from './transitions.js';
-import { media, importFile, loadAll, onMediaUpdate, kindOf } from './media.js';
+import { media, importFile, loadAll, useMedia, onMediaUpdate, kindOf, bitmapOf } from './media.js';
 import { Player } from './player.js';
 import { Timeline, fmtS } from './timeline.js';
 import { openSheet, closeSheet, sheetOpen, slider, chips, swatches } from './panels.js';
@@ -10,6 +10,9 @@ import { FONT_GROUPS } from './registry.js';
 import * as caps from './captions.js';
 import * as stickers from './stickers.js';
 import * as templates from './templates.js';
+import * as projects from './projects.js';
+import * as backupApi from './backup.js';
+import { initHome, showHome, hideHome, homeOpen, render as renderHome } from './home.js';
 import * as fx from './effects.js';
 import { FILTER_CATS } from './registry.js';
 import { ensureFont, ensureProjectFonts, onFontLoad } from './fonts.js';
@@ -36,11 +39,11 @@ let player, timeline;
 
 /* ---------------- boot ---------------- */
 async function boot() {
-  for (const [id, n] of [['menuBtn', 'menu'], ['undoBtn', 'undo'], ['redoBtn', 'redo'], ['zoomIn', 'zoomin'], ['zoomOut', 'zoomout'], ['kfPrev', 'kfprev'], ['kfNext', 'kfnext'], ['kfBtn', 'kf']]) $('#' + id).innerHTML = icon(n);
+  for (const [id, n] of [['menuBtn', 'home'], ['undoBtn', 'undo'], ['redoBtn', 'redo'], ['zoomIn', 'zoomin'], ['zoomOut', 'zoomout'], ['kfPrev', 'kfprev'], ['kfNext', 'kfnext'], ['kfBtn', 'kf']]) $('#' + id).innerHTML = icon(n);
   $('#addMainBtn').innerHTML = icon('plus', 26);
   $('#exportBtn').innerHTML = icon('export', 18) + '<span>Export</span>';
-  await load();
-  await loadAll(mediaIds(S.project));
+  await load(); await projects.migrate();
+  await useMedia(mediaIds(S.project));
   player = new Player($('#preview'), { getProject: () => S.project, selected: () => S.sel, onTime: t => { timeline.setTime(t); showTime(); updateKf(); }, onState: setPlayIcon });
   timeline = new Timeline({ getTime: () => player.t, seek: t => { player.seek(t, true); showTime(); updateKf(); }, onJoint: id => transitionSheet(id), isPlaying: () => player.playing, pause: () => player.pause(), onAdd: k => pick(k), afterEdit: afterEdit });
   on('change', () => { timeline.render(); player.seek(player.t); showTime(); refreshToolbar(); updateEmpty(); updateKf(); });
@@ -53,8 +56,50 @@ async function boot() {
   onBaked(() => { timeline.render(); if (player.playing) player.sync(player.t); });
   wireUI(); layoutPreview(); timeline.fitZoom(); timeline.render(); refreshToolbar(); updateUndo(); updateEmpty(); showTime(); setPlayIcon(false);
   player.seek(0);
-  window.studio = { templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, caps, stickers, fx, ready: true };
+  initHome({ toast, busy, menuSheet, templatesSheet, afterSwitch, leaveProject, deliver });
+  on('change', () => { clearTimeout(thumbTimer); thumbTimer = setTimeout(makeThumb, 4000); });
+  addEventListener('pagehide', () => makeThumb());
+  setTimeout(async () => { try { await projects.askPersist(); await projects.cleanUp(); if (!(await projects.getThumb(S.project.id))) makeThumb(); } catch (e) { console.warn('clean-up', e); } }, 2500);
+  const qs = new URLSearchParams(location.search);
+  if (qs.has('home') || (matchMedia('(display-mode: standalone)').matches && !qs.has('editor'))) showHome();
+  window.studio = { projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, caps, stickers, fx, ready: true };
   document.body.classList.add('ready');
+}
+/* ---------------- projects ---------------- */
+let thumbTimer = 0;
+/** Small picture of the project for the home grid: the frame under the playhead (or 1 s in), drawn by the real renderer. */
+async function makeThumb() {
+  clearTimeout(thumbTimer); const p = S.project; if (!p) return;
+  try {
+    const [a, b] = ASPECTS[p.aspect] || [9, 16], W = a > b ? 320 : Math.round(320 * a / b), H = Math.round(W * b / a), D = projectDuration(p);
+    const cv = new OffscreenCanvas(W, H), x = cv.getContext('2d', { alpha: false }); if (!D) { await projects.setThumb(p.id, null); return; }
+    const t = player.t > 0.05 && player.t < D ? player.t : Math.min(1, D / 3), frames = new Map();
+    for (const tr of p.tracks) for (const c of tr.clips) if (c.type === 'image' && c.start <= t && t < clipEnd(c)) { const r = media.get(c.mediaId), bm = r && bitmapOf(r); if (bm) frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); }
+    renderFrame(x, W, H, p, t, c => frames.get(c.id) || player.source(c), { fast: true });
+    await projects.setThumb(p.id, await cv.convertToBlob({ type: 'image/jpeg', quality: .78 }));
+  } catch (e) { console.warn('thumb', e); }
+}
+/** Before going to the home screen / another project: save and refresh the thumbnail. */
+async function leaveProject() { player.pause(); closeSheet(); select(null); await save(); await makeThumb(); }
+/** The open project changed (opened, created, deleted): refresh everything on screen. */
+function afterSwitch() {
+  player.pause(); player.gc(); ensureProjectFonts(S.project); $('#ratioBtn').textContent = S.project.aspect;
+  layoutPreview(); timeline.fitZoom(); timeline.render(); refreshToolbar(); updateUndo(); updateEmpty(); player.seek(0); showTime();
+  clearTimeout(thumbTimer); thumbTimer = setTimeout(makeThumb, 1500);
+}
+/** Hand a finished file to the user: Save to phone / Share (Drive, Files, WhatsApp…) / Save as (desktop). */
+function deliver(blob, name, mime, text, kind = 'file') {
+  const file = new File([blob], name, { type: mime || blob.type || 'application/octet-stream', lastModified: Date.now() });
+  let share = false; try { share = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })); } catch (e) {}
+  window.__lastDelivered = { name, size: blob.size, mime: file.type, kind, share };
+  openSheet('Your file is ready', body => {
+    body.innerHTML = `<p class="hint dl-text" id="dlText">${text || ''}</p><p class="dl-name" id="dlName">${esc(name)} · ${projects.fmtBytes(blob.size)}</p>`;
+    const b = (id, ic, label, fn, cls = '') => { const x = document.createElement('button'); x.className = 'btn ' + cls; x.id = id; x.innerHTML = icon(ic, 20) + ' ' + label; x.onclick = fn; body.append(x); };
+    b('dlSave', 'save', 'Save to phone', () => { downloadBlob(file, name); toast(isAndroid() ? 'Saved to Downloads (Files app)' : 'Saved to your Downloads folder', 3000); }, 'primary big');
+    if (share) b('dlShare', 'share', 'Share… (Drive, Files, WhatsApp)', async () => { try { await navigator.share({ files: [file], title: name }); } catch (e) { if (e.name !== 'AbortError') { downloadBlob(file, name); toast('Sharing failed, so it was saved instead'); } } }, 'big');
+    if (window.showSaveFilePicker && !isAndroid()) b('dlAs', 'download', 'Save as…', async () => { try { const h = await showSaveFilePicker({ suggestedName: name }); const w = await h.createWritable(); await w.write(file); await w.close(); toast('Saved as ' + h.name); } catch (e) {} }, 'ghost');
+    if (!share && kind === 'backup') body.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: 'To put it on Google Drive: Save to phone, then open the Drive app → + → Upload, and pick it from Downloads.' }));
+  }, { gesture: false });
 }
 function afterEdit() { player.seek(Math.min(player.t, projectDuration(S.project))); showTime(); refreshToolbar(); }
 function showTime() { $('#tcur').textContent = fmt(player.t); $('#ttot').textContent = fmt(projectDuration(S.project)); }
@@ -720,27 +765,25 @@ function templatesSheet() {
 const busy = (on, txt) => { $('#busy').hidden = !on; if (txt) $('#busyText').textContent = txt; };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 async function useTemplate(T) {
-  const empty = !S.project.tracks.some(t => t.clips.length);
-  if (!empty && !confirm(`Start “${T.name}”? Your current project will be replaced.`)) return;
   closeSheet(); player.pause(); busy(true, 'Making your project…');
   try {
-    await reset(); await loadAll(new Set()); player.gc();
+    if (S.project) await leaveProject();
     const p = await templates.buildTemplate({ media, importFile }, T, u => { $('#busyText').textContent = `Making your project… ${Math.round(u * 100)}%`; });
-    await ensureProjectFonts(p); await useProject(p); player.gc(); timeline.render(); player.seek(0); showTime();
-    const n = templates.placeholders(p).length;
-    toast(n ? `Template ready: replace the ${n} marked pictures with your own` : 'Template ready: tap the words to change them');
+    await ensureProjectFonts(p); await projects.addProject(p); hideHome(); afterSwitch();
+    const n = templates.placeholders(S.project).length;
+    toast(n ? `New project “${S.project.name}”: replace the ${n} marked pictures with your own` : `New project “${S.project.name}”: tap the words to change them`);
   } catch (e) { console.warn(e); toast('Could not make the template (connect to the internet once)'); }
   finally { busy(false); }
 }
 function menuSheet() {
   openSheet('Emmavengers Studio', async body => {
     body.innerHTML = `<div class="menu">
-      <button class="btn" id="newProj">${icon('plus', 18)} New project</button>
+      <button class="btn" id="newProj">${icon('home', 18)} My projects</button>
       <button class="btn ghost" id="checkUpd">Check for update</button>
-      <p class="hint">Your project saves automatically on this phone, even offline. <span id="storeInfo"></span></p>
+      <p class="hint">Your projects save automatically on this phone, even offline. <span id="storeInfo"></span></p>
       <p class="hint">Tips: tap a clip to edit it · drag its white edges to trim · press and hold a clip, then drag, to move it · pinch the timeline to zoom.</p>
       <p class="hint ver">Version <span id="buildId">…</span></p></div>`;
-    $('#newProj').onclick = async () => { if (!confirm('Start a new project? This one will be deleted.')) return; closeSheet(); player.pause(); await reset(); await loadAll(new Set()); player.gc(); timeline.render(); showTime(); toast('New project'); };
+    $('#newProj').onclick = () => { closeSheet(); showHome(); };
     $('#checkUpd').onclick = async () => { const r = await navigator.serviceWorker?.getRegistration(); if (r) { await r.update().catch(() => {}); toast(r.installing || r.waiting ? 'Downloading the new version…' : 'You have the latest version'); } };
     try { const e = await navigator.storage.estimate(); $('#storeInfo').textContent = `Using ${(e.usage / 1e6).toFixed(0)} MB of storage.`; } catch (e) {}
     $('#buildId').textContent = window.STUDIO_BUILD || 'dev';
@@ -893,7 +936,7 @@ function wireUI() {
   $('#zoomIn').onclick = () => timeline.zoomBy(1.6); $('#zoomOut').onclick = () => timeline.zoomBy(1 / 1.6);
   $('#addMainBtn').onclick = () => pick('main');
   $('#emptyAdd').onclick = () => pick('main');
-  $('#menuBtn').onclick = menuSheet;
+  $('#menuBtn').onclick = () => showHome();
   $('#ratioBtn').onclick = ratioSheet;
   $('#exportBtn').onclick = exportView;
   $('#fileMedia').onchange = e => onFiles(e.target.files, pickTarget);
