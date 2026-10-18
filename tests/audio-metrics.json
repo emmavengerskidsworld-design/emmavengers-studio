@@ -1,8 +1,32 @@
 {
- "speech": {
-  "seconds": 11.253358602523804,
-  "dur": 3.702583,
-  "local": 5,
-  "net": 0
+ "library": {
+  "sfx": 870,
+  "music": 102,
+  "cats": {
+   "cartoon": 62,
+   "funny": 17,
+   "magic": 25,
+   "whoosh": 25,
+   "game": 335,
+   "instruments": 55,
+   "weather": 17,
+   "bible": 18,
+   "nature": 14,
+   "household": 167,
+   "cheers": 27,
+   "animals": 51,
+   "voices": 57
+  },
+  "music_cats": {
+   "lullaby": 2,
+   "worship": 5,
+   "funny": 3,
+   "happy": 3,
+   "calm": 2,
+   "adventure": 2,
+   "jingles": 85
+  },
+  "packs": 14,
+  "mb": 66.5
  }
 }
