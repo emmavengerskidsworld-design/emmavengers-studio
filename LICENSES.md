@@ -181,9 +181,29 @@ Wikimedia Commons: each file’s licence was read from Commons’ own file metad
 - mp4box.js (js/vendor/mp4box.all.min.js) — BSD-3-Clause
 
 
+## Stickers (lib/stickers/)
+
+527 stickers, listed with a licence key per sticker in lib/stickers/index.json (built by tools/stickers/build_library.py).
+
+| Set | Stickers | Licence | Source |
+|---|---|---|---|
+| Emmavengers art (characters, animals, house items, letters, food, places, flags) | 164 | Emmavengers original art, © Cletus Emmanuel. All rights reserved; used in this app with the owner’s permission. Not open-licensed. | Cut out of the Emmavengers House game pictures (img/pNN scenes and letter / character art) by tools/stickers/build_emma.py (background removal with rembg, then cleanup). The game repository is only read, never changed. |
+| Google Noto Emoji, 3D set | 273 | Apache License 2.0 (see note) | https://github.com/googlefonts/noto-emoji/tree/main/3D/png, resized to 256 px WebP by tools/stickers/fetch_emoji.py |
+| Emmavengers Studio designs (arrows, stars, hearts, sparkles, frames, speech bubbles, shapes, 3D numbers and signs) | 90 | CC0-1.0 | Our own SVG drawings in tools/stickers/make_art.py. The 3D numbers are drawn with the bundled Luckiest Guy font (Apache-2.0), which allows this. |
+
+Noto Emoji note: the noto-emoji README says the tools and most image resources are under Apache License 2.0, the emoji fonts are under SIL OFL 1.1, and the flag images come from region-flags (public domain). Since July 2024 the repository’s top-level LICENSE file contains the OFL text. Both licences allow bundling and commercial use, including monetised videos. All three texts ship in lib/stickers/emoji/: LICENSE-Apache-2.0.txt, LICENSE-OFL-1.1.txt and LICENSE-region-flags.txt.
+
+## Template pictures (lib/templates/)
+
+Built by tools/templates/build_assets.py. The 9 backgrounds (sky, sunbursts, night, savanna, stage, pastel, chalkboard, rainbow) are our own drawings, made with plain PIL code: CC0-1.0. The 8 scene pictures (Noah story ×3, cup, morning ×4) are Emmavengers art, © Cletus Emmanuel. They were copied from the Emmavengers House game (read only), cropped above the story text and fitted to 9:16. Template music comes from the CC0 sound library listed above.
+
+## Effects, filters, text styles, titles and templates
+
+The effects (WebGL shaders in js/effects.js), filters (colour grades in js/filterdefs.js), text styles, bubbles, title presets and caption styles are all our own designs and code, under CC0-1.0. Nothing in them is copied from another editor.
+
 ## Fonts (lib/fonts/)
 
-48 font families from the Google Fonts repository (https://github.com/google/fonts), bundled as WOFF2 by tools/fonts/fetch_fonts.py. Variable fonts are pinned to one display weight (an allowed modification; the fonts keep their names only inside our app as "EVF-<id>", Reserved Font Names are not used for a renamed font). Each font’s own licence text ships next to it. SIL Open Font License 1.1 and Apache License 2.0 both allow bundling, embedding and use in monetised videos.
+48 font families from the Google Fonts repository (https://github.com/google/fonts), bundled as WOFF2 by tools/fonts/fetch_fonts.py. Variable fonts are pinned to one display weight, which the licences allow. Inside the app each font is loaded under the internal name "EVF-<id>"; we do not rename or redistribute any font under a Reserved Font Name. Each font’s own licence text ships next to it. SIL Open Font License 1.1 and Apache License 2.0 both allow bundling, embedding and use in monetised videos.
 
 | Font | Licence | Source | Licence text |
 |---|---|---|---|

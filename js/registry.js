@@ -8,6 +8,7 @@
 export const TRACK_KINDS = {
   caption: { label: 'Captions', visual: true,  magnetic: false, accepts: ['text'],           z: 4, height: 30 },
   text:    { label: 'Text',    visual: true,  magnetic: false, accepts: ['text'],           z: 3, height: 34 },
+  effect:  { label: 'Effects', visual: true,  magnetic: false, accepts: ['effect'],         z: 2.5, height: 30 },
   overlay: { label: 'Overlay', visual: true,  magnetic: false, accepts: ['video', 'image'], z: 2, height: 44 },
   main:    { label: 'Main',    visual: true,  magnetic: true,  accepts: ['video', 'image'], z: 1, height: 58 },
   audio:   { label: 'Audio',   visual: false, magnetic: false, accepts: ['audio'],          z: 0, height: 36 },
@@ -58,16 +59,11 @@ export function propAt(clip, prop, t) {
   return kf[kf.length - 1].v;
 }
 
-export const FILTERS = [
-  { id: null,     name: 'None',   css: () => '' },
-  { id: 'vivid',  name: 'Vivid',  css: i => `saturate(${1 + .8 * i}) contrast(${1 + .12 * i})` },
-  { id: 'warm',   name: 'Warm',   css: i => `sepia(${.35 * i}) saturate(${1 + .3 * i}) brightness(${1 + .04 * i})` },
-  { id: 'cool',   name: 'Cool',   css: i => `hue-rotate(${-12 * i}deg) saturate(${1 + .15 * i})` },
-  { id: 'bright', name: 'Bright', css: i => `brightness(${1 + .25 * i}) contrast(${1 + .05 * i})` },
-  { id: 'fade',   name: 'Fade',   css: i => `contrast(${1 - .25 * i}) brightness(${1 + .08 * i}) saturate(${1 - .2 * i})` },
-  { id: 'bw',     name: 'B&W',    css: i => `grayscale(${i}) contrast(${1 + .1 * i})` },
-  { id: 'old',    name: 'Old film', css: i => `sepia(${.8 * i}) contrast(${1 + .1 * i}) brightness(${1 - .05 * i})` },
-];
+/* colour filters: GL grades from js/filterdefs.js (CSS approximation only when WebGL2 is missing) */
+import { FILTER_DEFS, FILTER_CATS } from './filterdefs.js';
+import { gradeCss } from './effects.js';
+export { FILTER_CATS };
+export const FILTERS = [{ id: null, name: 'None', css: () => '' }, ...FILTER_DEFS.map(f => ({ id: f.id, name: f.name, cat: f.cat, css: i => gradeCss(f.id, i) }))];
 export const filterCss = f => { if (!f || !f.id) return ''; const d = FILTERS.find(x => x.id === f.id); return d ? d.css(f.amount ?? 1) : ''; };
 
 export { TRANSITIONS, TRANSITION_CATS, transitionById } from './transitions.js';

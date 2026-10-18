@@ -1,0 +1,1217 @@
+[
+ {
+  "cat": "arrows",
+  "name": "Red arrow",
+  "file": "art/arrows/arrow-red.webp",
+  "w": 284,
+  "h": 209,
+  "tags": [
+   "arrow",
+   "right",
+   "point"
+  ],
+  "lic": "own",
+  "anim": "hop"
+ },
+ {
+  "cat": "arrows",
+  "name": "Yellow arrow",
+  "file": "art/arrows/arrow-yellow.webp",
+  "w": 284,
+  "h": 209,
+  "tags": [
+   "arrow",
+   "right",
+   "point"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "arrows",
+  "name": "Blue arrow",
+  "file": "art/arrows/arrow-blue.webp",
+  "w": 284,
+  "h": 209,
+  "tags": [
+   "arrow",
+   "right",
+   "point"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "arrows",
+  "name": "Green arrow",
+  "file": "art/arrows/arrow-green.webp",
+  "w": 284,
+  "h": 209,
+  "tags": [
+   "arrow",
+   "right",
+   "point"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "arrows",
+  "name": "Pink arrow",
+  "file": "art/arrows/arrow-pink.webp",
+  "w": 284,
+  "h": 209,
+  "tags": [
+   "arrow",
+   "right",
+   "point"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "arrows",
+  "name": "White arrow",
+  "file": "art/arrows/arrow-white.webp",
+  "w": 284,
+  "h": 209,
+  "tags": [
+   "arrow",
+   "right",
+   "point"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "arrows",
+  "name": "Down arrow",
+  "file": "art/arrows/arrow-down.webp",
+  "w": 204,
+  "h": 289,
+  "tags": [
+   "arrow",
+   "down",
+   "point"
+  ],
+  "lic": "own",
+  "anim": "float"
+ },
+ {
+  "cat": "arrows",
+  "name": "Curved arrow",
+  "file": "art/arrows/arrow-curve.webp",
+  "w": 277,
+  "h": 244,
+  "tags": [
+   "arrow",
+   "curve",
+   "turn"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "arrows",
+  "name": "Double arrow",
+  "file": "art/arrows/arrow-double.webp",
+  "w": 314,
+  "h": 179,
+  "tags": [
+   "arrow",
+   "both",
+   "left",
+   "right"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "arrows",
+  "name": "Squiggle arrow",
+  "file": "art/arrows/arrow-squiggle.webp",
+  "w": 280,
+  "h": 158,
+  "tags": [
+   "arrow",
+   "hand",
+   "drawn",
+   "doodle"
+  ],
+  "lic": "own",
+  "anim": "sway"
+ },
+ {
+  "cat": "arrows",
+  "name": "Circle arrow",
+  "file": "art/arrows/arrow-circle.webp",
+  "w": 224,
+  "h": 238,
+  "tags": [
+   "arrow",
+   "round",
+   "again",
+   "repeat"
+  ],
+  "lic": "own",
+  "anim": "spinLoop"
+ },
+ {
+  "cat": "arrows",
+  "name": "Chevrons",
+  "file": "art/arrows/chevrons.webp",
+  "w": 263,
+  "h": 208,
+  "tags": [
+   "arrow",
+   "chevron",
+   "next",
+   "go"
+  ],
+  "lic": "own",
+  "anim": "shine"
+ },
+ {
+  "cat": "arrows",
+  "name": "Tap here",
+  "file": "art/arrows/pointer-hand.webp",
+  "w": 202,
+  "h": 253,
+  "tags": [
+   "hand",
+   "tap",
+   "click",
+   "finger",
+   "point"
+  ],
+  "lic": "own",
+  "anim": "pulse"
+ },
+ {
+  "cat": "stars",
+  "name": "Yellow star",
+  "file": "art/stars/star-yellow.webp",
+  "w": 292,
+  "h": 282,
+  "tags": [
+   "star"
+  ],
+  "lic": "own",
+  "anim": "pulse"
+ },
+ {
+  "cat": "stars",
+  "name": "Gold star",
+  "file": "art/stars/star-gold.webp",
+  "w": 292,
+  "h": 282,
+  "tags": [
+   "star"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "stars",
+  "name": "Pink star",
+  "file": "art/stars/star-pink.webp",
+  "w": 292,
+  "h": 282,
+  "tags": [
+   "star"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "stars",
+  "name": "Blue star",
+  "file": "art/stars/star-blue.webp",
+  "w": 292,
+  "h": 282,
+  "tags": [
+   "star"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "stars",
+  "name": "Purple star",
+  "file": "art/stars/star-purple.webp",
+  "w": 292,
+  "h": 282,
+  "tags": [
+   "star"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "stars",
+  "name": "Happy star",
+  "file": "art/stars/star-face.webp",
+  "w": 292,
+  "h": 282,
+  "tags": [
+   "star",
+   "face",
+   "happy",
+   "smile"
+  ],
+  "lic": "own",
+  "anim": "jelly"
+ },
+ {
+  "cat": "stars",
+  "name": "Red heart",
+  "file": "art/stars/heart-red.webp",
+  "w": 290,
+  "h": 264,
+  "tags": [
+   "heart",
+   "love"
+  ],
+  "lic": "own",
+  "anim": "heartbeat"
+ },
+ {
+  "cat": "stars",
+  "name": "Pink heart",
+  "file": "art/stars/heart-pink.webp",
+  "w": 290,
+  "h": 264,
+  "tags": [
+   "heart",
+   "love"
+  ],
+  "lic": "own",
+  "anim": "heartbeat"
+ },
+ {
+  "cat": "stars",
+  "name": "Purple heart",
+  "file": "art/stars/heart-purple.webp",
+  "w": 290,
+  "h": 264,
+  "tags": [
+   "heart",
+   "love"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "stars",
+  "name": "Orange heart",
+  "file": "art/stars/heart-orange.webp",
+  "w": 290,
+  "h": 264,
+  "tags": [
+   "heart",
+   "love"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "stars",
+  "name": "Heart outline",
+  "file": "art/stars/heart-outline.webp",
+  "w": 304,
+  "h": 274,
+  "tags": [
+   "heart",
+   "love",
+   "outline"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "stars",
+  "name": "Two hearts",
+  "file": "art/stars/hearts-two.webp",
+  "w": 290,
+  "h": 209,
+  "tags": [
+   "hearts",
+   "love",
+   "two"
+  ],
+  "lic": "own",
+  "anim": "float"
+ },
+ {
+  "cat": "stars",
+  "name": "Sparkle",
+  "file": "art/stars/sparkle.webp",
+  "w": 300,
+  "h": 306,
+  "tags": [
+   "sparkle",
+   "shine",
+   "twinkle"
+  ],
+  "lic": "own",
+  "anim": "shine"
+ },
+ {
+  "cat": "stars",
+  "name": "Sparkles",
+  "file": "art/stars/sparkles.webp",
+  "w": 288,
+  "h": 266,
+  "tags": [
+   "sparkles",
+   "shine",
+   "twinkle",
+   "magic"
+  ],
+  "lic": "own",
+  "anim": "pulse"
+ },
+ {
+  "cat": "stars",
+  "name": "White twinkle",
+  "file": "art/stars/sparkle-white.webp",
+  "w": 300,
+  "h": 300,
+  "tags": [
+   "twinkle",
+   "shine",
+   "glint",
+   "white"
+  ],
+  "lic": "own",
+  "anim": "blink"
+ },
+ {
+  "cat": "stars",
+  "name": "Shooting star",
+  "file": "art/stars/shooting-star.webp",
+  "w": 288,
+  "h": 304,
+  "tags": [
+   "shooting",
+   "star",
+   "wish"
+  ],
+  "lic": "own",
+  "anim": "float"
+ },
+ {
+  "cat": "stars",
+  "name": "Wow burst",
+  "file": "art/stars/burst-star.webp",
+  "w": 304,
+  "h": 315,
+  "tags": [
+   "burst",
+   "wow",
+   "pow",
+   "boom"
+  ],
+  "lic": "own",
+  "anim": "pulse"
+ },
+ {
+  "cat": "stars",
+  "name": "Moon & star",
+  "file": "art/stars/moon-star.webp",
+  "w": 263,
+  "h": 274,
+  "tags": [
+   "moon",
+   "star",
+   "night",
+   "sleep"
+  ],
+  "lic": "own",
+  "anim": "rock"
+ },
+ {
+  "cat": "stars",
+  "name": "Happy sun",
+  "file": "art/stars/sun.webp",
+  "w": 306,
+  "h": 306,
+  "tags": [
+   "sun",
+   "sunny",
+   "happy",
+   "day"
+  ],
+  "lic": "own",
+  "anim": "spinLoop"
+ },
+ {
+  "cat": "stars",
+  "name": "Rainbow",
+  "file": "art/stars/rainbow.webp",
+  "w": 298,
+  "h": 184,
+  "tags": [
+   "rainbow",
+   "colours",
+   "weather"
+  ],
+  "lic": "own",
+  "anim": "breathe"
+ },
+ {
+  "cat": "stars",
+  "name": "Cloud",
+  "file": "art/stars/cloud.webp",
+  "w": 263,
+  "h": 153,
+  "tags": [
+   "cloud",
+   "sky",
+   "weather"
+  ],
+  "lic": "own",
+  "anim": "float"
+ },
+ {
+  "cat": "stars",
+  "name": "Lightning",
+  "file": "art/stars/lightning.webp",
+  "w": 204,
+  "h": 313,
+  "tags": [
+   "lightning",
+   "bolt",
+   "flash",
+   "zap",
+   "power"
+  ],
+  "lic": "own",
+  "anim": "blink"
+ },
+ {
+  "cat": "stars",
+  "name": "Crown",
+  "file": "art/stars/crown.webp",
+  "w": 288,
+  "h": 209,
+  "tags": [
+   "crown",
+   "king",
+   "queen",
+   "prince",
+   "princess"
+  ],
+  "lic": "own",
+  "anim": "swingLoop"
+ },
+ {
+  "cat": "frames",
+  "name": "Sunny frame",
+  "file": "art/frames/frame-yellow.webp",
+  "w": 502,
+  "h": 502,
+  "tags": [
+   "frame",
+   "border"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "frames",
+  "name": "Sky frame",
+  "file": "art/frames/frame-blue.webp",
+  "w": 502,
+  "h": 502,
+  "tags": [
+   "frame",
+   "border"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "frames",
+  "name": "Candy frame",
+  "file": "art/frames/frame-pink.webp",
+  "w": 502,
+  "h": 502,
+  "tags": [
+   "frame",
+   "border"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "frames",
+  "name": "Gold frame",
+  "file": "art/frames/frame-gold.webp",
+  "w": 502,
+  "h": 502,
+  "tags": [
+   "frame",
+   "border"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "frames",
+  "name": "Photo card",
+  "file": "art/frames/frame-polaroid.webp",
+  "w": 462,
+  "h": 486,
+  "tags": [
+   "frame",
+   "border"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "frames",
+  "name": "Circle frame",
+  "file": "art/frames/frame-circle.webp",
+  "w": 502,
+  "h": 502,
+  "tags": [
+   "frame",
+   "border"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "frames",
+  "name": "Heart frame",
+  "file": "art/frames/frame-heart.webp",
+  "w": 498,
+  "h": 477,
+  "tags": [
+   "frame",
+   "heart",
+   "love"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "frames",
+  "name": "Star frame",
+  "file": "art/frames/frame-star.webp",
+  "w": 490,
+  "h": 465,
+  "tags": [
+   "frame",
+   "star"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "frames",
+  "name": "Film strip",
+  "file": "art/frames/frame-film.webp",
+  "w": 512,
+  "h": 432,
+  "tags": [
+   "frame",
+   "film",
+   "movie",
+   "cinema"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "frames",
+  "name": "TV frame",
+  "file": "art/frames/frame-tv.webp",
+  "w": 505,
+  "h": 490,
+  "tags": [
+   "frame",
+   "tv",
+   "television",
+   "screen"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "frames",
+  "name": "Party lights",
+  "file": "art/frames/frame-dots.webp",
+  "w": 504,
+  "h": 504,
+  "tags": [
+   "frame",
+   "lights",
+   "party",
+   "dots"
+  ],
+  "lic": "own",
+  "anim": "blink"
+ },
+ {
+  "cat": "bubbles",
+  "name": "Speech bubble",
+  "file": "art/bubbles/bubble-round.webp",
+  "w": 299,
+  "h": 282,
+  "tags": [
+   "speech",
+   "bubble",
+   "talk"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "bubbles",
+  "name": "Speech box",
+  "file": "art/bubbles/bubble-rect.webp",
+  "w": 295,
+  "h": 277,
+  "tags": [
+   "speech",
+   "bubble",
+   "talk"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "bubbles",
+  "name": "Thought cloud",
+  "file": "art/bubbles/bubble-thought.webp",
+  "w": 282,
+  "h": 277,
+  "tags": [
+   "thought",
+   "bubble",
+   "think",
+   "cloud"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "bubbles",
+  "name": "Shout!",
+  "file": "art/bubbles/bubble-shout.webp",
+  "w": 309,
+  "h": 311,
+  "tags": [
+   "shout",
+   "bubble",
+   "wow",
+   "boom"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "bubbles",
+  "name": "Yellow bubble",
+  "file": "art/bubbles/bubble-yellow.webp",
+  "w": 299,
+  "h": 282,
+  "tags": [
+   "speech",
+   "bubble",
+   "talk"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "bubbles",
+  "name": "Blue bubble",
+  "file": "art/bubbles/bubble-blue.webp",
+  "w": 295,
+  "h": 277,
+  "tags": [
+   "speech",
+   "bubble",
+   "talk"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "bubbles",
+  "name": "Whisper",
+  "file": "art/bubbles/bubble-whisper.webp",
+  "w": 283,
+  "h": 257,
+  "tags": [
+   "whisper",
+   "quiet",
+   "bubble"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "bubbles",
+  "name": "Love note",
+  "file": "art/bubbles/bubble-heart.webp",
+  "w": 289,
+  "h": 264,
+  "tags": [
+   "love",
+   "bubble",
+   "heart",
+   "note"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "bubbles",
+  "name": "Question",
+  "file": "art/bubbles/bubble-question.webp",
+  "w": 299,
+  "h": 282,
+  "tags": [
+   "question",
+   "ask",
+   "why",
+   "what",
+   "bubble"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "bubbles",
+  "name": "Exclaim",
+  "file": "art/bubbles/bubble-exclaim.webp",
+  "w": 295,
+  "h": 310,
+  "tags": [
+   "wow",
+   "exclaim",
+   "bubble"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Circle",
+  "file": "art/shapes/shape-circle.webp",
+  "w": 288,
+  "h": 293,
+  "tags": [
+   "shape",
+   "circle"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Square",
+  "file": "art/shapes/shape-square.webp",
+  "w": 278,
+  "h": 283,
+  "tags": [
+   "shape",
+   "square"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Triangle",
+  "file": "art/shapes/shape-triangle.webp",
+  "w": 294,
+  "h": 271,
+  "tags": [
+   "shape",
+   "triangle"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Diamond",
+  "file": "art/shapes/shape-diamond.webp",
+  "w": 288,
+  "h": 313,
+  "tags": [
+   "shape",
+   "diamond"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Hexagon",
+  "file": "art/shapes/shape-hexagon.webp",
+  "w": 294,
+  "h": 261,
+  "tags": [
+   "shape",
+   "hexagon"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Pentagon",
+  "file": "art/shapes/shape-pentagon.webp",
+  "w": 290,
+  "h": 281,
+  "tags": [
+   "shape",
+   "pentagon"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Oval",
+  "file": "art/shapes/shape-oval.webp",
+  "w": 308,
+  "h": 213,
+  "tags": [
+   "shape",
+   "oval"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Rectangle",
+  "file": "art/shapes/shape-rectangle.webp",
+  "w": 298,
+  "h": 179,
+  "tags": [
+   "shape",
+   "rectangle"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Octagon",
+  "file": "art/shapes/shape-octagon.webp",
+  "w": 276,
+  "h": 281,
+  "tags": [
+   "shape",
+   "octagon"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Crescent",
+  "file": "art/shapes/shape-crescent.webp",
+  "w": 272,
+  "h": 293,
+  "tags": [
+   "shape",
+   "crescent"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Plus",
+  "file": "art/shapes/shape-plus.webp",
+  "w": 288,
+  "h": 293,
+  "tags": [
+   "shape",
+   "plus"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Ring",
+  "file": "art/shapes/shape-ring.webp",
+  "w": 298,
+  "h": 303,
+  "tags": [
+   "shape",
+   "ring"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Six star",
+  "file": "art/shapes/shape-star6.webp",
+  "w": 269,
+  "h": 313,
+  "tags": [
+   "shape",
+   "star6"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Blob",
+  "file": "art/shapes/shape-blob.webp",
+  "w": 272,
+  "h": 279,
+  "tags": [
+   "shape",
+   "blob"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Drop",
+  "file": "art/shapes/shape-drop.webp",
+  "w": 218,
+  "h": 308,
+  "tags": [
+   "shape",
+   "drop"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Badge",
+  "file": "art/shapes/shape-badge.webp",
+  "w": 308,
+  "h": 317,
+  "tags": [
+   "shape",
+   "badge"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Ribbon banner",
+  "file": "art/shapes/ribbon-banner.webp",
+  "w": 306,
+  "h": 138,
+  "tags": [
+   "ribbon",
+   "banner",
+   "label",
+   "title"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "shapes",
+  "name": "Label tag",
+  "file": "art/shapes/label-tag.webp",
+  "w": 291,
+  "h": 213,
+  "tags": [
+   "label",
+   "tag",
+   "price"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "numbers",
+  "name": "Number 0",
+  "file": "art/numbers/digit-0.webp",
+  "w": 100,
+  "h": 130,
+  "tags": [
+   "number",
+   "digit",
+   "0",
+   "count",
+   "math"
+  ],
+  "lic": "own",
+  "anim": "hop"
+ },
+ {
+  "cat": "numbers",
+  "name": "Number 1",
+  "file": "art/numbers/digit-1.webp",
+  "w": 68,
+  "h": 130,
+  "tags": [
+   "number",
+   "digit",
+   "1",
+   "count",
+   "math"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "numbers",
+  "name": "Number 2",
+  "file": "art/numbers/digit-2.webp",
+  "w": 82,
+  "h": 133,
+  "tags": [
+   "number",
+   "digit",
+   "2",
+   "count",
+   "math"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "numbers",
+  "name": "Number 3",
+  "file": "art/numbers/digit-3.webp",
+  "w": 85,
+  "h": 137,
+  "tags": [
+   "number",
+   "digit",
+   "3",
+   "count",
+   "math"
+  ],
+  "lic": "own",
+  "anim": "hop"
+ },
+ {
+  "cat": "numbers",
+  "name": "Number 4",
+  "file": "art/numbers/digit-4.webp",
+  "w": 88,
+  "h": 133,
+  "tags": [
+   "number",
+   "digit",
+   "4",
+   "count",
+   "math"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "numbers",
+  "name": "Number 5",
+  "file": "art/numbers/digit-5.webp",
+  "w": 86,
+  "h": 133,
+  "tags": [
+   "number",
+   "digit",
+   "5",
+   "count",
+   "math"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "numbers",
+  "name": "Number 6",
+  "file": "art/numbers/digit-6.webp",
+  "w": 92,
+  "h": 135,
+  "tags": [
+   "number",
+   "digit",
+   "6",
+   "count",
+   "math"
+  ],
+  "lic": "own",
+  "anim": "hop"
+ },
+ {
+  "cat": "numbers",
+  "name": "Number 7",
+  "file": "art/numbers/digit-7.webp",
+  "w": 83,
+  "h": 131,
+  "tags": [
+   "number",
+   "digit",
+   "7",
+   "count",
+   "math"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "numbers",
+  "name": "Number 8",
+  "file": "art/numbers/digit-8.webp",
+  "w": 90,
+  "h": 133,
+  "tags": [
+   "number",
+   "digit",
+   "8",
+   "count",
+   "math"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "numbers",
+  "name": "Number 9",
+  "file": "art/numbers/digit-9.webp",
+  "w": 88,
+  "h": 131,
+  "tags": [
+   "number",
+   "digit",
+   "9",
+   "count",
+   "math"
+  ],
+  "lic": "own",
+  "anim": "hop"
+ },
+ {
+  "cat": "numbers",
+  "name": "Plus",
+  "file": "art/numbers/digit-plus.webp",
+  "w": 72,
+  "h": 90,
+  "tags": [
+   "number",
+   "digit",
+   "+",
+   "count",
+   "math"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "numbers",
+  "name": "Minus",
+  "file": "art/numbers/digit-minus.webp",
+  "w": 60,
+  "h": 54,
+  "tags": [
+   "number",
+   "digit",
+   "-",
+   "count",
+   "math"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "numbers",
+  "name": "Equals",
+  "file": "art/numbers/digit-equals.webp",
+  "w": 60,
+  "h": 85,
+  "tags": [
+   "number",
+   "digit",
+   "=",
+   "count",
+   "math"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "numbers",
+  "name": "Question mark",
+  "file": "art/numbers/digit-q.webp",
+  "w": 86,
+  "h": 137,
+  "tags": [
+   "number",
+   "digit",
+   "?",
+   "count",
+   "math"
+  ],
+  "lic": "own"
+ },
+ {
+  "cat": "numbers",
+  "name": "Exclamation mark",
+  "file": "art/numbers/digit-ex.webp",
+  "w": 48,
+  "h": 139,
+  "tags": [
+   "number",
+   "digit",
+   "!",
+   "count",
+   "math"
+  ],
+  "lic": "own"
+ }
+]

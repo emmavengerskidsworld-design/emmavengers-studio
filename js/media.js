@@ -77,6 +77,7 @@ export const once = (el, ev, ms = 8000) => new Promise((res, rej) => {
 
 /** Load every stored media record (on app start). Only ids in `keep` are loaded; others are deleted. */
 export async function loadAll(keep) {
+  for (const [id, r] of [...media]) if (!keep.has(id)) { try { r.url && URL.revokeObjectURL(r.url); } catch (e) {} media.delete(id); }   // forget records of a deleted project
   for (const rec of await db.all('media')) {
     if (!keep.has(rec.id)) { db.del('media', rec.id); continue; }
     try { await hydrate(rec); media.set(rec.id, rec); background(rec); } catch (e) { console.warn('media load failed', rec.name, e); }

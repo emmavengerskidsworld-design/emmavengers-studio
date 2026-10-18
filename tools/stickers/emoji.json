@@ -1,0 +1,3377 @@
+[
+ {
+  "cat": "emoji-faces",
+  "name": "Grinning Face",
+  "file": "emoji/1f600.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "grinning",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Grinning Face With Smiling Eyes",
+  "file": "emoji/1f601.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "grinning",
+   "face",
+   "with",
+   "smiling",
+   "eyes"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Face With Tears Of Joy",
+  "file": "emoji/1f602.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "face",
+   "with",
+   "tears",
+   "of",
+   "joy"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Smiling Face With Open Mouth",
+  "file": "emoji/1f603.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "smiling",
+   "face",
+   "with",
+   "open",
+   "mouth"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Smiling Face With Open Mouth And Smiling Eyes",
+  "file": "emoji/1f604.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "smiling",
+   "face",
+   "with",
+   "open",
+   "mouth",
+   "and",
+   "smiling",
+   "eyes"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Smiling Face With Open Mouth And Cold Sweat",
+  "file": "emoji/1f605.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "smiling",
+   "face",
+   "with",
+   "open",
+   "mouth",
+   "and",
+   "cold",
+   "sweat"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Smiling Face With Open Mouth And Tightly-Closed Eyes",
+  "file": "emoji/1f606.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "smiling",
+   "face",
+   "with",
+   "open",
+   "mouth",
+   "and",
+   "tightly-closed",
+   "eyes"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Smiling Face With Halo",
+  "file": "emoji/1f607.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "smiling",
+   "face",
+   "with",
+   "halo"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Winking Face",
+  "file": "emoji/1f609.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "winking",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Smiling Face With Smiling Eyes",
+  "file": "emoji/1f60a.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "smiling",
+   "face",
+   "with",
+   "smiling",
+   "eyes"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Face Savouring Delicious Food",
+  "file": "emoji/1f60b.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "face",
+   "savouring",
+   "delicious",
+   "food"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Relieved Face",
+  "file": "emoji/1f60c.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "relieved",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Smiling Face With Heart-Shaped Eyes",
+  "file": "emoji/1f60d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "smiling",
+   "face",
+   "with",
+   "heart-shaped",
+   "eyes"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Smiling Face With Sunglasses",
+  "file": "emoji/1f60e.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "smiling",
+   "face",
+   "with",
+   "sunglasses"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Face Throwing A Kiss",
+  "file": "emoji/1f618.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "face",
+   "throwing",
+   "a",
+   "kiss"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Face With Stuck-Out Tongue",
+  "file": "emoji/1f61b.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "face",
+   "with",
+   "stuck-out",
+   "tongue"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Face With Stuck-Out Tongue And Winking Eye",
+  "file": "emoji/1f61c.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "face",
+   "with",
+   "stuck-out",
+   "tongue",
+   "and",
+   "winking",
+   "eye"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Face With Stuck-Out Tongue And Tightly-Closed Eyes",
+  "file": "emoji/1f61d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "face",
+   "with",
+   "stuck-out",
+   "tongue",
+   "and",
+   "tightly-closed",
+   "eyes"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Crying Face",
+  "file": "emoji/1f622.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "crying",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Loudly Crying Face",
+  "file": "emoji/1f62d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "loudly",
+   "crying",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Face With Open Mouth",
+  "file": "emoji/1f62e.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "face",
+   "with",
+   "open",
+   "mouth"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Face Screaming In Fear",
+  "file": "emoji/1f631.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "face",
+   "screaming",
+   "in",
+   "fear"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Astonished Face",
+  "file": "emoji/1f632.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "astonished",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Flushed Face",
+  "file": "emoji/1f633.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flushed",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Sleeping Face",
+  "file": "emoji/1f634.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "sleeping",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Slightly Smiling Face",
+  "file": "emoji/1f642.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "slightly",
+   "smiling",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Upside-Down Face",
+  "file": "emoji/1f643.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "upside-down",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Face With Rolling Eyes",
+  "file": "emoji/1f644.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "face",
+   "with",
+   "rolling",
+   "eyes"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Thinking Face",
+  "file": "emoji/1f914.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "thinking",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Hugging Face",
+  "file": "emoji/1f917.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "hugging",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Grinning Face With Star Eyes",
+  "file": "emoji/1f929.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "grinning",
+   "face",
+   "with",
+   "star",
+   "eyes"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Face With Party Horn And Party Hat",
+  "file": "emoji/1f973.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "face",
+   "with",
+   "party",
+   "horn",
+   "and",
+   "party",
+   "hat"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Smiling Face With Smiling Eyes And Three Hearts",
+  "file": "emoji/1f970.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "smiling",
+   "face",
+   "with",
+   "smiling",
+   "eyes",
+   "and",
+   "three",
+   "hearts"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Grinning Face With One Large And One Small Eye",
+  "file": "emoji/1f92a.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "grinning",
+   "face",
+   "with",
+   "one",
+   "large",
+   "and",
+   "one",
+   "small",
+   "eye"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Face With Finger Covering Closed Lips",
+  "file": "emoji/1f92b.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "face",
+   "with",
+   "finger",
+   "covering",
+   "closed",
+   "lips"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Smiling Face With Smiling Eyes And Hand Covering Mouth",
+  "file": "emoji/1f92d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "smiling",
+   "face",
+   "with",
+   "smiling",
+   "eyes",
+   "and",
+   "hand",
+   "covering",
+   "mouth"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Face With Pleading Eyes",
+  "file": "emoji/1f97a.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "face",
+   "with",
+   "pleading",
+   "eyes"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Yawning Face",
+  "file": "emoji/1f971.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "yawning",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Face With Cowboy Hat",
+  "file": "emoji/1f920.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "face",
+   "with",
+   "cowboy",
+   "hat"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Nerd Face",
+  "file": "emoji/1f913.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "nerd",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Ghost",
+  "file": "emoji/1f47b.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "ghost"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Extraterrestrial Alien",
+  "file": "emoji/1f47d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "extraterrestrial",
+   "alien"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Robot Face",
+  "file": "emoji/1f916.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "robot",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Clown Face",
+  "file": "emoji/1f921.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "clown",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "See-No-Evil Monkey",
+  "file": "emoji/1f648.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "see-no-evil",
+   "monkey"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Hear-No-Evil Monkey",
+  "file": "emoji/1f649.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "hear-no-evil",
+   "monkey"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Speak-No-Evil Monkey",
+  "file": "emoji/1f64a.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "speak-no-evil",
+   "monkey"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Thumbs Up Sign",
+  "file": "emoji/1f44d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "thumbs",
+   "up",
+   "sign"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Clapping Hands Sign",
+  "file": "emoji/1f44f.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "clapping",
+   "hands",
+   "sign"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Person Raising Both Hands In Celebration",
+  "file": "emoji/1f64c.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "person",
+   "raising",
+   "both",
+   "hands",
+   "in",
+   "celebration"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Waving Hand Sign",
+  "file": "emoji/1f44b.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "waving",
+   "hand",
+   "sign"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Person With Folded Hands",
+  "file": "emoji/1f64f.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "person",
+   "with",
+   "folded",
+   "hands"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Flexed Biceps",
+  "file": "emoji/1f4aa.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flexed",
+   "biceps"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Victory Hand",
+  "file": "emoji/270c.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "victory",
+   "hand"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Eyes",
+  "file": "emoji/1f440.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "eyes"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "Hand With Index And Middle Fingers Crossed",
+  "file": "emoji/1f91e.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "hand",
+   "with",
+   "index",
+   "and",
+   "middle",
+   "fingers",
+   "crossed"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-faces",
+  "name": "White Up Pointing Backhand Index",
+  "file": "emoji/1f446.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "white",
+   "up",
+   "pointing",
+   "backhand",
+   "index"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Dog Face",
+  "file": "emoji/1f436.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "dog",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Cat Face",
+  "file": "emoji/1f431.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "cat",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Mouse Face",
+  "file": "emoji/1f42d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "mouse",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Hamster Face",
+  "file": "emoji/1f439.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "hamster",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Rabbit Face",
+  "file": "emoji/1f430.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "rabbit",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Fox Face",
+  "file": "emoji/1f98a.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "fox",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Bear Face",
+  "file": "emoji/1f43b.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "bear",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Panda Face",
+  "file": "emoji/1f43c.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "panda",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Koala",
+  "file": "emoji/1f428.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "koala"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Tiger Face",
+  "file": "emoji/1f42f.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "tiger",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Lion Face",
+  "file": "emoji/1f981.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "lion",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Cow Face",
+  "file": "emoji/1f42e.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "cow",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Pig Face",
+  "file": "emoji/1f437.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "pig",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Frog Face",
+  "file": "emoji/1f438.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "frog",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Monkey Face",
+  "file": "emoji/1f435.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "monkey",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Chicken",
+  "file": "emoji/1f414.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "chicken"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Penguin",
+  "file": "emoji/1f427.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "penguin"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Bird",
+  "file": "emoji/1f426.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "bird"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Baby Chick",
+  "file": "emoji/1f424.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "baby",
+   "chick"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Duck",
+  "file": "emoji/1f986.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "duck"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Owl",
+  "file": "emoji/1f989.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "owl"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Unicorn Face",
+  "file": "emoji/1f984.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "unicorn",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Honeybee",
+  "file": "emoji/1f41d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "honeybee"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Butterfly",
+  "file": "emoji/1f98b.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "butterfly"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Lady Beetle",
+  "file": "emoji/1f41e.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "lady",
+   "beetle"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Turtle",
+  "file": "emoji/1f422.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "turtle"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Snake",
+  "file": "emoji/1f40d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "snake"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "T-Rex",
+  "file": "emoji/1f996.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "t-rex"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Sauropod",
+  "file": "emoji/1f995.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "sauropod"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Octopus",
+  "file": "emoji/1f419.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "octopus"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Dolphin",
+  "file": "emoji/1f42c.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "dolphin"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Spouting Whale",
+  "file": "emoji/1f433.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "spouting",
+   "whale"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Fish",
+  "file": "emoji/1f41f.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "fish"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Tropical Fish",
+  "file": "emoji/1f420.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "tropical",
+   "fish"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Shark",
+  "file": "emoji/1f988.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "shark"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Elephant",
+  "file": "emoji/1f418.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "elephant"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Giraffe Face",
+  "file": "emoji/1f992.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "giraffe",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Zebra Face",
+  "file": "emoji/1f993.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "zebra",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Rhinoceros",
+  "file": "emoji/1f98f.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "rhinoceros"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Hippopotamus",
+  "file": "emoji/1f99b.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "hippopotamus"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Crocodile",
+  "file": "emoji/1f40a.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "crocodile"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Sheep",
+  "file": "emoji/1f411.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "sheep"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Goat",
+  "file": "emoji/1f410.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "goat"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Dromedary Camel",
+  "file": "emoji/1f42a.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "dromedary",
+   "camel"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Horse",
+  "file": "emoji/1f40e.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "horse"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Snail",
+  "file": "emoji/1f40c.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "snail"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Lizard",
+  "file": "emoji/1f98e.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "lizard"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Parrot",
+  "file": "emoji/1f99c.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "parrot"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Flamingo",
+  "file": "emoji/1f9a9.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flamingo"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Hedgehog",
+  "file": "emoji/1f994.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "hedgehog"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-animals",
+  "name": "Paw Prints",
+  "file": "emoji/1f43e.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "paw",
+   "prints"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Red Apple",
+  "file": "emoji/1f34e.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "red",
+   "apple"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Banana",
+  "file": "emoji/1f34c.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "banana"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Grapes",
+  "file": "emoji/1f347.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "grapes"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Strawberry",
+  "file": "emoji/1f353.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "strawberry"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Watermelon",
+  "file": "emoji/1f349.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "watermelon"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Tangerine",
+  "file": "emoji/1f34a.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "tangerine"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Pineapple",
+  "file": "emoji/1f34d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "pineapple"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Mango",
+  "file": "emoji/1f96d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "mango"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Coconut",
+  "file": "emoji/1f965.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "coconut"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Cherries",
+  "file": "emoji/1f352.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "cherries"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Peach",
+  "file": "emoji/1f351.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "peach"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Carrot",
+  "file": "emoji/1f955.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "carrot"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Ear Of Maize",
+  "file": "emoji/1f33d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "ear",
+   "of",
+   "maize"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Broccoli",
+  "file": "emoji/1f966.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "broccoli"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Bread",
+  "file": "emoji/1f35e.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "bread"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Pancakes",
+  "file": "emoji/1f95e.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "pancakes"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Slice Of Pizza",
+  "file": "emoji/1f355.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "slice",
+   "of",
+   "pizza"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Hamburger",
+  "file": "emoji/1f354.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "hamburger"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "French Fries",
+  "file": "emoji/1f35f.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "french",
+   "fries"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Soft Ice Cream",
+  "file": "emoji/1f366.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "soft",
+   "ice",
+   "cream"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Ice Cream",
+  "file": "emoji/1f368.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "ice",
+   "cream"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Doughnut",
+  "file": "emoji/1f369.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "doughnut"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Cookie",
+  "file": "emoji/1f36a.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "cookie"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Birthday Cake",
+  "file": "emoji/1f382.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "birthday",
+   "cake"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Cupcake",
+  "file": "emoji/1f9c1.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "cupcake"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Lollipop",
+  "file": "emoji/1f36d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "lollipop"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Candy",
+  "file": "emoji/1f36c.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "candy"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Chocolate Bar",
+  "file": "emoji/1f36b.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "chocolate",
+   "bar"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Glass Of Milk",
+  "file": "emoji/1f95b.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "glass",
+   "of",
+   "milk"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Beverage Box",
+  "file": "emoji/1f9c3.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "beverage",
+   "box"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Egg",
+  "file": "emoji/1f95a.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "egg"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Cooked Rice",
+  "file": "emoji/1f35a.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "cooked",
+   "rice"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Spaghetti",
+  "file": "emoji/1f35d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "spaghetti"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Popcorn",
+  "file": "emoji/1f37f.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "popcorn"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-food",
+  "name": "Waffle",
+  "file": "emoji/1f9c7.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "waffle"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Black Sun With Rays",
+  "file": "emoji/2600.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "black",
+   "sun",
+   "with",
+   "rays"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Sun With Face",
+  "file": "emoji/1f31e.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "sun",
+   "with",
+   "face"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Crescent Moon",
+  "file": "emoji/1f319.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "crescent",
+   "moon"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Glowing Star",
+  "file": "emoji/1f31f.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "glowing",
+   "star"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "White Medium Star",
+  "file": "emoji/2b50.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "white",
+   "medium",
+   "star"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Rainbow",
+  "file": "emoji/1f308.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "rainbow"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Cloud",
+  "file": "emoji/2601.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "cloud"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Sun Behind Cloud",
+  "file": "emoji/26c5.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "sun",
+   "behind",
+   "cloud"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Cloud With Rain",
+  "file": "emoji/1f327.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "cloud",
+   "with",
+   "rain"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Snowflake",
+  "file": "emoji/2744.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "snowflake"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Snowman Without Snow",
+  "file": "emoji/26c4.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "snowman",
+   "without",
+   "snow"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "High Voltage Sign",
+  "file": "emoji/26a1.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "high",
+   "voltage",
+   "sign"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Fire",
+  "file": "emoji/1f525.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "fire"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Droplet",
+  "file": "emoji/1f4a7.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "droplet"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Water Wave",
+  "file": "emoji/1f30a.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "water",
+   "wave"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Sunflower",
+  "file": "emoji/1f33b.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "sunflower"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Tulip",
+  "file": "emoji/1f337.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "tulip"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Rose",
+  "file": "emoji/1f339.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "rose"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Cherry Blossom",
+  "file": "emoji/1f338.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "cherry",
+   "blossom"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Blossom",
+  "file": "emoji/1f33c.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "blossom"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Four Leaf Clover",
+  "file": "emoji/1f340.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "four",
+   "leaf",
+   "clover"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Deciduous Tree",
+  "file": "emoji/1f333.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "deciduous",
+   "tree"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Palm Tree",
+  "file": "emoji/1f334.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "palm",
+   "tree"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Cactus",
+  "file": "emoji/1f335.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "cactus"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Mushroom",
+  "file": "emoji/1f344.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "mushroom"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Fallen Leaf",
+  "file": "emoji/1f342.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "fallen",
+   "leaf"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Earth Globe Europe-Africa",
+  "file": "emoji/1f30d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "earth",
+   "globe",
+   "europe-africa"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Volcano",
+  "file": "emoji/1f30b.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "volcano"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Snow Capped Mountain",
+  "file": "emoji/1f3d4.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "snow",
+   "capped",
+   "mountain"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Desert Island",
+  "file": "emoji/1f3dd.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "desert",
+   "island"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-nature",
+  "name": "Potted Plant",
+  "file": "emoji/1fab4.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "potted",
+   "plant"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Balloon",
+  "file": "emoji/1f388.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "balloon"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Party Popper",
+  "file": "emoji/1f389.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "party",
+   "popper"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Confetti Ball",
+  "file": "emoji/1f38a.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "confetti",
+   "ball"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Wrapped Present",
+  "file": "emoji/1f381.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "wrapped",
+   "present"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Ribbon",
+  "file": "emoji/1f380.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "ribbon"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Trophy",
+  "file": "emoji/1f3c6.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "trophy"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "First Place Medal",
+  "file": "emoji/1f947.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "first",
+   "place",
+   "medal"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Crown",
+  "file": "emoji/1f451.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "crown"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Artist Palette",
+  "file": "emoji/1f3a8.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "artist",
+   "palette"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Lower Left Crayon",
+  "file": "emoji/1f58d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "lower",
+   "left",
+   "crayon"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Pencil",
+  "file": "emoji/270f.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "pencil"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Books",
+  "file": "emoji/1f4da.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "books"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Open Book",
+  "file": "emoji/1f4d6.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "open",
+   "book"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "School Satchel",
+  "file": "emoji/1f392.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "school",
+   "satchel"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Musical Note",
+  "file": "emoji/1f3b5.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "musical",
+   "note"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Multiple Musical Notes",
+  "file": "emoji/1f3b6.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "multiple",
+   "musical",
+   "notes"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Guitar",
+  "file": "emoji/1f3b8.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "guitar"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Drum With Drumsticks",
+  "file": "emoji/1f941.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "drum",
+   "with",
+   "drumsticks"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Musical Keyboard",
+  "file": "emoji/1f3b9.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "musical",
+   "keyboard"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Trumpet",
+  "file": "emoji/1f3ba.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "trumpet"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Soccer Ball",
+  "file": "emoji/26bd.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "soccer",
+   "ball"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Basketball And Hoop",
+  "file": "emoji/1f3c0.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "basketball",
+   "and",
+   "hoop"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Video Game",
+  "file": "emoji/1f3ae.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "video",
+   "game"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Teddy Bear",
+  "file": "emoji/1f9f8.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "teddy",
+   "bear"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Kite",
+  "file": "emoji/1fa81.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "kite"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Rocket",
+  "file": "emoji/1f680.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "rocket"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Flying Saucer",
+  "file": "emoji/1f6f8.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flying",
+   "saucer"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Airplane",
+  "file": "emoji/2708.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "airplane"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Automobile",
+  "file": "emoji/1f697.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "automobile"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Bus",
+  "file": "emoji/1f68c.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "bus"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Steam Locomotive",
+  "file": "emoji/1f682.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "steam",
+   "locomotive"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Bicycle",
+  "file": "emoji/1f6b2.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "bicycle"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Sailboat",
+  "file": "emoji/26f5.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "sailboat"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "House Building",
+  "file": "emoji/1f3e0.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "house",
+   "building"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "European Castle",
+  "file": "emoji/1f3f0.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "european",
+   "castle"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Carousel Horse",
+  "file": "emoji/1f3a0.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "carousel",
+   "horse"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Ferris Wheel",
+  "file": "emoji/1f3a1.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "ferris",
+   "wheel"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Jigsaw Puzzle Piece",
+  "file": "emoji/1f9e9.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "jigsaw",
+   "puzzle",
+   "piece"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Magic Wand",
+  "file": "emoji/1fa84.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "magic",
+   "wand"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Camera",
+  "file": "emoji/1f4f7.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "camera"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Electric Light Bulb",
+  "file": "emoji/1f4a1.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "electric",
+   "light",
+   "bulb"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Alarm Clock",
+  "file": "emoji/23f0.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "alarm",
+   "clock"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Bell",
+  "file": "emoji/1f514.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "bell"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Cheering Megaphone",
+  "file": "emoji/1f4e3.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "cheering",
+   "megaphone"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Clapper Board",
+  "file": "emoji/1f3ac.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "clapper",
+   "board"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Microphone",
+  "file": "emoji/1f3a4.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "microphone"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Telescope",
+  "file": "emoji/1f52d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "telescope"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-fun",
+  "name": "Ringed Planet",
+  "file": "emoji/1fa90.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "ringed",
+   "planet"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Heavy Black Heart",
+  "file": "emoji/2764.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "heavy",
+   "black",
+   "heart"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Orange Heart",
+  "file": "emoji/1f9e1.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "orange",
+   "heart"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Yellow Heart",
+  "file": "emoji/1f49b.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "yellow",
+   "heart"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Green Heart",
+  "file": "emoji/1f49a.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "green",
+   "heart"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Blue Heart",
+  "file": "emoji/1f499.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "blue",
+   "heart"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Purple Heart",
+  "file": "emoji/1f49c.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "purple",
+   "heart"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Brown Heart",
+  "file": "emoji/1f90e.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "brown",
+   "heart"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Sparkling Heart",
+  "file": "emoji/1f496.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "sparkling",
+   "heart"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Growing Heart",
+  "file": "emoji/1f497.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "growing",
+   "heart"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Two Hearts",
+  "file": "emoji/1f495.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "two",
+   "hearts"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Heart With Arrow",
+  "file": "emoji/1f498.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "heart",
+   "with",
+   "arrow"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Heart With Ribbon",
+  "file": "emoji/1f49d.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "heart",
+   "with",
+   "ribbon"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Sparkles",
+  "file": "emoji/2728.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "sparkles"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Dizzy Symbol",
+  "file": "emoji/1f4ab.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "dizzy",
+   "symbol"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Collision Symbol",
+  "file": "emoji/1f4a5.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "collision",
+   "symbol"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Hundred Points Symbol",
+  "file": "emoji/1f4af.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "hundred",
+   "points",
+   "symbol"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "White Heavy Check Mark",
+  "file": "emoji/2705.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "white",
+   "heavy",
+   "check",
+   "mark"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Cross Mark",
+  "file": "emoji/274c.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "cross",
+   "mark"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Black Question Mark Ornament",
+  "file": "emoji/2753.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "black",
+   "question",
+   "mark",
+   "ornament"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Heavy Exclamation Mark Symbol",
+  "file": "emoji/2757.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "heavy",
+   "exclamation",
+   "mark",
+   "symbol"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Heavy Plus Sign",
+  "file": "emoji/2795.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "heavy",
+   "plus",
+   "sign"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Speech Balloon",
+  "file": "emoji/1f4ac.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "speech",
+   "balloon"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Thought Balloon",
+  "file": "emoji/1f4ad.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "thought",
+   "balloon"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Sleeping Symbol",
+  "file": "emoji/1f4a4.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "sleeping",
+   "symbol"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Anger Symbol",
+  "file": "emoji/1f4a2.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "anger",
+   "symbol"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Dash Symbol",
+  "file": "emoji/1f4a8.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "dash",
+   "symbol"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "emoji-symbols",
+  "name": "Multiple Musical Notes",
+  "file": "emoji/1f3b6.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "multiple",
+   "musical",
+   "notes"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Nigeria",
+  "file": "emoji/1f1f3_1f1ec.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "nigeria",
+   "ng"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Ghana",
+  "file": "emoji/1f1ec_1f1ed.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "ghana",
+   "gh"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Kenya",
+  "file": "emoji/1f1f0_1f1ea.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "kenya",
+   "ke"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag South Africa",
+  "file": "emoji/1f1ff_1f1e6.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "south africa",
+   "za"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Cameroon",
+  "file": "emoji/1f1e8_1f1f2.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "cameroon",
+   "cm"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Tanzania",
+  "file": "emoji/1f1f9_1f1ff.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "tanzania",
+   "tz"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Uganda",
+  "file": "emoji/1f1fa_1f1ec.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "uganda",
+   "ug"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Ethiopia",
+  "file": "emoji/1f1ea_1f1f9.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "ethiopia",
+   "et"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Egypt",
+  "file": "emoji/1f1ea_1f1ec.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "egypt",
+   "eg"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Senegal",
+  "file": "emoji/1f1f8_1f1f3.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "senegal",
+   "sn"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag C\u00f4te d'Ivoire",
+  "file": "emoji/1f1e8_1f1ee.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "c\u00f4te d'ivoire",
+   "ci"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Rwanda",
+  "file": "emoji/1f1f7_1f1fc.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "rwanda",
+   "rw"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag DR Congo",
+  "file": "emoji/1f1e8_1f1e9.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "dr congo",
+   "cd"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Zambia",
+  "file": "emoji/1f1ff_1f1f2.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "zambia",
+   "zm"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Zimbabwe",
+  "file": "emoji/1f1ff_1f1fc.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "zimbabwe",
+   "zw"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Benin",
+  "file": "emoji/1f1e7_1f1ef.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "benin",
+   "bj"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Togo",
+  "file": "emoji/1f1f9_1f1ec.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "togo",
+   "tg"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Jamaica",
+  "file": "emoji/1f1ef_1f1f2.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "jamaica",
+   "jm"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag United States",
+  "file": "emoji/1f1fa_1f1f8.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "united states",
+   "us"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag United Kingdom",
+  "file": "emoji/1f1ec_1f1e7.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "united kingdom",
+   "gb"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Canada",
+  "file": "emoji/1f1e8_1f1e6.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "canada",
+   "ca"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag France",
+  "file": "emoji/1f1eb_1f1f7.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "france",
+   "fr"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag Brazil",
+  "file": "emoji/1f1e7_1f1f7.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "brazil",
+   "br"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag India",
+  "file": "emoji/1f1ee_1f1f3.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "india",
+   "in"
+  ],
+  "lic": "noto"
+ },
+ {
+  "cat": "flags",
+  "name": "Flag United Arab Emirates",
+  "file": "emoji/1f1e6_1f1ea.webp",
+  "w": 256,
+  "h": 256,
+  "tags": [
+   "flag",
+   "united arab emirates",
+   "ae"
+  ],
+  "lic": "noto"
+ }
+]

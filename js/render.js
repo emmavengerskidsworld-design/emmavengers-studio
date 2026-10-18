@@ -7,6 +7,7 @@ import { clipEnd, clipDur } from './project.js';
 import { clipAnimState, textAnimPlan, unitQ } from './animations.js';
 import { processImage, hasAdjust, enhanceOn, maxSide, DEFAULT_STRENGTH } from './enhance.js';
 import { ensureFont, fontsVersion } from './fonts.js';
+import { applyChain, fxAvailable, DEFAULT_EFFECT_AMOUNT } from './effects.js';
 import { isPro, cropAt, maskAt, keyOn, straightenZoom, scratch, maskPath, blendOp, drawBgBlur } from './pro.js';
 
 export function visualTracks(p) {
@@ -30,6 +31,7 @@ export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
     const local = t - clip.start;
     const tr = { x: propAt(clip, 'x', local), y: propAt(clip, 'y', local), scale: propAt(clip, 'scale', local), rotation: propAt(clip, 'rotation', local), opacity: propAt(clip, 'opacity', local) };
     let box = null;
+    if (clip.type === 'effect') { drawFrameEffect(cx, W, H, clip, local); return; }
     if (clip.type === 'text') box = drawText(cx, W, H, clip, tr, local);
     else { const s = getSource(clip, t); if (s) box = drawVisual(cx, W, H, s, clip, tr, local, opts); }
     if (box) boxes.push({ id: clip.id, ...box, rotation: tr.rotation });
@@ -55,6 +57,20 @@ export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
   return boxes;
 }
 
+/** An Effects-track clip: runs its effect (or filter) over everything already drawn under it. */
+export function drawFrameEffect(ctx, W, H, clip, local) {
+  const e = clip.effect; if (!e || !e.id) return;
+  const r = applyChain(ctx.canvas, W, H, [{ kind: e.kind || 'effect', id: e.id, amount: e.amount ?? DEFAULT_EFFECT_AMOUNT, t: local, dur: clipDur(clip), seed: clip.id }]);
+  if (!r) return;
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.globalCompositeOperation = 'copy'; ctx.drawImage(r, 0, 0, W, H); ctx.restore();
+}
+/** Filter + per-clip effects of a photo / video clip, as a GL chain. */
+export function clipChain(clip, local) {
+  const ch = [];
+  if (clip.filter && clip.filter.id) ch.push({ kind: 'filter', id: clip.filter.id, amount: clip.filter.amount ?? 1 });
+  for (const e of clip.effects || []) if (e && e.id) ch.push({ kind: 'effect', id: e.id, amount: e.amount ?? DEFAULT_EFFECT_AMOUNT, t: local || 0, dur: clipDur(clip), seed: clip.id });
+  return ch;
+}
 let pre = null;   // downscale scratch (big sources are first brought to on-screen size with high-quality smoothing)
 /** Draw one video / photo / overlay clip. Exported so the animation picker tiles use exactly this code.
     s = { img, w, h, rot }, tr = transform at this time (keyframes applied), local = clip-local time. */
@@ -78,7 +94,8 @@ export function drawVisual(ctx, W, H, s, clip, tr, local, opts = {}) {
   g.save();
   g.globalAlpha = mk ? 1 : alpha;
   if (!mk && clip.blend && clip.blend !== 'normal') g.globalCompositeOperation = blendOp(clip.blend);
-  const f = [filterCss(clip.filter)]; if (st && st.blur > .05) f.push(`blur(${(st.blur * Math.min(W, H) / 1080).toFixed(2)}px)`); if (st && Math.abs(st.bright) > .001) f.push(`brightness(${(1 + st.bright).toFixed(3)})`);
+  const chain = clipChain(clip, local), glFx = chain.length && fxAvailable();
+  const f = [glFx ? '' : filterCss(clip.filter)]; if (st && st.blur > .05) f.push(`blur(${(st.blur * Math.min(W, H) / 1080).toFixed(2)}px)`); if (st && Math.abs(st.bright) > .001) f.push(`brightness(${(1 + st.bright).toFixed(3)})`);
   g.filter = f.filter(Boolean).join(' ') || 'none';
   // HD pipeline: enhance / colour adjust / chroma key / any upscale go through the WebGL shaders (same code for preview and export)
   const enh = !opts.plain && enhanceOn(clip) ? (clip.enhance.strength ?? DEFAULT_STRENGTH) : 0, adj = !opts.plain && hasAdjust(clip.adjust), key = !opts.noKey && keyOn(clip) ? clip.key : null;
@@ -94,7 +111,11 @@ export function drawVisual(ctx, W, H, s, clip, tr, local, opts = {}) {
     }
     out = processImage(src, sw, sh, ow, oh, { enhance: enh, adjust: adj ? clip.adjust : null, key, fast: !!opts.fast, seed: Math.floor((local || 0) * 30) % 997 });
   }
-  const img = out || s.img;
+  let img = out || s.img;
+  if (glFx) {   // filters + effects run on the clip's own pixels (at most on-screen size), same code for preview and export
+    let iw = out ? ow : s.w, ih = out ? oh : s.h; if (!out && kk < 1) { iw = Math.max(2, Math.round(s.w * kk)); ih = Math.max(2, Math.round(s.h * kk)); }
+    const r = applyChain(img, iw, ih, chain); if (r) img = r;
+  }
   if (!pro && !st && out && !s.rot && Math.abs(tr.rotation % 360) < 1e-6 && Math.abs(ow - s.w * k) < 0.75 && Math.abs(oh - s.h * k) < 0.75) {
     g.drawImage(img, Math.round(cx - ow / 2), Math.round(cy - oh / 2));   // pixel-exact, no second resample
   } else {

@@ -260,7 +260,7 @@ export function replaceWith(p, clipId, rec) {
   else { const need = hasSource(c) ? c.out - c.in : D, len = Math.min(rec.duration, need);
     if (c.type !== 'video') { c.speed = 1; delete c.dur; }
     c.type = 'video'; c.mediaId = rec.id; c.in = 0; c.out = Math.round(len * 1e6) / 1e6; delete c.reversed; }
-  normalize(p); return c;
+  delete c.placeholder; normalize(p); return c;
 }
 export function replaceClip() {
   const f = selected(); if (!f || !isPic(f.clip)) return;

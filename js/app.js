@@ -1,5 +1,5 @@
 /* Emmavengers Studio — app shell: wires the store, preview player, timeline, toolbars, panels and export. */
-import { S, act, live, load, save, on, undo, redo, canUndo, canRedo, select, selected, reset, begin, end } from './store.js';
+import { S, act, live, load, save, on, undo, redo, canUndo, canRedo, select, selected, reset, begin, end, useProject } from './store.js';
 import { newClip, addToMain, addToKind, split, remove, duplicate, setSpeed, projectDuration, clipDur, clipEnd, hasSource, find, ASPECTS, mediaIds, kfTimes, kfAt, hasKeyframes, addKeyframe, removeKeyframe, setEase, setProp, kenBurns, KEN_BURNS, transEff, KF_EPS } from './project.js';
 import { TRANSITIONS, TRANSITION_CATS, transitionById, helpers as trHelpers, DEFAULT_TRANSITION_DUR, MIN_TRANSITION, MAX_TRANSITION } from './transitions.js';
 import { media, importFile, loadAll, onMediaUpdate, kindOf } from './media.js';
@@ -8,6 +8,10 @@ import { Timeline, fmtS } from './timeline.js';
 import { openSheet, closeSheet, sheetOpen, slider, chips, swatches } from './panels.js';
 import { FONT_GROUPS } from './registry.js';
 import * as caps from './captions.js';
+import * as stickers from './stickers.js';
+import * as templates from './templates.js';
+import * as fx from './effects.js';
+import { FILTER_CATS } from './registry.js';
 import { ensureFont, ensureProjectFonts, onFontLoad } from './fonts.js';
 import { TEXT_STYLES, BUBBLES, TITLES, applyStyle, applyTitle } from './textstyles.js';
 import { FILTERS, FONTS, COLORS, BG_COLORS, SPEED_PRESETS, KEYFRAME_PROPS, DEFAULT_TRANSFORM, TRACK_KINDS, propAt, kfPropsFor, EASING_LIST, TRANSFORM_PROPS } from './registry.js';
@@ -49,7 +53,7 @@ async function boot() {
   onBaked(() => { timeline.render(); if (player.playing) player.sync(player.t); });
   wireUI(); layoutPreview(); timeline.fitZoom(); timeline.render(); refreshToolbar(); updateUndo(); updateEmpty(); showTime(); setPlayIcon(false);
   player.seek(0);
-  window.studio = { S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, caps, ready: true };
+  window.studio = { templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, caps, stickers, fx, ready: true };
   document.body.classList.add('ready');
 }
 function afterEdit() { player.seek(Math.min(player.t, projectDuration(S.project))); showTime(); refreshToolbar(); }
@@ -317,9 +321,10 @@ async function onFiles(files, kind) {
 }
 
 /* ---------------- toolbar ---------------- */
-const isVisualClip = c => c.type !== 'audio';
+const isVisualClip = c => c.type !== 'audio' && c.type !== 'effect';
 const ROOT_TOOLS = [
   { id: 'media', icon: 'media', label: 'Media', run: () => pick('main') },
+  { id: 'templates', icon: 'templates', label: 'Templates', run: () => templatesSheet() },
   { id: 'audio', icon: 'music', label: 'Audio', run: () => pick('audio') },
   { id: 'sounds', icon: 'sounds', label: 'Sounds', run: () => soundsSheet({ player, timeline, toast }) },
   { id: 'record', icon: 'mic', label: 'Record', run: recordSheet },
@@ -327,6 +332,8 @@ const ROOT_TOOLS = [
   { id: 'text', icon: 'text', label: 'Text', run: addText },
   { id: 'titles', icon: 'titles', label: 'Titles', run: addTitle },
   { id: 'captions', icon: 'captions', label: 'Captions', run: captionsSheet },
+  { id: 'stickers', icon: 'sticker', label: 'Stickers', run: () => stickers.stickerSheet({ player, toast, media, importFile, act, newClip, addToKind, DEFAULT_TRANSFORM, select }) },
+  { id: 'effects', icon: 'effects', label: 'Effects', run: () => { select(null); effectsSheet('track'); } },
   { id: 'overlay', icon: 'overlay', label: 'Overlay', run: () => pick('overlay') },
   { id: 'split', icon: 'split', label: 'Split', run: doSplit },
   { id: 'ratio', icon: 'ratio', label: 'Ratio', run: ratioSheet },
@@ -334,6 +341,7 @@ const ROOT_TOOLS = [
   { id: 'guides', icon: 'safe', label: 'Safe area', run: pro.guidesSheet },
 ];
 const CLIP_TOOLS = [
+  { id: 'phreplace', icon: 'replace', label: 'Replace me', when: c => !!c.placeholder && c.placeholder !== 'text' && isPic(c), run: () => pro.replaceClip() },
   { id: 'split', icon: 'split', label: 'Split', run: doSplit },
   { id: 'edit', icon: 'edit', label: 'Edit text', when: c => c.type === 'text', run: () => textSheet('edit') },
   { id: 'captions', icon: 'captions', label: 'Captions', when: c => !!c.caption, run: captionsSheet },
@@ -348,7 +356,7 @@ const CLIP_TOOLS = [
   { id: 'tomain', icon: 'tomain', label: 'Main track', when: c => isPic(c) && find(S.project, c.id)?.track.kind === 'overlay', run: () => pro.toTrack('main') },
   { id: 'freeze', icon: 'freeze', label: 'Freeze', when: c => c.type === 'video', run: () => pro.freezeFrame() },
   { id: 'reverse', icon: 'reverse', label: 'Reverse', when: c => c.type === 'video', run: () => pro.reverseClip() },
-  { id: 'replace', icon: 'replace', label: 'Replace', when: c => isPic(c), run: pro.replaceClip },
+  { id: 'replace', icon: 'replace', label: 'Replace', when: c => isPic(c) && !(c.placeholder && c.placeholder !== 'text'), run: pro.replaceClip },
   { id: 'volume', icon: 'volume', label: 'Volume', when: hasSource, run: volumeSheet },
   { id: 'enhvoice', icon: 'enhvoice', label: 'Enhance voice', when: hasSource, run: enhanceVoiceSheet },
   { id: 'voicefx', icon: 'voicefx', label: 'Voice effects', when: hasSource, run: voiceFxSheet },
@@ -358,6 +366,8 @@ const CLIP_TOOLS = [
   { id: 'hd', icon: 'hd', label: 'HD Enhance', when: c => c.type === 'video' || c.type === 'image', run: hdSheet },
   { id: 'adjust', icon: 'adjust', label: 'Adjust', when: c => c.type === 'video' || c.type === 'image', run: colorSheet },
   { id: 'transform', icon: 'move', label: 'Transform', when: isVisualClip, run: transformSheet },
+  { id: 'effect', icon: 'effects', label: 'Effect', when: c => c.type === 'effect', run: () => effectsSheet('track') },
+  { id: 'clipfx', icon: 'effects', label: 'Effects', when: c => c.type === 'video' || c.type === 'image', run: () => effectsSheet('clip') },
   { id: 'filters', icon: 'filter', label: 'Filters', when: c => c.type === 'video' || c.type === 'image', run: filterSheet },
   { id: 'fit', icon: 'fit', label: 'Fit / Fill', when: c => c.type === 'video' || c.type === 'image', run: toggleFit },
   { id: 'curve', icon: 'curve', label: 'Curve', when: c => hasKeyframes(c), run: curveSheet },
@@ -513,13 +523,6 @@ async function renderStill({ t = 0, W, H, plain = false, fast = false, type = 'i
   let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
   return btoa(s);
 }
-function filterSheet() {
-  const c = selected().clip;
-  openSheet('Filters', body => {
-    const amt = slider('Strength', { min: 0, max: 1, step: 0.01, value: c.filter?.amount ?? 1, fmt: v => Math.round(v * 100) + '%', onInput: v => editSel(cl => { if (cl.filter) cl.filter.amount = v; }) });
-    body.append(chips(FILTERS.map(f => ({ value: f.id, label: f.name })), c.filter?.id ?? null, id => editSel(cl => { cl.filter = id ? { id, amount: cl.filter?.amount ?? 1 } : null; })), amt);
-  });
-}
 /* text sheet: Edit / Font / Styles / Bubble / Titles. Tiles are drawn by the real drawText (same as preview + export). */
 let textTab = 'edit';
 function textTile(x, TW, TH, clip, t = clip.anim ? (clip.dur || 3) / 2 : 0) {
@@ -533,7 +536,7 @@ function textSheet(startTab) {
   openSheet('Text', body => {
     const T = clipNow().text;
     const ta = document.createElement('textarea'); ta.id = 'textInput'; ta.rows = 2; ta.value = T.content === 'Your text' ? '' : T.content; ta.placeholder = 'Type your text';
-    ta.oninput = () => { editSel(cl => { cl.text.content = ta.value || ' '; }); }; body.append(ta);
+    ta.oninput = () => { editSel(cl => { cl.text.content = ta.value || ' '; delete cl.placeholder; }); }; body.append(ta);
     const pane = document.createElement('div'); pane.className = 'textpane';
     const tabEl = chips([['edit', 'Edit'], ['font', 'Font'], ['style', 'Styles'], ['bubble', 'Bubble'], ['title', 'Titles']].map(([value, label]) => ({ value, label })), textTab, v => { textTab = v; show(); }, 'tabs texttabs');
     body.append(tabEl, pane);
@@ -591,6 +594,69 @@ function textSheet(startTab) {
   }, { className: 'tall' });
 }
 function addTitle() { addText(true); textSheet('title'); }
+/* ---------------- effects + filters (WebGL, shared by preview and export) ---------------- */
+function fxThumbBase(TW, TH, clip) {
+  const c = Object.assign(document.createElement('canvas'), { width: TW, height: TH }), x = c.getContext('2d');
+  const s = clip && clip.type !== 'text' && clip.type !== 'effect' ? player.source(clip) : null, pv = $('#preview');
+  const img = s ? s.img : (S.project.tracks.some(t => t.clips.length) ? pv : sampleArt(TW, TH)[0]), iw = s ? s.w : img.width, ih = s ? s.h : img.height;
+  const k = Math.max(TW / iw, TH / ih); x.fillStyle = '#1b1b24'; x.fillRect(0, 0, TW, TH); try { x.drawImage(img, (TW - iw * k) / 2, (TH - ih * k) / 2, iw * k, ih * k); } catch (e) {}
+  return c;
+}
+function fxTiles(grid, list, base, kind, TW, TH, t = 0.8) {
+  const todo = [...grid.querySelectorAll('.trtile')].filter(b => b.dataset.v !== 'none');
+  const step = () => { const b = todo.shift(); if (!b) return; const x = b.querySelector('canvas').getContext('2d');
+    const r = fx.applyChain(base, TW, TH, [{ kind, id: b.dataset.v, amount: kind === 'filter' ? 1 : .9, t, dur: 3, seed: 'tile' }]); x.drawImage(r || base, 0, 0, TW, TH);
+    if (todo.length) (todo.length % 8 ? step() : requestAnimationFrame(step)); };
+  const nb = grid.querySelector('.trtile[data-v="none"] canvas'); if (nb) nb.getContext('2d').drawImage(base, 0, 0, TW, TH);
+  requestAnimationFrame(step);
+}
+function tileGridOf(items, cur, onPick, cls) {
+  const dpr = Math.min(2, devicePixelRatio || 1), TW = Math.round(68 * dpr), TH = Math.round(68 * dpr);
+  const g = document.createElement('div'); g.className = 'trgrid fxgrid ' + cls;
+  for (const it of items) { const b = document.createElement('button'); b.className = 'trtile' + ((it.id || null) === (cur || null) ? ' on' : ''); b.dataset.v = it.id || 'none'; b.dataset.cat = it.cat || '';
+    b.innerHTML = `<canvas width="${TW}" height="${TH}"></canvas><span>${it.name}</span>`; b.onclick = () => { g.querySelectorAll('.trtile').forEach(x => x.classList.toggle('on', x === b)); onPick(it.id || null); }; g.append(b); }
+  return { g, TW, TH };
+}
+function catFilter(g, cat) { g.querySelectorAll('.trtile').forEach(b => { b.hidden = !!cat && b.dataset.v !== 'none' && b.dataset.cat !== cat; }); }
+/** Effects. mode 'track': add / change an effect clip on the Effects track (applies to everything under it). mode 'clip': effect on the selected photo / video only. */
+function effectsSheet(mode) {
+  const f0 = selected(); const onEffectClip = f0 && f0.clip.type === 'effect';
+  mode = mode || (onEffectClip ? 'track' : 'track'); const editId = onEffectClip ? f0.clip.id : null, clipId = mode === 'clip' && f0 ? f0.clip.id : null;
+  if (!fx.fxAvailable()) { toast('Effects need WebGL2 (please use Chrome)'); return; }
+  let target = editId;   // the effect clip being edited (track mode)
+  const cur = () => clipId ? (find(S.project, clipId)?.clip.effects || [])[0] || null : target ? find(S.project, target)?.clip.effect || null : null;
+  openSheet(clipId ? 'Clip effect' : 'Effects', body => {
+    let cat = '';
+    body.append(Object.assign(document.createElement('p'), { className: 'hint', id: 'fxHint', textContent: clipId ? 'The effect is only on this clip.' : 'Effects sit on the purple Effects track and change everything under them. Drag the ends to set how long.' }));
+    const cats = chips([{ value: '', label: 'All' }, ...fx.EFFECT_CATS.map(([value, label]) => ({ value, label }))], '', v => { cat = v; catFilter(T.g, cat); }, 'tabs fxcats');
+    const T = tileGridOf([{ id: null, name: 'None', cat: '' }, ...fx.EFFECTS], cur()?.id, id => {
+      if (clipId) { editSel(cl => { cl.effects = id ? [{ id, amount: cl.effects?.[0]?.amount ?? fx.DEFAULT_EFFECT_AMOUNT }] : []; if (!cl.effects.length) delete cl.effects; }); }
+      else if (!id) { if (target) { const k = target; live(p => remove(p, k)); target = null; } }
+      else if (target && find(S.project, target)) live(p => { const c = find(p, target).clip; c.effect = { ...c.effect, kind: 'effect', id }; });
+      else { const c = newClip('effect', { dur: 3, effect: { kind: 'effect', id, amount: fx.DEFAULT_EFFECT_AMOUNT } }); live(p => addToKind(p, 'effect', c, Math.min(player.t, Math.max(0, projectDuration(p) - 0.1)))); target = c.id; }
+      amt.hidden = !id; timeline.render(); updateEmpty();
+      const c = clipId ? find(S.project, clipId)?.clip : target ? find(S.project, target)?.clip : null;
+      if (id && c) { const back = player.t; player.playRange(Math.max(c.start, Math.min(player.t, clipEnd(c) - 0.5)), Math.min(clipEnd(c), Math.max(player.t, c.start) + 2), back); }
+    }, 'fxtiles');
+    T.g.id = 'fxGrid';
+    const amt = slider('Intensity', { min: 0, max: 1, step: 0.01, value: cur()?.amount ?? fx.DEFAULT_EFFECT_AMOUNT, fmt: v => Math.round(v * 100) + '%', id: 'fxAmount',
+      onInput: v => { if (clipId) editSel(cl => { if (cl.effects?.[0]) cl.effects[0].amount = v; }); else if (target) live(p => { const c = find(p, target)?.clip; if (c) c.effect.amount = v; }); } });
+    amt.hidden = !cur(); body.append(cats, T.g, amt);
+    fxTiles(T.g, fx.EFFECTS, fxThumbBase(T.TW, T.TH, clipId ? f0.clip : null), 'effect', T.TW, T.TH);
+  }, { className: 'tall' });
+}
+function filterSheet() {
+  const c = selected().clip;
+  openSheet('Filters', body => {
+    const amt = slider('Strength', { min: 0, max: 1, step: 0.01, value: c.filter?.amount ?? 1, fmt: v => Math.round(v * 100) + '%', id: 'filterAmount', onInput: v => editSel(cl => { if (cl.filter) cl.filter.amount = v; }) });
+    let cat = '';
+    const cats = chips([{ value: '', label: 'All' }, ...FILTER_CATS.map(([value, label]) => ({ value, label }))], '', v => { cat = v; catFilter(T.g, cat); }, 'tabs filtercats');
+    const T = tileGridOf(FILTERS.map(f => ({ id: f.id, name: f.name, cat: f.cat })), c.filter?.id ?? null, id => { editSel(cl => { cl.filter = id ? { id, amount: cl.filter?.amount ?? 1 } : null; }); amt.hidden = !id; timeline.render(); }, 'filtertiles');
+    T.g.id = 'filterGrid'; amt.hidden = !c.filter?.id;
+    body.append(cats, T.g, amt);
+    if (fx.fxAvailable()) fxTiles(T.g, FILTERS, fxThumbBase(T.TW, T.TH, c), 'filter', T.TW, T.TH);
+  }, { className: 'tall' });
+}
 /* ---------------- captions (manual: type, paste or import SRT) ---------------- */
 function captionsSheet() {
   const f = selected(), sel = f && !f.clip.caption ? f.clip : null, D = projectDuration(S.project);
@@ -636,6 +702,36 @@ function ratioSheet() {
   });
 }
 function bgSheet() { openSheet('Background', body => body.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: 'Colour' }), swatches(BG_COLORS, S.project.bg, v => live(p => { p.bg = v; })), pro.bgBlurControls())); }
+/* ---------------- Templates ---------------- */
+function templatesSheet() {
+  let cat = '';
+  openSheet('Templates', body => {
+    const tabs = chips([{ value: '', label: 'All' }, ...templates.TEMPLATE_CATS.map(([v, l]) => ({ value: v, label: l }))], '', v => { cat = v; grid.querySelectorAll('.tpl').forEach(b => { b.hidden = !!cat && b.dataset.cat !== cat; }); }, 'tabs tplcats');
+    const grid = document.createElement('div'); grid.className = 'tplgrid'; grid.id = 'tplGrid';
+    for (const T of templates.TEMPLATES) {
+      const b = document.createElement('button'); b.className = 'tpl'; b.dataset.id = T.id; b.dataset.cat = T.cat;
+      const st = T.layers.find(l => l.k === 'sticker'), ti = T.layers.find(l => l.k === 'text');
+      b.innerHTML = `<span class="tplpic" style="background-image:url(lib/templates/${T.scenes[0].bg}.webp)">${st ? `<img loading="lazy" alt="" src="lib/stickers/${st.id}.webp">` : ''}${ti ? `<b>${esc(ti.content.split('\n')[0])}</b>` : ''}<i>${Math.round(templates.templateDur(T))}s</i></span><span class="tplname">${esc(T.name)}</span><span class="tpldesc">${esc(T.desc)}</span>`;
+      b.onclick = () => useTemplate(T); grid.append(b);
+    }
+    body.append(tabs, grid, Object.assign(document.createElement('p'), { className: 'hint', textContent: 'A template makes a ready project. Then tap a picture marked “Replace”, and tap Replace me to use your own photo or video. Tap any words to change them.' }));
+  }, { className: 'tall', gesture: false });
+}
+const busy = (on, txt) => { $('#busy').hidden = !on; if (txt) $('#busyText').textContent = txt; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+async function useTemplate(T) {
+  const empty = !S.project.tracks.some(t => t.clips.length);
+  if (!empty && !confirm(`Start “${T.name}”? Your current project will be replaced.`)) return;
+  closeSheet(); player.pause(); busy(true, 'Making your project…');
+  try {
+    await reset(); await loadAll(new Set()); player.gc();
+    const p = await templates.buildTemplate({ media, importFile }, T, u => { $('#busyText').textContent = `Making your project… ${Math.round(u * 100)}%`; });
+    await ensureProjectFonts(p); await useProject(p); player.gc(); timeline.render(); player.seek(0); showTime();
+    const n = templates.placeholders(p).length;
+    toast(n ? `Template ready: replace the ${n} marked pictures with your own` : 'Template ready: tap the words to change them');
+  } catch (e) { console.warn(e); toast('Could not make the template (connect to the internet once)'); }
+  finally { busy(false); }
+}
 function menuSheet() {
   openSheet('Emmavengers Studio', async body => {
     body.innerHTML = `<div class="menu">

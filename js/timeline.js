@@ -9,6 +9,7 @@ import { voiceFxById } from './audiofx.js';
 import { transitionById } from './transitions.js';
 import { media, TILE, PEAK_RATE } from './media.js';
 import { icon } from './icons.js';
+import { effectById, filterGL } from './effects.js';
 
 const MIN_PPS = 4, MAX_PPS = 600, LONG_PRESS = 350, SNAP_PX = 10;
 const fmtS = s => s < 10 ? s.toFixed(1) + 's' : s < 60 ? Math.round(s) + 's' : Math.floor(s / 60) + ':' + String(Math.round(s % 60)).padStart(2, '0');
@@ -90,14 +91,16 @@ export class Timeline {
     }
     const badges = [];
     if (c.type === 'text') badges.push(`<span class="ctext">${esc(c.text.content.split('\n')[0] || 'Text')}</span>`);
+    else if (c.type === 'effect') { const e = c.effect && (c.effect.kind === 'filter' ? filterGL(c.effect.id) : effectById(c.effect.id)); badges.push(`<span class="ctext">${icon('effects', 12)} ${esc(e ? e.name : 'Effect')}</span>`); }
     else if (c.type === 'audio') badges.push(`<span class="cname">${esc(rec ? rec.name : 'Audio')}</span>`);
     if (S.sel === c.id || c.type === 'video') badges.push(`<span class="dur">${fmtS(d)}</span>`);
     if (c.curve) badges.push(`<span class="spd">curve</span>`); else if (c.speed !== 1) badges.push(`<span class="spd">${c.speed}x</span>`);
     if (hasSource(c) && (c.volume === 0 || c.muteAudio)) badges.push(`<span class="spd">${icon('volume', 11)}✕</span>`);
     if (c.voice && c.voice.enhance) badges.push('<span class="spd" title="Enhance voice">✨</span>');
     if (c.voice && c.voice.fx && voiceFxById(c.voice.fx)) badges.push(`<span class="spd" title="${voiceFxById(c.voice.fx).name}">${voiceFxById(c.voice.fx).emoji}</span>`);
-    if (c.filter && c.filter.id) badges.push(`<span class="spd">FX</span>`);
-    if (!rec && c.type !== 'text') badges.push('<span class="spd">missing</span>');
+    if ((c.filter && c.filter.id) || (c.effects && c.effects.length)) badges.push(`<span class="spd">FX</span>`);
+    if (c.placeholder && c.placeholder !== 'text') badges.push(`<span class="ph" title="${esc(c.placeholder)}">Replace</span>`);
+    if (!rec && c.type !== 'text' && c.type !== 'effect') badges.push('<span class="spd">missing</span>');
     el.insertAdjacentHTML('beforeend', `<div class="badges">${badges.join('')}</div>`);
     if (c.anim) { const { di, dO } = animSpans(c, d), lp = c.anim[loopKind(c)];
       if (di > 0) el.insertAdjacentHTML('beforeend', `<i class="anin" style="width:${(di * this.pps).toFixed(1)}px"></i>`);

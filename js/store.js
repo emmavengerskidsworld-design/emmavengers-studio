@@ -36,5 +36,11 @@ export async function reset() {
   if (old) await db.del('projects', old.id);
   await save(); changed(); emit('history');
 }
+/** Make p the current project (a template, for example): replaces the current one, fresh undo history. */
+export async function useProject(p) {
+  const old = S.project; S.project = normalize(p); hist.u = []; hist.r = []; select(null);
+  if (old && old.id !== p.id) await db.del('projects', old.id);
+  await save(); changed(); emit('history');
+}
 addEventListener('pagehide', () => save());
 document.addEventListener('visibilitychange', () => document.hidden && save());

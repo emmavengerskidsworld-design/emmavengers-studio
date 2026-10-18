@@ -1,0 +1,1245 @@
+[
+ {
+  "cat": "letters",
+  "name": "Letter A",
+  "file": "emma/letters/letter-a.webp",
+  "w": 353,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter B",
+  "file": "emma/letters/letter-b.webp",
+  "w": 384,
+  "h": 382
+ },
+ {
+  "cat": "letters",
+  "name": "Letter C",
+  "file": "emma/letters/letter-c.webp",
+  "w": 270,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter D",
+  "file": "emma/letters/letter-d.webp",
+  "w": 288,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter E",
+  "file": "emma/letters/letter-e.webp",
+  "w": 289,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter F",
+  "file": "emma/letters/letter-f.webp",
+  "w": 384,
+  "h": 229
+ },
+ {
+  "cat": "letters",
+  "name": "Letter G",
+  "file": "emma/letters/letter-g.webp",
+  "w": 285,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter H",
+  "file": "emma/letters/letter-h.webp",
+  "w": 384,
+  "h": 296
+ },
+ {
+  "cat": "letters",
+  "name": "Letter I",
+  "file": "emma/letters/letter-i.webp",
+  "w": 366,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter J",
+  "file": "emma/letters/letter-j.webp",
+  "w": 242,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter K",
+  "file": "emma/letters/letter-k.webp",
+  "w": 300,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter L",
+  "file": "emma/letters/letter-l.webp",
+  "w": 293,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter M",
+  "file": "emma/letters/letter-m.webp",
+  "w": 305,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter N",
+  "file": "emma/letters/letter-n.webp",
+  "w": 384,
+  "h": 261
+ },
+ {
+  "cat": "letters",
+  "name": "Letter O",
+  "file": "emma/letters/letter-o.webp",
+  "w": 384,
+  "h": 273
+ },
+ {
+  "cat": "letters",
+  "name": "Letter P",
+  "file": "emma/letters/letter-p.webp",
+  "w": 341,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter Q",
+  "file": "emma/letters/letter-q.webp",
+  "w": 384,
+  "h": 274
+ },
+ {
+  "cat": "letters",
+  "name": "Letter R",
+  "file": "emma/letters/letter-r.webp",
+  "w": 211,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter S",
+  "file": "emma/letters/letter-s.webp",
+  "w": 384,
+  "h": 383
+ },
+ {
+  "cat": "letters",
+  "name": "Letter T",
+  "file": "emma/letters/letter-t.webp",
+  "w": 315,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter U",
+  "file": "emma/letters/letter-u.webp",
+  "w": 384,
+  "h": 283
+ },
+ {
+  "cat": "letters",
+  "name": "Letter V",
+  "file": "emma/letters/letter-v.webp",
+  "w": 359,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter W",
+  "file": "emma/letters/letter-w.webp",
+  "w": 384,
+  "h": 330
+ },
+ {
+  "cat": "letters",
+  "name": "Letter X",
+  "file": "emma/letters/letter-x.webp",
+  "w": 371,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter Y",
+  "file": "emma/letters/letter-y.webp",
+  "w": 276,
+  "h": 384
+ },
+ {
+  "cat": "letters",
+  "name": "Letter Z",
+  "file": "emma/letters/letter-z.webp",
+  "w": 335,
+  "h": 384
+ },
+ {
+  "cat": "counting",
+  "name": "apple",
+  "file": "emma/counting/apple.webp",
+  "w": 353,
+  "h": 384
+ },
+ {
+  "cat": "counting",
+  "name": "ball",
+  "file": "emma/counting/ball.webp",
+  "w": 384,
+  "h": 382
+ },
+ {
+  "cat": "counting",
+  "name": "balloon",
+  "file": "emma/counting/balloon.webp",
+  "w": 207,
+  "h": 384
+ },
+ {
+  "cat": "counting",
+  "name": "banana",
+  "file": "emma/counting/banana.webp",
+  "w": 384,
+  "h": 198
+ },
+ {
+  "cat": "counting",
+  "name": "butterfly",
+  "file": "emma/counting/butterfly.webp",
+  "w": 384,
+  "h": 278
+ },
+ {
+  "cat": "counting",
+  "name": "duck",
+  "file": "emma/counting/duck.webp",
+  "w": 384,
+  "h": 367
+ },
+ {
+  "cat": "counting",
+  "name": "egg",
+  "file": "emma/counting/egg.webp",
+  "w": 276,
+  "h": 384
+ },
+ {
+  "cat": "counting",
+  "name": "fish",
+  "file": "emma/counting/fish.webp",
+  "w": 384,
+  "h": 229
+ },
+ {
+  "cat": "counting",
+  "name": "star",
+  "file": "emma/counting/star.webp",
+  "w": 384,
+  "h": 350
+ },
+ {
+  "cat": "animals",
+  "name": "crocodile",
+  "file": "emma/animals/crocodile.webp",
+  "w": 384,
+  "h": 203
+ },
+ {
+  "cat": "animals",
+  "name": "elephant",
+  "file": "emma/animals/elephant.webp",
+  "w": 384,
+  "h": 367
+ },
+ {
+  "cat": "animals",
+  "name": "flamingo",
+  "file": "emma/animals/flamingo.webp",
+  "w": 176,
+  "h": 384
+ },
+ {
+  "cat": "animals",
+  "name": "giraffe",
+  "file": "emma/animals/giraffe.webp",
+  "w": 184,
+  "h": 384
+ },
+ {
+  "cat": "animals",
+  "name": "gorilla",
+  "file": "emma/animals/gorilla.webp",
+  "w": 352,
+  "h": 384
+ },
+ {
+  "cat": "animals",
+  "name": "hippopotamus",
+  "file": "emma/animals/hippopotamus.webp",
+  "w": 296,
+  "h": 384
+ },
+ {
+  "cat": "animals",
+  "name": "leopard",
+  "file": "emma/animals/leopard.webp",
+  "w": 358,
+  "h": 384
+ },
+ {
+  "cat": "animals",
+  "name": "lion",
+  "file": "emma/animals/lion.webp",
+  "w": 293,
+  "h": 384
+ },
+ {
+  "cat": "animals",
+  "name": "rhinoceros",
+  "file": "emma/animals/rhinoceros.webp",
+  "w": 384,
+  "h": 326
+ },
+ {
+  "cat": "animals",
+  "name": "zebra",
+  "file": "emma/animals/zebra.webp",
+  "w": 335,
+  "h": 384
+ },
+ {
+  "cat": "flags",
+  "name": "cameroon flag",
+  "file": "emma/flags/cameroon-flag.webp",
+  "w": 384,
+  "h": 326
+ },
+ {
+  "cat": "food",
+  "name": "cameroon food",
+  "file": "emma/food/cameroon-food.webp",
+  "w": 384,
+  "h": 248
+ },
+ {
+  "cat": "flags",
+  "name": "ghana flag",
+  "file": "emma/flags/ghana-flag.webp",
+  "w": 384,
+  "h": 326
+ },
+ {
+  "cat": "food",
+  "name": "ghana food",
+  "file": "emma/food/ghana-food.webp",
+  "w": 384,
+  "h": 210
+ },
+ {
+  "cat": "flags",
+  "name": "kenya flag",
+  "file": "emma/flags/kenya-flag.webp",
+  "w": 384,
+  "h": 326
+ },
+ {
+  "cat": "food",
+  "name": "kenya food",
+  "file": "emma/food/kenya-food.webp",
+  "w": 384,
+  "h": 213
+ },
+ {
+  "cat": "flags",
+  "name": "nigeria flag",
+  "file": "emma/flags/nigeria-flag.webp",
+  "w": 384,
+  "h": 326
+ },
+ {
+  "cat": "food",
+  "name": "nigeria food",
+  "file": "emma/food/nigeria-food.webp",
+  "w": 384,
+  "h": 299
+ },
+ {
+  "cat": "flags",
+  "name": "south africa flag",
+  "file": "emma/flags/south-africa-flag.webp",
+  "w": 384,
+  "h": 326
+ },
+ {
+  "cat": "food",
+  "name": "south africa food",
+  "file": "emma/food/south-africa-food.webp",
+  "w": 384,
+  "h": 222
+ },
+ {
+  "cat": "places",
+  "name": "abc",
+  "file": "emma/places/abc.webp",
+  "w": 384,
+  "h": 151
+ },
+ {
+  "cat": "places",
+  "name": "animalquiz",
+  "file": "emma/places/animalquiz.webp",
+  "w": 384,
+  "h": 232
+ },
+ {
+  "cat": "places",
+  "name": "count",
+  "file": "emma/places/count.webp",
+  "w": 384,
+  "h": 279
+ },
+ {
+  "cat": "places",
+  "name": "countries",
+  "file": "emma/places/countries.webp",
+  "w": 298,
+  "h": 384
+ },
+ {
+  "cat": "places",
+  "name": "flagquiz",
+  "file": "emma/places/flagquiz.webp",
+  "w": 334,
+  "h": 384
+ },
+ {
+  "cat": "places",
+  "name": "house",
+  "file": "emma/places/house.webp",
+  "w": 384,
+  "h": 302
+ },
+ {
+  "cat": "places",
+  "name": "hunt",
+  "file": "emma/places/hunt.webp",
+  "w": 384,
+  "h": 334
+ },
+ {
+  "cat": "places",
+  "name": "numbers",
+  "file": "emma/places/numbers.webp",
+  "w": 384,
+  "h": 336
+ },
+ {
+  "cat": "places",
+  "name": "prayer",
+  "file": "emma/places/prayer.webp",
+  "w": 378,
+  "h": 384
+ },
+ {
+  "cat": "places",
+  "name": "safari",
+  "file": "emma/places/safari.webp",
+  "w": 384,
+  "h": 260
+ },
+ {
+  "cat": "characters",
+  "name": "bedtime",
+  "file": "emma/characters/bedtime.webp",
+  "w": 384,
+  "h": 332
+ },
+ {
+  "cat": "characters",
+  "name": "meal",
+  "file": "emma/characters/meal.webp",
+  "w": 384,
+  "h": 349
+ },
+ {
+  "cat": "characters",
+  "name": "morning",
+  "file": "emma/characters/morning.webp",
+  "w": 184,
+  "h": 384
+ },
+ {
+  "cat": "characters",
+  "name": "thanks",
+  "file": "emma/characters/thanks.webp",
+  "w": 131,
+  "h": 384
+ },
+ {
+  "cat": "house",
+  "name": "cup",
+  "file": "emma/house/cup.webp",
+  "w": 336,
+  "h": 233,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "spoon",
+  "file": "emma/house/spoon.webp",
+  "w": 384,
+  "h": 128,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "plate",
+  "file": "emma/house/plate.webp",
+  "w": 384,
+  "h": 146,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "bowl",
+  "file": "emma/house/bowl.webp",
+  "w": 384,
+  "h": 219,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "pot",
+  "file": "emma/house/pot.webp",
+  "w": 384,
+  "h": 283,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "frying pan",
+  "file": "emma/house/frying-pan.webp",
+  "w": 384,
+  "h": 232,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "kettle",
+  "file": "emma/house/kettle.webp",
+  "w": 384,
+  "h": 374,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "fridge",
+  "file": "emma/house/fridge.webp",
+  "w": 384,
+  "h": 331,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "stove",
+  "file": "emma/house/stove.webp",
+  "w": 374,
+  "h": 384,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "microwave",
+  "file": "emma/house/microwave.webp",
+  "w": 384,
+  "h": 236,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "sink",
+  "file": "emma/house/sink.webp",
+  "w": 384,
+  "h": 105,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "blender",
+  "file": "emma/house/blender.webp",
+  "w": 214,
+  "h": 384,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "toaster",
+  "file": "emma/house/toaster.webp",
+  "w": 384,
+  "h": 363,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "jug",
+  "file": "emma/house/jug.webp",
+  "w": 305,
+  "h": 384,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "ladle",
+  "file": "emma/house/ladle.webp",
+  "w": 384,
+  "h": 254,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "rolling pin",
+  "file": "emma/house/rolling-pin.webp",
+  "w": 384,
+  "h": 154,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "cutting board",
+  "file": "emma/house/cutting-board.webp",
+  "w": 384,
+  "h": 139,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "apron",
+  "file": "emma/house/apron.webp",
+  "w": 264,
+  "h": 384,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "tray",
+  "file": "emma/house/tray.webp",
+  "w": 384,
+  "h": 185,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "dish rack",
+  "file": "emma/house/dish-rack.webp",
+  "w": 384,
+  "h": 245,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "grater",
+  "file": "emma/house/grater.webp",
+  "w": 384,
+  "h": 345,
+  "room": "kitchen"
+ },
+ {
+  "cat": "house",
+  "name": "bed",
+  "file": "emma/house/bed.webp",
+  "w": 384,
+  "h": 175,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "pillow",
+  "file": "emma/house/pillow.webp",
+  "w": 384,
+  "h": 313,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "blanket",
+  "file": "emma/house/blanket.webp",
+  "w": 384,
+  "h": 216,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "lamp",
+  "file": "emma/house/lamp.webp",
+  "w": 301,
+  "h": 384,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "wardrobe",
+  "file": "emma/house/wardrobe.webp",
+  "w": 320,
+  "h": 384,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "dresser",
+  "file": "emma/house/dresser.webp",
+  "w": 384,
+  "h": 262,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "mirror",
+  "file": "emma/house/mirror.webp",
+  "w": 222,
+  "h": 384,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "alarm clock",
+  "file": "emma/house/alarm-clock.webp",
+  "w": 294,
+  "h": 384,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "teddy bear",
+  "file": "emma/house/teddy-bear.webp",
+  "w": 332,
+  "h": 384,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "nightstand",
+  "file": "emma/house/nightstand.webp",
+  "w": 343,
+  "h": 304,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "curtain",
+  "file": "emma/house/curtain.webp",
+  "w": 380,
+  "h": 384,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "rug",
+  "file": "emma/house/rug.webp",
+  "w": 384,
+  "h": 191,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "hanger",
+  "file": "emma/house/hanger.webp",
+  "w": 384,
+  "h": 290,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "pajamas",
+  "file": "emma/house/pajamas.webp",
+  "w": 384,
+  "h": 233,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "slippers",
+  "file": "emma/house/slippers.webp",
+  "w": 384,
+  "h": 186,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "quilt",
+  "file": "emma/house/quilt.webp",
+  "w": 384,
+  "h": 206,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "photo frame",
+  "file": "emma/house/photo-frame.webp",
+  "w": 384,
+  "h": 315,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "toy box",
+  "file": "emma/house/toy-box.webp",
+  "w": 384,
+  "h": 348,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "desk",
+  "file": "emma/house/desk.webp",
+  "w": 384,
+  "h": 285,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "chair",
+  "file": "emma/house/chair.webp",
+  "w": 326,
+  "h": 285,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "drawer",
+  "file": "emma/house/drawer.webp",
+  "w": 384,
+  "h": 244,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "mattress",
+  "file": "emma/house/mattress.webp",
+  "w": 384,
+  "h": 128,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "crib",
+  "file": "emma/house/crib.webp",
+  "w": 384,
+  "h": 259,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "clock",
+  "file": "emma/house/clock.webp",
+  "w": 341,
+  "h": 348,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "fan",
+  "file": "emma/house/fan.webp",
+  "w": 256,
+  "h": 384,
+  "room": "bedroom"
+ },
+ {
+  "cat": "house",
+  "name": "toothbrush",
+  "file": "emma/house/toothbrush.webp",
+  "w": 132,
+  "h": 384,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "toothpaste",
+  "file": "emma/house/toothpaste.webp",
+  "w": 172,
+  "h": 384,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "soap",
+  "file": "emma/house/soap.webp",
+  "w": 377,
+  "h": 202,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "towel",
+  "file": "emma/house/towel.webp",
+  "w": 384,
+  "h": 234,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "bathtub",
+  "file": "emma/house/bathtub.webp",
+  "w": 384,
+  "h": 248,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "shower",
+  "file": "emma/house/shower.webp",
+  "w": 384,
+  "h": 231,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "toilet",
+  "file": "emma/house/toilet.webp",
+  "w": 324,
+  "h": 384,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "shampoo",
+  "file": "emma/house/shampoo.webp",
+  "w": 212,
+  "h": 384,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "hairbrush",
+  "file": "emma/house/hairbrush.webp",
+  "w": 381,
+  "h": 309,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "washcloth",
+  "file": "emma/house/washcloth.webp",
+  "w": 384,
+  "h": 212,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "rubber duck",
+  "file": "emma/house/rubber-duck.webp",
+  "w": 306,
+  "h": 311,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "toilet paper",
+  "file": "emma/house/toilet-paper.webp",
+  "w": 349,
+  "h": 279,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "bath mat",
+  "file": "emma/house/bath-mat.webp",
+  "w": 384,
+  "h": 225,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "comb",
+  "file": "emma/house/comb.webp",
+  "w": 374,
+  "h": 286,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "bathrobe",
+  "file": "emma/house/bathrobe.webp",
+  "w": 308,
+  "h": 384,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "nail clippers",
+  "file": "emma/house/nail-clippers.webp",
+  "w": 384,
+  "h": 338,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "dental floss",
+  "file": "emma/house/dental-floss.webp",
+  "w": 313,
+  "h": 315,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "bubble bath",
+  "file": "emma/house/bubble-bath.webp",
+  "w": 251,
+  "h": 384,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "lotion",
+  "file": "emma/house/lotion.webp",
+  "w": 215,
+  "h": 384,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "faucet",
+  "file": "emma/house/faucet.webp",
+  "w": 348,
+  "h": 384,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "sponge",
+  "file": "emma/house/sponge.webp",
+  "w": 384,
+  "h": 305,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "plunger",
+  "file": "emma/house/plunger.webp",
+  "w": 196,
+  "h": 384,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "tissue",
+  "file": "emma/house/tissue.webp",
+  "w": 384,
+  "h": 374,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "laundry basket",
+  "file": "emma/house/laundry-basket.webp",
+  "w": 384,
+  "h": 259,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "mouthwash",
+  "file": "emma/house/mouthwash.webp",
+  "w": 186,
+  "h": 384,
+  "room": "bathroom"
+ },
+ {
+  "cat": "house",
+  "name": "sofa",
+  "file": "emma/house/sofa.webp",
+  "w": 384,
+  "h": 167,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "TV",
+  "file": "emma/house/tv.webp",
+  "w": 384,
+  "h": 298,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "remote",
+  "file": "emma/house/remote.webp",
+  "w": 201,
+  "h": 384,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "coffee table",
+  "file": "emma/house/coffee-table.webp",
+  "w": 384,
+  "h": 198,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "armchair",
+  "file": "emma/house/armchair.webp",
+  "w": 384,
+  "h": 331,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "cushion",
+  "file": "emma/house/cushion.webp",
+  "w": 384,
+  "h": 333,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "bookshelf",
+  "file": "emma/house/bookshelf.webp",
+  "w": 294,
+  "h": 384,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "floor lamp",
+  "file": "emma/house/floor-lamp.webp",
+  "w": 181,
+  "h": 384,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "fireplace",
+  "file": "emma/house/fireplace.webp",
+  "w": 384,
+  "h": 298,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "speaker",
+  "file": "emma/house/speaker.webp",
+  "w": 380,
+  "h": 329,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "vase",
+  "file": "emma/house/vase.webp",
+  "w": 312,
+  "h": 384,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "ottoman",
+  "file": "emma/house/ottoman.webp",
+  "w": 384,
+  "h": 245,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "plant",
+  "file": "emma/house/plant.webp",
+  "w": 353,
+  "h": 384,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "chandelier",
+  "file": "emma/house/chandelier.webp",
+  "w": 344,
+  "h": 384,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "board game",
+  "file": "emma/house/board-game.webp",
+  "w": 314,
+  "h": 319,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "magazine",
+  "file": "emma/house/magazine.webp",
+  "w": 384,
+  "h": 205,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "coat rack",
+  "file": "emma/house/coat-rack.webp",
+  "w": 275,
+  "h": 384,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "window",
+  "file": "emma/house/window.webp",
+  "w": 384,
+  "h": 353,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "door",
+  "file": "emma/house/door.webp",
+  "w": 359,
+  "h": 384,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "throw pillow",
+  "file": "emma/house/throw-pillow.webp",
+  "w": 384,
+  "h": 167,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "side table",
+  "file": "emma/house/side-table.webp",
+  "w": 384,
+  "h": 278,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "ceiling fan",
+  "file": "emma/house/ceiling-fan.webp",
+  "w": 384,
+  "h": 229,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "picture",
+  "file": "emma/house/picture.webp",
+  "w": 359,
+  "h": 305,
+  "room": "living room"
+ },
+ {
+  "cat": "house",
+  "name": "stool",
+  "file": "emma/house/stool.webp",
+  "w": 280,
+  "h": 274,
+  "room": "living room"
+ }
+]
