@@ -93,7 +93,7 @@ export class Player {
     this.sync(this.t); this.draw(); this.o.onState && this.o.onState(false);
   }
   /** Play just a section (used to preview a transition), then stop. */
-  playRange(a, b) { this.pause(); this.seek(a); this.stopAt = b; this.play(); }
+  playRange(a, b, back = null) { this.pause(); this.seek(a); this.stopAt = b; this._back = back; this.play(); }
   toggle() { this.playing ? this.pause() : this.play(); }
   seek(t, scrub = false) {
     const d = this.duration; this.t = Math.max(0, Math.min(d || 0, t)); if (scrub) this._lastSeek = performance.now();
@@ -105,7 +105,7 @@ export class Player {
     if (this.stalled()) { this.t0 = this.t; this.n0 = now; }
     else this.t = this.t0 + (now - this.n0) / 1000;
     const d = this.stopAt != null ? Math.min(this.duration, this.stopAt) : this.duration;
-    if (this.t >= d) { this.stopAt = null; this.t = d; this.sync(this.t); this.draw(); this.o.onTime && this.o.onTime(this.t); this.pause(); this.o.onEnd && this.o.onEnd(); return; }
+    if (this.t >= d) { const back = this.stopAt != null ? this._back : null; this.stopAt = null; this._back = null; this.t = d; this.sync(this.t); this.draw(); this.o.onTime && this.o.onTime(this.t); this.pause(); this.o.onEnd && this.o.onEnd(); if (back != null) { this.seek(back); this.o.onTime && this.o.onTime(this.t); } return; }
     this.sync(this.t); this.draw(); this.o.onTime && this.o.onTime(this.t);
     this._raf = requestAnimationFrame(() => this.loop());
   }

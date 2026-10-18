@@ -101,6 +101,8 @@ export function split(p, clipId, t) {
     A.push({ t: round(local), v, ease: 'linear' }); B.unshift({ t: 0, v, ease: prev ? prev.ease || 'linear' : 'linear' });
     c.keyframes[k] = A; b.keyframes[k] = B;
   }
+  // animations: the In stays on the first part, the Out moves to the second part, a loop keeps running on both
+  if (c.anim) { if (c.anim.out) delete c.anim.out; if (b.anim && b.anim.in) delete b.anim.in; }
   f.track.clips.splice(f.index + 1, 0, b);
   normalize(p); return b;
 }

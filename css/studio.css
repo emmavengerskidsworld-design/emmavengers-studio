@@ -174,3 +174,12 @@ body.has-sel #addMainBtn{display:none}
 .ex-size{margin:4px 0 0;font-size:14px;color:#dde}
 .ex-hd{display:flex;align-items:center;gap:8px;padding:10px;border-radius:12px;background:#2a2410;border:1px solid #6b5517;font-size:13px;color:#f3e7c2;margin-top:6px}
 .ex-hd[hidden]{display:none}.ex-hd .ico{color:var(--accent);flex:none}.ex-hd span{flex:1}
+
+/* animations */
+.anin,.anout{position:absolute;top:2px;bottom:2px;pointer-events:none;z-index:1;border-radius:5px}
+.anin{left:0;background:linear-gradient(90deg,#ffcc33aa,#ffcc3300);border-left:2px solid #ffcc33}
+.anout{right:0;background:linear-gradient(270deg,#5fd0ffaa,#5fd0ff00);border-right:2px solid #5fd0ff}
+.anloop{position:absolute;right:4px;bottom:2px;font-style:normal;font-size:12px;line-height:14px;color:#fff;background:#0009;border-radius:4px;padding:0 4px;pointer-events:none;z-index:2}
+.chips.animtabs .chipbtn.set::after{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-left:6px;vertical-align:middle}
+.sh-body>*{flex-shrink:0}
+.trgrid.angrid{max-height:min(46vh,360px);overflow-y:auto;padding:2px;overscroll-behavior:contain}

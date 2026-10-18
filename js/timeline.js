@@ -1,5 +1,6 @@
 /* CapCut-style timeline: fixed centre playhead, horizontally scrolling tracks, pinch / buttons to zoom.
    Tap = select, drag edges = trim, long-press (touch) or drag (mouse) = move / reorder. */
+import { animSpans, loopKind } from './animations.js';
 import { S, live, begin, end, select } from './store.js';
 import { TRACK_KINDS } from './registry.js';
 import { clipDur, clipEnd, projectDuration, hasSource, reorder, moveTo, trim, find, kfTimes } from './project.js';
@@ -94,6 +95,10 @@ export class Timeline {
     if (c.filter && c.filter.id) badges.push(`<span class="spd">FX</span>`);
     if (!rec && c.type !== 'text') badges.push('<span class="spd">missing</span>');
     el.insertAdjacentHTML('beforeend', `<div class="badges">${badges.join('')}</div>`);
+    if (c.anim) { const { di, dO } = animSpans(c, d), lp = c.anim[loopKind(c)];
+      if (di > 0) el.insertAdjacentHTML('beforeend', `<i class="anin" style="width:${(di * this.pps).toFixed(1)}px"></i>`);
+      if (dO > 0) el.insertAdjacentHTML('beforeend', `<i class="anout" style="width:${(dO * this.pps).toFixed(1)}px"></i>`);
+      if (lp && lp.id) el.insertAdjacentHTML('beforeend', '<i class="anloop">∞</i>'); }
     const kts = kfTimes(c); if (kts.length) el.insertAdjacentHTML('beforeend', kts.filter(k => k <= d + 1e-6).map(k => `<i class="kfd" style="left:${(k * this.pps).toFixed(1)}px"></i>`).join(''));
     if (S.sel === c.id) el.insertAdjacentHTML('beforeend', '<div class="h l" data-edge="left"><i></i></div><div class="h r" data-edge="right"><i></i></div>');
     return el;

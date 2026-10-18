@@ -29,6 +29,7 @@ const P = {
   kfon: '<path d="M12 3l8 9-8 9-8-9z" fill="currentColor"/>',
   kfprev: '<path d="M14 6l-6 6 6 6"/><path d="M19 9l-3 3 3 3z" fill="currentColor"/>',
   kfnext: '<path d="M10 6l6 6-6 6"/><path d="M5 9l3 3-3 3z" fill="currentColor"/>',
+  anim: '<circle cx="8" cy="12" r="4"/><path d="M14 8.5a4 4 0 0 1 0 7M18 6.5a7 7 0 0 1 0 11"/>',
   transition: '<path d="M3 5l8 7-8 7zM21 5l-8 7 8 7z"/>',
   curve: '<path d="M3 20C10 20 14 4 21 4"/><circle cx="3" cy="20" r="1.5" fill="currentColor"/><circle cx="21" cy="4" r="1.5" fill="currentColor"/>',
   kenburns: '<rect x="3" y="5" width="18" height="14" rx="2"/><rect x="8" y="9" width="8" height="6" rx="1"/><path d="M3 5l5 4M21 5l-5 4M3 19l5-4M21 19l-5-4"/>',

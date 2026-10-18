@@ -93,13 +93,124 @@ async def test_transitions(b):
         a = await still(pg, t - 0.55); ok(psnr_lo(a, ex) < 25, f'{nm}: midpoint frame is mid-effect, not the outgoing clip')
     ok(not pg.errs, f'no console errors {pg.errs[:3]}'); await ctx.close()
 
+async def test_anim_registries(b):
+    log('== clip + text animation registries (every entry)')
+    ctx, pg = await new_page(b)
+    r = await P(pg, PROBE + '.then(m=>({p:m.probeAnims(), t:m.timeAnims()}))'); res, tms = r['p']['res'], r['t']
+    ok(not r['p']['errors'], f'every animation renders without error {r["p"]["errors"][:3]}')
+    cnt = {}
+    for k, v in res.items(): cnt.setdefault((v['type'], v['kind']), []).append(v['name'])
+    for (ty, kd), names in cnt.items(): log(f'       {"clip" if ty == "image" else "text"} {kd} ({len(names)}): {", ".join(names)}')
+    nclip = sum(len(v) for (ty, _), v in cnt.items() if ty == 'image'); ntext = sum(len(v) for (ty, _), v in cnt.items() if ty == 'text')
+    ok(nclip >= 60, f'{nclip} clip animations (In {len(cnt[("image","in")])} / Out {len(cnt[("image","out")])} / Combo {len(cnt[("image","combo")])})')
+    ok(ntext >= 40, f'{ntext} text animations (In {len(cnt[("text","in")])} / Out {len(cnt[("text","out")])} / Loop {len(cnt[("text","loop")])})')
+    flat = [k for k, v in res.items() if v['mid'] < 0.9]; ok(not flat, f'every animation visibly changes the picture mid-way {flat}')
+    ends = [k for k, v in res.items() if v['kind'] in ('in', 'out') and v['end'] > 0.5]; ok(not ends, f'In ends / Out starts on the untouched picture {ends}')
+    after = [k for k, v in res.items() if v['kind'] in ('in', 'out') and v['after'] > 0.01]; ok(not after, f'outside the In / Out time the clip is untouched {after}')
+    per = [k for k, v in res.items() if v['kind'] in ('combo', 'loop') and v['end'] > 0.5]; ok(not per, f'Combo / Loop animations repeat seamlessly (cycle start == cycle end) {per}')
+    slow = sorted(tms.items(), key=lambda x: -x[1])[:4]; log(f'       slowest draw at 540x960: {[(k, round(v, 1)) for k, v in slow]}')
+    ok(slow[0][1] < 40, f'every animation draws in < 40 ms at 540x960 on this box (worst {slow[0][0]} {slow[0][1]:.1f} ms)')
+    ok(not pg.errs, f'no console errors {pg.errs[:3]}'); await ctx.close()
+
+async def pick_anim(pg, tab, aid, dur=None):
+    await pg.click(f'.chips.animtabs .chipbtn[data-v="{tab}"]'); await pg.wait_for_timeout(80); await pg.click(f'.angrid .trtile[data-an="{aid}"]'); await pg.wait_for_timeout(80)
+    if dur is not None: await P(pg, f"(()=>{{const r=document.querySelector('#anDur');r.value={dur};r.dispatchEvent(new Event('input'))}})()")
+
+async def test_anim_editor(b):
+    log('== Animation panel (clip): tabs, tiles, duration, undo, autosave, split')
+    ctx, pg = await new_page(b)
+    await pg.set_input_files('#fileMedia', [str(FX / 'sharp.png'), str(FX / 'image.png')])
+    await pg.wait_for_function('studio.S.project.tracks.find(t=>t.kind==="main").clips.length===2', timeout=20000)
+    mc = await main_clips(pg); c0 = mc[0]['id']
+    await P(pg, f'studio.select("{c0}")'); await pg.wait_for_timeout(150)
+    ok(await pg.locator('#toolbar .tool[data-tool="anim"]').count() == 1, 'clip toolbar has Animation')
+    await pg.click('#toolbar .tool[data-tool="anim"]'); await pg.wait_for_selector('.angrid .trtile')
+    tabs = await P(pg, "[...document.querySelectorAll('.chips.animtabs .chipbtn')].map(b=>b.textContent)"); ok(tabs == ['In', 'Out', 'Combo'], f'tabs {tabs}')
+    nin = await pg.locator('.angrid .trtile').count(); ok(nin >= 26, f'In tab: None + {nin - 1} animated tiles')
+    anim = await P(pg, "(async()=>{const c=document.querySelector('.angrid .trtile[data-an=\"zoomIn\"] canvas');const a=c.toDataURL();await new Promise(r=>setTimeout(r,300));return a!==c.toDataURL()})()")
+    ok(anim, 'tiles are animated (drawn by the real renderer)')
+    ok(await P(pg, "document.querySelector('#anDur').closest('label').hidden"), 'duration slider hidden until an animation is picked')
+    await pick_anim(pg, 'in', 'zoomIn', 1.0)
+    await pick_anim(pg, 'out', 'slideL', 0.8)
+    await pick_anim(pg, 'combo', 'pulse', 1.5)
+    lab = await P(pg, "document.querySelector('#anDur').closest('label').querySelector('.cl').textContent"); ok(lab == 'Speed', f'Combo tab slider is the loop speed ({lab})')
+    await pg.click('.chips.animtabs .chipbtn[data-v="in"]'); await pg.wait_for_timeout(2300)
+    await pg.screenshot(path=str(SHOTS / 'clip-animation-panel-390.png')); log('  shot clip-animation-panel-390.png')
+    marks = await P(pg, "[...document.querySelectorAll('.chips.animtabs .chipbtn.set')].length"); ok(marks == 3, f'tabs with an animation are marked ({marks})')
+    note = await P(pg, "document.querySelector('.sheet .hint').textContent"); ok('1.0s' in note, f'note shows the play time ({note})')
+    await pg.click('.sh-done')
+    a = (await main_clips(pg))[0]['anim']
+    ok(a == {'in': {'id': 'zoomIn', 'dur': 1}, 'out': {'id': 'slideL', 'dur': 0.8}, 'combo': {'id': 'pulse', 'dur': 1.5}}, f'clip.anim saved: {a}')
+    ok(await pg.locator(f'.clip[data-id="{c0}"] .anin').count() == 1 and await pg.locator(f'.clip[data-id="{c0}"] .anout').count() == 1 and await pg.locator(f'.clip[data-id="{c0}"] .anloop').count() == 1, 'timeline shows In / Out ramps and the loop mark')
+    await pg.click('#undoBtn'); ok((await main_clips(pg))[0]['anim'] is None, 'one undo removes the whole Animation edit')
+    await pg.click('#redoBtn'); ok((await main_clips(pg))[0]['anim'] == a, 'redo brings it back')
+    await P(pg, f'studio.select("{c0}")'); await pg.wait_for_timeout(150); await pg.click('#toolbar .tool[data-tool="anim"]'); await pg.wait_for_selector('.angrid .trtile')
+    await pick_anim(pg, 'out', 'none'); await pg.click('.sh-done'); a2 = (await main_clips(pg))[0]['anim']
+    ok(a2 == {'in': {'id': 'zoomIn', 'dur': 1}, 'combo': {'id': 'pulse', 'dur': 1.5}}, f'None removes just that tab ({a2})')
+    await pg.click('#undoBtn')
+    snap = await P(pg, 'JSON.stringify({...studio.S.project,updated:0})'); await P(pg, 'studio.save()')
+    await pg.reload(); await pg.wait_for_function('window.studio && studio.ready')
+    ok(await P(pg, 'JSON.stringify({...studio.S.project,updated:0})') == snap, 'reload keeps animations (autosave)')
+    await P(pg, f'(()=>{{studio.select("{c0}");studio.player.seek(1.5);studio.timeline.setTime(1.5)}})()'); await pg.wait_for_timeout(300)
+    await pg.click('#toolbar .tool[data-tool="split"]'); await pg.wait_for_timeout(200); mc = await main_clips(pg)
+    ok(set(mc[0]['anim'] or {}) == {'in', 'combo'} and set(mc[1]['anim'] or {}) == {'out', 'combo'}, f'split: In stays on part 1, Out moves to part 2, Combo on both ({mc[0]["anim"]}, {mc[1]["anim"]})')
+    ok(not pg.errs, f'no console errors {pg.errs[:3]}'); await ctx.close()
+
+    log('== Animation panel (text): In / Out / Loop')
+    ctx, pg = await new_page(b)
+    await pg.set_input_files('#fileMedia', [str(FX / 'sharp.png')]); await pg.wait_for_function('studio.S.project.tracks.find(t=>t.kind==="main").clips.length===1')
+    await P(pg, 'studio.select(null)'); await pg.click('#toolbar .tool[data-tool="text"]'); await pg.wait_for_timeout(300); await pg.click('.sh-done')
+    tid = await P(pg, "studio.S.project.tracks.find(t=>t.kind==='text').clips[0].id")
+    await P(pg, f"studio.act(p=>{{const t=studio.find(p,'{tid}').clip;t.start=0;t.text.content='Jesus loves me';t.text.size=130;t.transform.y=.3}})"); await seek_exact(pg, 0.2)
+    await P(pg, f'studio.select("{tid}")'); await pg.wait_for_timeout(150)
+    await pg.click('#toolbar .tool[data-tool="anim"]'); await pg.wait_for_selector('.angrid .trtile')
+    tabs = await P(pg, "[...document.querySelectorAll('.chips.animtabs .chipbtn')].map(b=>b.textContent)"); ok(tabs == ['In', 'Out', 'Loop'], f'text tabs {tabs}')
+    ok(await pg.locator('.angrid .trtile[data-an="typewriter"]').count() == 1, 'text In tab has Typewriter')
+    await pick_anim(pg, 'in', 'typewriter', 1.2); await pick_anim(pg, 'loop', 'wave'); await pick_anim(pg, 'out', 'fadeWords', 0.6)
+    await pg.click('.chips.animtabs .chipbtn[data-v="loop"]'); await pg.wait_for_timeout(2300); await seek_exact(pg, 1.6)
+    await pg.screenshot(path=str(SHOTS / 'text-animation-panel-390.png')); log('  shot text-animation-panel-390.png')
+    await pg.click('.chips.animtabs .chipbtn[data-v="in"]'); await pg.wait_for_timeout(1200)
+    await pg.screenshot(path=str(SHOTS / 'text-animation-in-390.png')); log('  shot text-animation-in-390.png')
+    await pg.click('.sh-done'); ta = await P(pg, f'studio.find(studio.S.project,"{tid}").clip.anim')
+    ok(ta == {'in': {'id': 'typewriter', 'dur': 1.2}, 'loop': {'id': 'wave', 'dur': 1.2}, 'out': {'id': 'fadeWords', 'dur': 0.6}}, f'text anim saved: {ta}')
+    ok(not pg.errs, f'no console errors {pg.errs[:3]}'); await ctx.close()
+
+async def test_anim_export(b):
+    log('== preview == export with animations + keyframes + HD Enhance + transition')
+    ctx, pg = await new_page(b)
+    await pg.set_input_files('#fileMedia', [str(FX / 'low.png'), str(FX / 'image.png')])
+    await pg.wait_for_function('studio.S.project.tracks.find(t=>t.kind==="main").clips.length===2', timeout=20000)
+    await P(pg, 'studio.select(null)'); await pg.click('#toolbar .tool[data-tool="text"]'); await pg.wait_for_timeout(300); await pg.click('.sh-done'); await P(pg, 'studio.select(null)')
+    await P(pg, """studio.act(p=>{const m=p.tracks.find(t=>t.kind==='main'), a=m.clips[0], b=m.clips[1], t=p.tracks.find(t=>t.kind==='text').clips[0];
+      a.anim={in:{id:'spin',dur:1},combo:{id:'pulse',dur:1}}; a.enhance={on:true,strength:.6}; a.keyframes={x:[{t:0,v:.4,ease:'linear'},{t:3,v:.6,ease:'linear'}]};
+      b.anim={out:{id:'wipe',dur:1}}; b.transitionIn={id:'whipL',dur:.6};
+      t.start=0; t.dur=3; t.text.content='Jesus loves me'; t.anim={in:{id:'typewriter',dur:1.5},loop:{id:'wave',dur:1}};})""")
+    await P(pg, 'studio.select(null)'); await pg.wait_for_timeout(200)
+    D = await P(pg, 'studio.projectDuration(studio.S.project)'); times = [0.5, 1.2, 2.7, round(D - 0.5, 3)]
+    prev, st = {}, {}
+    for t in times:
+        await seek_exact(pg, t); im = OUT / f'aprev_{t}.png'; await pg.locator('#preview').screenshot(path=str(im)); prev[t] = Image.open(im).convert('RGB')
+        st[t] = await still(pg, t)
+    calm = await still(pg, 1.6)
+    ok(psnr_lo(st[0.5], calm) < 25, 'the In animation is visible at 0.5 s (differs from the settled frame)')
+    rf = await P(pg, """import('./js/render.js').then(R=>{const W=1080,H=1920,c=new OffscreenCanvas(W,H),x=c.getContext('2d');const go=t=>{studio.player.seek(t);const t0=performance.now();for(let i=0;i<5;i++)R.renderFrame(x,W,H,studio.S.project,t+i/30,cl=>studio.player.source(cl),{});x.getImageData(0,0,1,1);return (performance.now()-t0)/5};return {anim:go(0.4),calm:go(1.6)}})""")
+    log(f'       full 1080x1920 frame (HD Enhance + animation + text): {rf["anim"]:.1f} ms animating, {rf["calm"]:.1f} ms settled')
+    ok(rf['anim'] < rf['calm'] * 2 + 30, 'animating costs about the same as a still frame (the HD pass is not redone at a new size)')
+    f = await export(pg, 'anims')
+    for t in times:
+        ex = frame(f, t, f'aex_{t}.png'); ps = psnr_lo(st[t], ex); gd = grid_diff(prev[t], ex)
+        ok(ps > 30, f'{t:.2f}s: export frame == renderer (PSNR at 1/4 size {ps:.1f} dB; fast spin = harder to compress)'); ok(gd < 60, f'{t:.2f}s: preview == export (max cell diff {gd})')
+    a0, a1 = frame(f, 0.5, 'p1.png'), frame(f, 1.6, 'p2.png'); pair = Image.new('RGB', (a0.width * 2, a0.height)); pair.paste(a0, (0, 0)); pair.paste(a1, (a0.width, 0))
+    pair.resize((pair.width // 2, pair.height // 2)).save(SHOTS / 'anim-export-frames.png'); log('  shot anim-export-frames.png (export at 0.5 s mid-animation | 1.6 s settled)')
+    ok(not pg.errs, f'no console errors {pg.errs[:3]}'); await ctx.close()
+
 async def run():
     s = http.server.ThreadingHTTPServer(('127.0.0.1', PORT), functools.partial(Q, directory=str(ROOT))); threading.Thread(target=s.serve_forever, daemon=True).start()
     async with async_playwright() as p:
         b = await p.chromium.launch(channel='chrome', headless=True)
         for t in TESTS: await t(b)
         await b.close()
-TESTS = [test_transitions]
+TESTS = [test_transitions, test_anim_registries, test_anim_editor, test_anim_export]
 if __name__ == '__main__':
     try: asyncio.run(run())
     except Exception as e: import traceback; traceback.print_exc(); fails.append('crash: ' + repr(e))

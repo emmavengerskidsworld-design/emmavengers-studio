@@ -9,7 +9,8 @@ import { openSheet, closeSheet, sheetOpen, slider, chips, swatches } from './pan
 import { FILTERS, FONTS, COLORS, BG_COLORS, SPEED_PRESETS, KEYFRAME_PROPS, DEFAULT_TRANSFORM, TRACK_KINDS, propAt, kfPropsFor, EASING_LIST, TRANSFORM_PROPS } from './registry.js';
 import { exportVideo, outputSize, pickCodecs, recorderMime, planBitrate, qualityFloor, QUALITY, RESOLUTIONS, supportedResolutions, estimateBytes, bitrateFor } from './export.js';
 import { ADJUST, DEFAULT_STRENGTH, enhanceOn, glAvailable } from './enhance.js';
-import { renderFrame } from './render.js';
+import { renderFrame, drawVisual, drawText } from './render.js';
+import { CLIP_ANIMS, TEXT_ANIMS, animSetFor, animById, animSpans, DEFAULT_ANIM_DUR, DEFAULT_LOOP_DUR, MIN_ANIM, MAX_ANIM, MIN_LOOP, MAX_LOOP, loopKind } from './animations.js';
 import { hitTest } from './render.js';
 import { icon } from './icons.js';
 
@@ -32,7 +33,7 @@ async function boot() {
   onMediaUpdate(() => { timeline.render(); player.requestDraw(); });
   wireUI(); layoutPreview(); timeline.fitZoom(); timeline.render(); refreshToolbar(); updateUndo(); updateEmpty(); showTime(); setPlayIcon(false);
   player.seek(0);
-  window.studio = { S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, renderStill, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, ready: true };
+  window.studio = { S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, ready: true };
   document.body.classList.add('ready');
 }
 function afterEdit() { player.seek(Math.min(player.t, projectDuration(S.project))); showTime(); refreshToolbar(); }
@@ -141,6 +142,63 @@ function kenBurnsSheet() {
     const tip = document.createElement('p'); tip.className = 'hint'; tip.textContent = 'A slow, smooth camera move over the photo. Pick one, then press play.';
     body.append(tip, chips(Object.entries(KEN_BURNS).map(([k, v]) => ({ value: k, label: v.name })), null, v => { editSel(cl => kenBurns(cl, v)); player.playRange(c.start, clipEnd(selected().clip)); }));
   });
+}
+
+/* ---------------- clip + text animations ---------------- */
+let animLoop = 0;
+function animSheet(startKind) {
+  const f0 = selected(); if (!f0) return; const id = f0.clip.id, isText = f0.clip.type === 'text', { reg, tabs } = animSetFor(f0.clip), lk = loopKind(f0.clip);
+  let kind = startKind || 'in';
+  const clipNow = () => find(S.project, id)?.clip;
+  const cur = k => clipNow()?.anim?.[k] || null;
+  // preview plays just the animation, then returns the playhead to where it was (the clip stays on screen)
+  const preview = k => { const c = clipNow(); if (!c) return; const e = clipEnd(c), { di, dO } = animSpans(c, clipDur(c)), back = Math.max(c.start, Math.min(e - 1e-3, player.playing ? c.start : player.t));
+    if (k === 'in') player.playRange(c.start, Math.min(e, c.start + di + 0.4), back); else if (k === 'out') player.playRange(Math.max(c.start, e - dO - 0.4), e, back);
+    else player.playRange(c.start, Math.min(e, c.start + Math.max(2.4, 2 * (c.anim[k]?.dur || DEFAULT_LOOP_DUR))), back); };
+  openSheet('Animation', body => {
+    const tabEl = chips(tabs.map(([v, l]) => ({ value: v, label: l })), kind, v => { kind = v; fill(); }, 'tabs animtabs');
+    const markTabs = () => tabEl.querySelectorAll('.chipbtn').forEach(b => b.classList.toggle('set', !!cur(b.dataset.v)?.id));
+    const grid = document.createElement('div'); grid.className = 'trgrid angrid';
+    const dpr = Math.min(2, devicePixelRatio || 1), TW = Math.round(64 * dpr), TH = Math.round(64 * dpr);
+    const [art] = sampleArt(Math.round(TW * .62), Math.round(TH * .62));
+    const sl = slider('Duration', { min: MIN_ANIM, max: MAX_ANIM, step: 0.1, value: DEFAULT_ANIM_DUR, fmt: v => v.toFixed(1) + 's', id: 'anDur', onInput: v => { live(p => { const c = find(p, id).clip; if (c.anim?.[kind]?.id) c.anim[kind].dur = v; }); info(); } });
+    sl.querySelector('input').addEventListener('change', () => cur(kind)?.id && preview(kind));
+    const note = document.createElement('p'); note.className = 'hint';
+    const info = () => { const c = clipNow(); if (!c) return; const a = cur(kind);
+      if (!a || !a.id) { note.textContent = kind === lk ? (isText ? 'A loop keeps moving the whole time the text is on screen.' : 'A combo loops for the whole clip.') : kind === 'in' ? 'How the clip appears. In and Out can both be used.' : 'How the clip leaves. In and Out can both be used.'; return; }
+      const { di, dO } = animSpans(c, clipDur(c)), real = kind === 'in' ? di : kind === 'out' ? dO : a.dur;
+      note.textContent = kind === lk ? `${animById(c, kind, a.id)?.name}: one cycle every ${a.dur.toFixed(1)}s, for the whole clip.` : `${animById(c, kind, a.id)?.name}: plays for ${real.toFixed(1)}s${real + 1e-6 < a.dur ? ' (shortened to fit the clip)' : ''}.`; };
+    const setSlider = () => { const c = clipNow(), a = cur(kind), loop = kind === lk, max = loop ? MAX_LOOP : Math.max(MIN_ANIM, Math.min(MAX_ANIM, Math.floor(clipDur(c) * 10) / 10));
+      const inp = sl.querySelector('input'); inp.min = loop ? MIN_LOOP : MIN_ANIM; inp.max = max; sl.querySelector('.cl').textContent = loop ? 'Speed' : 'Duration';
+      sl.set(Math.min(max, a?.dur || (loop ? DEFAULT_LOOP_DUR : Math.min(DEFAULT_ANIM_DUR, max)))); sl.hidden = !a?.id; };
+    const fill = () => {
+      grid.innerHTML = ''; const list = reg[kind] || [];
+      for (const t of [{ id: null, name: 'None' }, ...list]) {
+        const b = document.createElement('button'); b.className = 'trtile' + ((cur(kind)?.id || null) === t.id ? ' on' : ''); b.dataset.an = t.id || 'none';
+        b.innerHTML = `<canvas width="${TW}" height="${TH}"></canvas><span>${t.name}</span>`;
+        if (!t.id) { const x = b.querySelector('canvas').getContext('2d'); x.fillStyle = '#2a2a33'; x.fillRect(0, 0, TW, TH); x.strokeStyle = '#777'; x.lineWidth = 3 * dpr; x.beginPath(); x.arc(TW / 2, TH / 2, TW * .22, 0, 7); x.moveTo(TW * .34, TH * .66); x.lineTo(TW * .66, TH * .34); x.stroke(); }
+        b.onclick = () => { const k = kind; live(p => { const c = find(p, id).clip; c.anim = { ...(c.anim || {}) };
+            if (t.id) c.anim[k] = { id: t.id, dur: c.anim[k]?.dur || (k === lk ? DEFAULT_LOOP_DUR : Math.min(DEFAULT_ANIM_DUR, clipDur(c))) }; else delete c.anim[k];
+            if (!Object.keys(c.anim).length) delete c.anim; });
+          grid.querySelectorAll('.trtile').forEach(x => x.classList.toggle('on', x === b)); setSlider(); info(); markTabs(); timeline.render(); if (t.id) preview(k); };
+        grid.appendChild(b);
+      }
+      setSlider(); info(); markTabs();
+    };
+    body.append(tabEl, grid, sl, note); fill();
+    // animated tiles: the real renderer draws every tile (same code as preview + export)
+    const tc = { id: 'tile', type: isText ? 'text' : 'image', fit: 'contain', transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, start: 0, dur: 1, text: { ...(f0.clip.text || {}), content: 'Abc', size: 300, align: 'center', box: false } };
+    const src = { img: art, w: art.width, h: art.height };
+    cancelAnimationFrame(animLoop);
+    const loop = now => { if (!document.body.contains(grid)) return;
+      grid.querySelectorAll('.trtile').forEach(b => { const aid = b.dataset.an; if (aid === 'none') return; const x = b.querySelector('canvas').getContext('2d');
+        let t, D; if (kind === lk) { D = 99; t = now / 1000; tc.anim = { [kind]: { id: aid, dur: 1.2 } }; } else { D = 1; const cyc = (now % 1700) / 1000; t = kind === 'in' ? Math.min(1, cyc) : Math.min(1, Math.max(0, cyc - .3)); tc.anim = { [kind]: { id: aid, dur: .9 } }; }
+        tc.dur = D; x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.filter = 'none'; x.fillStyle = '#1b1b24'; x.fillRect(0, 0, TW, TH);
+        if (isText) drawText(x, TW, TH, tc, DEFAULT_TRANSFORM, t); else drawVisual(x, TW, TH, src, tc, { ...DEFAULT_TRANSFORM, scale: .62 }, t, { plain: true });
+        x.restore(); });
+      animLoop = requestAnimationFrame(loop); };
+    animLoop = requestAnimationFrame(loop);
+  }, { className: 'tall' });
 }
 
 /* ---------------- transitions ---------------- */
@@ -255,6 +313,7 @@ const ROOT_TOOLS = [
 const CLIP_TOOLS = [
   { id: 'split', icon: 'split', label: 'Split', run: doSplit },
   { id: 'edit', icon: 'edit', label: 'Edit text', when: c => c.type === 'text', run: textSheet },
+  { id: 'anim', icon: 'anim', label: 'Animation', when: isVisualClip, run: () => animSheet() },
   { id: 'speed', icon: 'speed', label: 'Speed', when: hasSource, run: speedSheet },
   { id: 'volume', icon: 'volume', label: 'Volume', when: hasSource, run: volumeSheet },
   { id: 'duration', icon: 'clock', label: 'Duration', when: c => !hasSource(c), run: durationSheet },
