@@ -35,11 +35,17 @@ Object.assign(KEYFRAME_PROPS, {
   maskW: sub('mask', 'w', 'Mask width', 0.02, 2, 0.001, pct, 0.6), maskH: sub('mask', 'h', 'Mask height', 0.02, 2, 0.001, pct, 0.6),
   maskRot: sub('mask', 'rot', 'Mask rotate', -180, 180, 1, deg, 0), maskFeather: sub('mask', 'feather', 'Feather', 0, 1, 0.01, pct, 0),
 });
+Object.assign(KEYFRAME_PROPS, {
+  adjVignette: sub('adjust', 'vignette', 'Vignette', 0, 1, 0.01, pct, 0), adjGrain: sub('adjust', 'grain', 'Grain', 0, 1, 0.01, pct, 0), adjSharpen: sub('adjust', 'sharpen', 'Sharpen', 0, 1, 0.01, pct, 0),
+  pan: { label: 'Pan', min: -1, max: 1, step: 0.01, fmt: v => v === 0 ? 'C' : (v < 0 ? 'L' : 'R') + Math.round(Math.abs(v) * 100), get: c => c.pan ?? 0, set: (c, v) => { c.pan = v; } },
+});
+export const VGS_PROPS = ['adjVignette', 'adjGrain', 'adjSharpen'];
+const vgsOn = c => !!(c.keyframes && VGS_PROPS.some(k => c.keyframes[k])) || !!(c.adjust && (c.adjust.vignette || c.adjust.grain || c.adjust.sharpen)) || c.type === 'effect' && c.effect && c.effect.kind === 'adjust';
 export const CROP_PROPS = ['cropX', 'cropY', 'cropW', 'cropH', 'straighten'];
 export const MASK_PROPS = ['maskX', 'maskY', 'maskW', 'maskH', 'maskRot', 'maskFeather'];
 export const TRANSFORM_PROPS = ['x', 'y', 'scale', 'rotation', 'opacity'];
 /** Which properties a clip type can animate. */
-export const kfPropsFor = c => c.type === 'audio' ? ['volume'] : [...TRANSFORM_PROPS, ...(c.type === 'video' ? ['volume'] : []), ...(c.crop ? CROP_PROPS : []), ...(c.mask && c.mask.shape !== 'none' ? MASK_PROPS : [])];
+export const kfPropsFor = c => c.type === 'audio' ? ['volume', ...(c.pan != null || (c.keyframes && c.keyframes.pan) ? ['pan'] : [])] : c.type === 'effect' && c.effect && c.effect.kind === 'adjust' ? ['opacity', ...VGS_PROPS] : [...TRANSFORM_PROPS, ...(c.type === 'video' ? ['volume', ...(c.pan != null || (c.keyframes && c.keyframes.pan) ? ['pan'] : [])] : []), ...(c.crop ? CROP_PROPS : []), ...(c.mask && c.mask.shape !== 'none' ? MASK_PROPS : []), ...(vgsOn(c) ? VGS_PROPS : [])];
 export { E as EASINGS } from './transitions.js';
 import { E } from './transitions.js';
 export const EASING_LIST = [{ id: 'linear', name: 'Linear' }, { id: 'in', name: 'Ease in' }, { id: 'out', name: 'Ease out' }, { id: 'inOut', name: 'Ease in-out' }, { id: 'bounce', name: 'Bounce' }];

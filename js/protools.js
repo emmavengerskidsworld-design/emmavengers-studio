@@ -144,6 +144,8 @@ export function maskSheet() {
 
 /* ---------------- Cutout (chroma key) ---------------- */
 let pickHook = null;
+/** Let another panel pick a point on the preview (white balance, tracker). */
+export const setPickHook = f => { pickHook = f; };
 /** Called by the preview on a tap; returns true when the tap was used (colour picking). */
 export function previewTap(pos) { if (!pickHook) return false; const f = pickHook; pickHook = null; f(pos); return true; }
 /** Colour of the picture (without the key) at canvas position x, y — averaged over 5x5 pixels. */

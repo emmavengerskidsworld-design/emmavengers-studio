@@ -8,6 +8,7 @@ import { clipAnimState, textAnimPlan, unitQ } from './animations.js';
 import { processImage, hasAdjust, enhanceOn, maxSide, DEFAULT_STRENGTH } from './enhance.js';
 import { ensureFont, fontsVersion } from './fonts.js';
 import { applyChain, fxAvailable, DEFAULT_EFFECT_AMOUNT } from './effects.js';
+import { hasColor, colorParams } from './colorpro.js';
 import { isPro, cropAt, maskAt, keyOn, straightenZoom, scratch, maskPath, blendOp, drawBgBlur } from './pro.js';
 
 export function visualTracks(p) {
@@ -60,17 +61,33 @@ export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
 /** An Effects-track clip: runs its effect (or filter) over everything already drawn under it. */
 export function drawFrameEffect(ctx, W, H, clip, local) {
   const e = clip.effect; if (!e || !e.id) return;
-  const r = applyChain(ctx.canvas, W, H, [{ kind: e.kind || 'effect', id: e.id, amount: e.amount ?? DEFAULT_EFFECT_AMOUNT, t: local, dur: clipDur(clip), seed: clip.id }]);
+  const chain = e.kind === 'adjust' ? adjustChain(clip, local) : [{ kind: e.kind || 'effect', id: e.id, amount: e.amount ?? DEFAULT_EFFECT_AMOUNT, t: local, dur: clipDur(clip), seed: clip.id }];
+  if (!chain.length) return;
+  const r = applyChain(ctx.canvas, W, H, chain);
   if (!r) return;
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.globalCompositeOperation = 'copy'; ctx.drawImage(r, 0, 0, W, H); ctx.restore();
 }
 /** Filter + per-clip effects of a photo / video clip, as a GL chain. */
+/** Adjustment layer: colour (curves, HSL, wheels, LUT, light, vignette, grain, sharpen) + filter + effects over everything under it.
+    Vignette / grain / sharpen / intensity can be keyframed (adjVignette, adjGrain, adjSharpen, opacity = intensity). */
+export function adjustChain(clip, local) {
+  const amt = Math.max(0, Math.min(1, (clip.effect.amount ?? 1) * propAt(clip, 'opacity', local))), ch = [];
+  const q = { ...(clip.color || {}), vig: Math.max(clip.color?.vig || 0, propAt(clip, 'adjVignette', local)), grain: Math.max(clip.color?.grain || 0, propAt(clip, 'adjGrain', local)), sharp: Math.max(clip.color?.sharp || 0, propAt(clip, 'adjSharpen', local)) };
+  if (hasColor({ color: q })) ch.push({ kind: 'color', id: 'color', amount: amt, p: colorParams(q), t: local, seed: clip.id });
+  if (clip.filter && clip.filter.id) ch.push({ kind: 'filter', id: clip.filter.id, amount: (clip.filter.amount ?? 1) * amt });
+  for (const e of clip.effects || []) if (e && e.id) ch.push({ kind: 'effect', id: e.id, amount: (e.amount ?? DEFAULT_EFFECT_AMOUNT) * amt, t: local || 0, dur: clipDur(clip), seed: clip.id });
+  return ch;
+}
 export function clipChain(clip, local) {
   const ch = [];
+  if (hasColor(clip)) ch.push({ kind: 'color', id: 'color', amount: 1, p: colorParams(clip.color), t: local || 0, seed: clip.id });
   if (clip.filter && clip.filter.id) ch.push({ kind: 'filter', id: clip.filter.id, amount: clip.filter.amount ?? 1 });
   for (const e of clip.effects || []) if (e && e.id) ch.push({ kind: 'effect', id: e.id, amount: e.amount ?? DEFAULT_EFFECT_AMOUNT, t: local || 0, dur: clipDur(clip), seed: clip.id });
   return ch;
 }
+/** Colour adjust of a clip at clip-local time (vignette / grain / sharpen can be keyframed). */
+export function adjustAt(clip, L) { const a = clip.adjust; const k = clip.keyframes || {}; if (!k.adjVignette && !k.adjGrain && !k.adjSharpen) return a;
+  return { ...(a || {}), vignette: propAt(clip, 'adjVignette', L), grain: propAt(clip, 'adjGrain', L), sharpen: propAt(clip, 'adjSharpen', L) }; }
 let pre = null;   // downscale scratch (big sources are first brought to on-screen size with high-quality smoothing)
 /** Draw one video / photo / overlay clip. Exported so the animation picker tiles use exactly this code.
     s = { img, w, h, rot }, tr = transform at this time (keyframes applied), local = clip-local time. */
@@ -98,7 +115,7 @@ export function drawVisual(ctx, W, H, s, clip, tr, local, opts = {}) {
   const f = [glFx ? '' : filterCss(clip.filter)]; if (st && st.blur > .05) f.push(`blur(${(st.blur * Math.min(W, H) / 1080).toFixed(2)}px)`); if (st && Math.abs(st.bright) > .001) f.push(`brightness(${(1 + st.bright).toFixed(3)})`);
   g.filter = f.filter(Boolean).join(' ') || 'none';
   // HD pipeline: enhance / colour adjust / chroma key / any upscale go through the WebGL shaders (same code for preview and export)
-  const enh = !opts.plain && enhanceOn(clip) ? (clip.enhance.strength ?? DEFAULT_STRENGTH) : 0, adj = !opts.plain && hasAdjust(clip.adjust), key = !opts.noKey && keyOn(clip) ? clip.key : null;
+  const enh = !opts.plain && enhanceOn(clip) ? (clip.enhance.strength ?? DEFAULT_STRENGTH) : 0, adjv = adjustAt(clip, local || 0), adj = !opts.plain && hasAdjust(adjv), key = !opts.noKey && keyOn(clip) ? clip.key : null;
   const kk = k * zs;
   let out = null, ow = Math.round(s.w * kk), oh = Math.round(s.h * kk);
   if ((!opts.plain || key) && (enh || adj || key || kk > 1.001) && ow >= 2 && oh >= 2) {
@@ -109,7 +126,7 @@ export function drawVisual(ctx, W, H, s, clip, tr, local, opts = {}) {
       if (!pre || pre.width !== ow || pre.height !== oh) pre = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(ow, oh) : Object.assign(document.createElement('canvas'), { width: ow, height: oh });
       const x = pre.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.clearRect(0, 0, ow, oh); x.drawImage(s.img, 0, 0, ow, oh); src = pre; sw = ow; sh = oh;
     }
-    out = processImage(src, sw, sh, ow, oh, { enhance: enh, adjust: adj ? clip.adjust : null, key, fast: !!opts.fast, seed: Math.floor((local || 0) * 30) % 997 });
+    out = processImage(src, sw, sh, ow, oh, { enhance: enh, adjust: adj ? adjv : null, key, fast: !!opts.fast, seed: Math.floor((local || 0) * 30) % 997 });
   }
   let img = out || s.img;
   if (glFx) {   // filters + effects run on the clip's own pixels (at most on-screen size), same code for preview and export

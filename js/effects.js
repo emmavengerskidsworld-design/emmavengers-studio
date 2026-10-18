@@ -53,6 +53,41 @@ vec4 fx(vec2 u){ vec4 C = src(u); vec3 c = unpm(C), c0 = c;
   vec2 p = (u - .5) * ASP / max(ASP.x, ASP.y) * 1.4; c *= 1. - vig * smoothstep(.25, 1.1, length(p));
   c = mix(c0, clamp(c, 0., 1.), A); return vec4(c * C.a, C.a); }`;
 
+/* Colour pro pass (js/colorpro.js): white balance -> wheels (lift / gamma / gain) -> exposure, contrast, saturation -> curves
+   -> HSL per hue band -> 3D LUT -> sharpen, vignette, grain. One pass, same for preview, export and adjustment layers. */
+const COLOR = `uniform sampler2D CV, LT; uniform float useCv, LN, LA, ex, con, sat, vig, grain, sharp; uniform vec3 wl, wg, wn; uniform vec2 wb; uniform float hs[24];
+vec3 rgb2hsl(vec3 c){ float mx = max(c.r, max(c.g, c.b)), mn = min(c.r, min(c.g, c.b)), l = (mx + mn) * .5, d = mx - mn; if (d < 1e-5) return vec3(0., 0., l);
+  float s = l > .5 ? d / (2. - mx - mn) : d / (mx + mn), h = mx == c.r ? (c.g - c.b) / d + (c.g < c.b ? 6. : 0.) : mx == c.g ? (c.b - c.r) / d + 2. : (c.r - c.g) / d + 4.; return vec3(h / 6., s, l); }
+float h2r(float p, float q, float t){ t = fract(t); if (t < 1. / 6.) return p + (q - p) * 6. * t; if (t < .5) return q; if (t < 2. / 3.) return p + (q - p) * (2. / 3. - t) * 6.; return p; }
+vec3 hsl2rgb(vec3 h){ if (h.y < 1e-5) return vec3(h.z); float q = h.z < .5 ? h.z * (1. + h.y) : h.z + h.y - h.z * h.y, p = 2. * h.z - q; return vec3(h2r(p, q, h.x + 1. / 3.), h2r(p, q, h.x), h2r(p, q, h.x - 1. / 3.)); }
+const float BC[8] = float[8](0., 30., 60., 120., 180., 225., 270., 315.);
+vec3 lutAt(vec3 c){ float n = LN, b = c.b * (n - 1.), b0 = floor(b), b1 = min(n - 1., b0 + 1.), f = b - b0;
+  vec2 q = vec2(c.r * (n - 1.) + .5, c.g * (n - 1.) + .5) / vec2(n * n, n);
+  vec3 x0 = texture(LT, q + vec2(b0 / n, 0.)).rgb, x1 = texture(LT, q + vec2(b1 / n, 0.)).rgb; return mix(x0, x1, f); }
+vec3 grade(vec3 c, vec2 u){
+  c *= vec3(exp(wb.x * .5 + wb.y * .25), exp(-wb.y * .5), exp(-wb.x * .5 + wb.y * .25));
+  vec3 gn = max(vec3(0.), 1. + wn), gm = clamp(1. + wg, .2, 5.); c = pow(max(c * gn + wl * (1. - c), 0.), 1. / gm);
+  c *= exp2(ex); c = (c - .5) * con + .5; c = clamp(c, 0., 1.); float l = lum(c); c = clamp(mix(vec3(l), c, sat), 0., 1.);
+  if (useCv > .5) c = vec3(texture(CV, vec2(c.r * 255. / 256. + .5 / 256., .5)).r, texture(CV, vec2(c.g * 255. / 256. + .5 / 256., .5)).g, texture(CV, vec2(c.b * 255. / 256. + .5 / 256., .5)).b);
+  vec3 h = rgb2hsl(c); float dh = 0., ds = 0., dl = 0., any = 0.;
+  for (int i = 0; i < 8; i++){ any += abs(hs[i * 3]) + abs(hs[i * 3 + 1]) + abs(hs[i * 3 + 2]); }
+  if (any > 1e-4 && h.y > 1e-4){ float hd = h.x * 360.;
+    for (int i = 0; i < 8; i++){ float lo = BC[(i + 7) % 8], hi = BC[(i + 1) % 8], cc = BC[i];
+      float dlo = mod(cc - lo + 360., 360.), dhi = mod(hi - cc + 360., 360.), d = mod(hd - cc + 540., 360.) - 180.;
+      float w = d < 0. ? max(0., 1. + d / dlo) : max(0., 1. - d / dhi); w = w * w * (3. - 2. * w);
+      dh += w * hs[i * 3]; ds += w * hs[i * 3 + 1]; dl += w * hs[i * 3 + 2]; }
+    float k = smoothstep(0., .25, h.y);
+    h.x = fract(h.x + dh * .5 * k); h.y = clamp(h.y * (1. + ds), 0., 1.); h.z = clamp(h.z + dl * .25 * k * (1. - abs(2. * h.z - 1.)), 0., 1.); c = hsl2rgb(h); }
+  if (LA > 0.) c = mix(c, lutAt(clamp(c, 0., 1.)), LA);
+  return c; }
+vec4 fx(vec2 u){ vec4 C = src(u); vec3 c = unpm(C), c0 = c;
+  if (sharp > 1e-4){ vec2 px = 1. / R; vec3 b = (unpm(src(u + vec2(px.x, 0.))) + unpm(src(u - vec2(px.x, 0.))) + unpm(src(u + vec2(0., px.y))) + unpm(src(u - vec2(0., px.y)))) * .25;
+    vec3 d = c - b; c = c + clamp(d * sharp * 2., -.2, .2); }
+  c = grade(clamp(c, 0., 1.), u);
+  if (vig > 1e-4){ vec2 p = (u - .5) * ASP / max(ASP.x, ASP.y) * 1.4; c *= 1. - vig * smoothstep(.25, 1.1, length(p)); }
+  if (grain > 1e-4){ float g = hash(floor(u * R) + floor(S * 13.) + floor(t * 24.) * 7.31) - .5; c += g * grain * .16; }
+  c = mix(c0, clamp(c, 0., 1.), A); return vec4(c * C.a, C.a); }`;
+
 /* ---------------- effects (our own designs) ---------------- */
 const fx = (id, name, cat, body, extra = {}) => ({ id, name, cat, body, ...extra });
 export const EFFECT_CATS = [['magic', 'Magic'], ['party', 'Party'], ['weather', 'Weather'], ['light', 'Light'], ['retro', 'Retro'], ['motion', 'Motion'], ['distort', 'Distort'], ['art', 'Art']];
@@ -261,7 +296,7 @@ function targets(w, h) {
 const seedOf = s => { if (typeof s === 'number') return s; let h = 7; for (const ch of String(s || '')) h = (h * 31 + ch.charCodeAt(0)) % 9973; return h / 97; };
 /** Run a chain of filters / effects over an image. Returns the GL canvas (valid until the next call) or null when unavailable. */
 export function applyChain(img, w, h, chain) {
-  chain = (chain || []).filter(x => x && x.id && (x.amount ?? 1) > 0.001 && (x.kind === 'filter' ? filterGL(x.id) : effectById(x.id)));
+  chain = (chain || []).filter(x => x && x.id && (x.amount ?? 1) > 0.001 && (x.kind === 'color' ? !!x.p : x.kind === 'filter' ? filterGL(x.id) : effectById(x.id)));
   if (!chain.length || !init()) return null;
   w = Math.max(2, Math.round(w)); h = Math.max(2, Math.round(h));
   const gl = G.gl;
@@ -280,17 +315,37 @@ export function applyChain(img, w, h, chain) {
     gl.viewport(0, 0, w, h); gl.disable(gl.BLEND); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     let input = G.src;
     chain.forEach((x, i) => {
-      const last = i === chain.length - 1, f = x.kind === 'filter' ? filterGL(x.id) : null, P = f ? prog('grade', GRADE) : prog('fx:' + x.id, effectById(x.id).body);
+      const last = i === chain.length - 1, f = x.kind === 'filter' ? filterGL(x.id) : null, P = x.kind === 'color' ? prog('color', COLOR) : f ? prog('grade', GRADE) : prog('fx:' + x.id, effectById(x.id).body);
       gl.useProgram(P.p); gl.bindFramebuffer(gl.FRAMEBUFFER, last ? null : G.fbo[i % 2]);
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, input); gl.uniform1i(P.U.T, 0);
       gl.uniform2f(P.U.R, w, h); gl.uniform1f(P.U.t, x.t || 0); gl.uniform1f(P.U.A, Math.max(0, Math.min(1, x.amount ?? 1))); gl.uniform1f(P.U.D, x.dur || 3); gl.uniform1f(P.U.S, seedOf(x.seed));
       if (f) { const q = { ...GRADE_DEFAULTS, ...f.p }; for (const k of ['lift', 'gam', 'gain', 'shc', 'hic', 'bwt']) P.U[k] && gl.uniform3fv(P.U[k], q[k]);
         for (const k of ['ex', 'con', 'sat', 'temp', 'tnt', 'hue', 'fade', 'vib', 'split', 'bw', 'vig', 'cross']) P.U[k] && gl.uniform1f(P.U[k], q[k]); }
+      if (x.kind === 'color') colorUniforms(gl, P, x.p);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       input = G.tex[i % 2];
     });
     return G.cv;
   } catch (e) { console.warn('effects', e); return null; }
+}
+
+/* data textures for the colour pass (curve table 256x1, LUT atlas n² x n), cached by key */
+function dataTex(key, w, h, data) {
+  const gl = G.gl; G.dt ||= new Map(); let t = G.dt.get(key);
+  if (!t) { t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t); texSetup(gl, t); gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, data); G.dt.set(key, t);
+    if (G.dt.size > 40) { const k0 = G.dt.keys().next().value; gl.deleteTexture(G.dt.get(k0)); G.dt.delete(k0); } }
+  return t;
+}
+function colorUniforms(gl, P, q) {
+  const U = P.U;
+  gl.uniform1f(U.useCv, q.cv ? 1 : 0); gl.uniform1f(U.LA, q.lut ? q.lutAmt : 0); gl.uniform1f(U.LN, q.lut ? q.lut.n : 2);
+  for (const k of ['ex', 'con', 'sat', 'vig', 'grain', 'sharp']) U[k] && gl.uniform1f(U[k], q[k]);
+  U.wl && gl.uniform3fv(U.wl, q.wl); U.wg && gl.uniform3fv(U.wg, q.wg); U.wn && gl.uniform3fv(U.wn, q.wn); U.wb && gl.uniform2fv(U.wb, q.wb);
+  const hl = U['hs[0]'] || U.hs; hl && gl.uniform1fv(hl, q.hs);
+  gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, q.cv ? dataTex(q.cvKey, 256, 1, q.cv) : dataTex('cv:none', 1, 1, new Uint8Array(4))); gl.uniform1i(U.CV, 1);
+  gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, q.lut ? dataTex(q.lut.key, q.lut.n * q.lut.n, q.lut.n, q.lut.data) : dataTex('lt:none', 1, 1, new Uint8Array(4))); gl.uniform1i(U.LT, 2);
+  gl.activeTexture(gl.TEXTURE0);
 }
 export const GRADE_DEFAULTS = { lift: [0, 0, 0], gam: [1, 1, 1], gain: [1, 1, 1], shc: [.5, .5, .5], hic: [.5, .5, .5], bwt: [1, 1, 1], ex: 0, con: 1, sat: 1, temp: 0, tnt: 0, hue: 0, fade: 0, vib: 0, split: 0, bw: 0, vig: 0, cross: 0 };
 /** CSS approximation of a grade (used only when WebGL2 is missing). */

@@ -19,4 +19,6 @@ export function ensureFont(id) {
 }
 /** Every bundled font a project uses (text + captions). */
 export const projectFonts = p => [...new Set(p.tracks.flatMap(t => t.clips.filter(c => c.type === 'text').map(c => c.text.font)))].filter(id => BUNDLED.has(id));
-export const ensureProjectFonts = p => Promise.all(projectFonts(p).map(ensureFont));
+import { ensureLuts } from './colorpro.js';
+/** Fonts + colour LUTs a project needs (called before preview, stills and export). */
+export const ensureProjectFonts = p => Promise.all([...projectFonts(p).map(ensureFont), ensureLuts(p)]);

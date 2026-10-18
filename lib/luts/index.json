@@ -1,0 +1,86 @@
+{
+ "license": "CC0-1.0",
+ "author": "Emmavengers Studio",
+ "luts": [
+  {
+   "id": "sunny-kids",
+   "name": "Sunny Kids"
+  },
+  {
+   "id": "candy-pop",
+   "name": "Candy Pop"
+  },
+  {
+   "id": "golden-hour",
+   "name": "Golden Hour"
+  },
+  {
+   "id": "teal-orange",
+   "name": "Teal & Orange"
+  },
+  {
+   "id": "bible-warm",
+   "name": "Bible Warm"
+  },
+  {
+   "id": "desert-sand",
+   "name": "Desert Sand"
+  },
+  {
+   "id": "ocean-blue",
+   "name": "Ocean Blue"
+  },
+  {
+   "id": "forest-green",
+   "name": "Forest Green"
+  },
+  {
+   "id": "night-sky",
+   "name": "Night Sky"
+  },
+  {
+   "id": "dreamy-pastel",
+   "name": "Dreamy Pastel"
+  },
+  {
+   "id": "vintage-film",
+   "name": "Vintage Film"
+  },
+  {
+   "id": "old-photo",
+   "name": "Old Photo"
+  },
+  {
+   "id": "bw-classic",
+   "name": "B&W Classic"
+  },
+  {
+   "id": "bw-soft",
+   "name": "B&W Soft"
+  },
+  {
+   "id": "comic-pop",
+   "name": "Comic Pop"
+  },
+  {
+   "id": "cinema",
+   "name": "Cinema"
+  },
+  {
+   "id": "bleach",
+   "name": "Bleach Bypass"
+  },
+  {
+   "id": "neon-night",
+   "name": "Neon Night"
+  },
+  {
+   "id": "autumn",
+   "name": "Autumn"
+  },
+  {
+   "id": "cool-morning",
+   "name": "Cool Morning"
+  }
+ ]
+}

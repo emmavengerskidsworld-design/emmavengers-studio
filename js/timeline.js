@@ -91,7 +91,7 @@ export class Timeline {
     }
     const badges = [];
     if (c.type === 'text') badges.push(`<span class="ctext">${esc(c.text.content.split('\n')[0] || 'Text')}</span>`);
-    else if (c.type === 'effect') { const e = c.effect && (c.effect.kind === 'filter' ? filterGL(c.effect.id) : effectById(c.effect.id)); badges.push(`<span class="ctext">${icon('effects', 12)} ${esc(e ? e.name : 'Effect')}</span>`); }
+    else if (c.type === 'effect') { const e = c.effect && (c.effect.kind === 'adjust' ? { name: 'Adjustment layer' } : c.effect.kind === 'filter' ? filterGL(c.effect.id) : effectById(c.effect.id)); badges.push(`<span class="ctext">${icon('effects', 12)} ${esc(e ? e.name : 'Effect')}</span>`); }
     else if (c.type === 'audio') badges.push(`<span class="cname">${esc(rec ? rec.name : 'Audio')}</span>`) && c.beat && badges.push(`<span class="spd bpm" title="Beat markers">♩${Math.round(c.beat.bpm)}</span>`);
     if (S.sel === c.id || c.type === 'video') badges.push(`<span class="dur">${fmtS(d)}</span>`);
     if (c.curve) badges.push(`<span class="spd">curve</span>`); else if (c.speed !== 1) badges.push(`<span class="spd">${c.speed}x</span>`);
