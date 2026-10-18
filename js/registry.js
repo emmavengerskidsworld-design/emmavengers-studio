@@ -54,12 +54,13 @@ const baseOf = (clip, prop) => { const d = KEYFRAME_PROPS[prop]; return d?.get ?
 export function setBase(clip, prop, v) { const d = KEYFRAME_PROPS[prop]; if (d?.set) d.set(clip, v); else if (d?.base === 'clip') clip[prop] = v; else clip.transform[prop] = v; }
 /** Value of an animatable property at clip-local time t. Keyframes win over the static value.
     The easing stored on a keyframe shapes the movement that LEAVES it (towards the next keyframe). */
+import { bezierEase } from './motion.js';
 export function propAt(clip, prop, t) {
   const kf = clip.keyframes && clip.keyframes[prop];
   if (!kf || !kf.length) return baseOf(clip, prop);
   if (t <= kf[0].t) return kf[0].v;
   for (let i = 1; i < kf.length; i++) if (t <= kf[i].t) {
-    const a = kf[i - 1], b = kf[i], e = E[a.ease || 'linear'] || E.linear;
+    const a = kf[i - 1], b = kf[i], e = a.ease === 'bezier' && a.bz ? bezierEase(a.bz) : E[a.ease || 'linear'] || E.linear;
     return a.v + (b.v - a.v) * e((t - a.t) / Math.max(1e-6, b.t - a.t));
   }
   return kf[kf.length - 1].v;

@@ -93,20 +93,17 @@ export const STAB_LEVELS = { low: { name: 'Low', sigma: .2 }, med: { name: 'Medi
 export function gaussSmooth(a, sig) {
   const n = a.length, out = new Float64Array(n); if (!n) return out; const R = Math.max(1, Math.ceil(sig * 3)), k = [];
   for (let i = -R; i <= R; i++) k.push(Math.exp(-i * i / (2 * sig * sig)));
-  for (let i = 0; i < n; i++) { let s = 0, ws = 0; for (let j = -R; j <= R; j++) { let q = i + j; if (q < 0) q = -q; if (q >= n) q = 2 * n - 2 - q; q = Math.max(0, Math.min(n - 1, q)); s += a[q] * k[j + R]; ws += k[j + R]; } out[i] = s / ws; }
+  for (let i = 0; i < n; i++) { let s = 0, ws = 0; for (let j = -R; j <= R; j++) { const q = i + j; let v;   // point reflection at the ends keeps a steady pan a pan
+      if (q < 0) v = 2 * a[0] - a[Math.min(n - 1, -q)]; else if (q >= n) v = 2 * a[n - 1] - a[Math.max(0, 2 * n - 2 - q)]; else v = a[q]; s += v * k[j + R]; ws += k[j + R]; } out[i] = s / ws; }
   return out;
 }
 /** Zoom needed so the corrected frame still covers the whole picture (no black edges). */
 export function coverZoom(dx, dy, da, ds, w, h) {
-  // corrected point p' = e^ds R(da) p + d (centred). The output corners must come from inside the source: inverse map them.
-  const s = Math.exp(ds), c = Math.cos(da), sn = Math.sin(da); let z = 1;
-  for (const [X, Y] of [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]]) {
-    for (let zz = 1; zz < 3; zz += .005) {   // output corner at zoom zz -> source position
-      const qx = X / zz - dx, qy = Y / zz - dy, px = (c * qx + sn * qy) / s, py = (-sn * qx + c * qy) / s;
-      if (Math.abs(px) <= w / 2 + 1e-6 && Math.abs(py) <= h / 2 + 1e-6) { z = Math.max(z, zz); break; }
-    }
-  }
-  return z;
+  // corrected point p' = z (e^ds R(da) p + d) (centred). Every output corner must come from inside the source frame.
+  const s = Math.exp(ds), c = Math.cos(da), sn = Math.sin(da);
+  const inside = zz => [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]].every(([X, Y]) => { const qx = X / zz - dx, qy = Y / zz - dy, px = (c * qx + sn * qy) / s, py = (-sn * qx + c * qy) / s; return Math.abs(px) <= w / 2 + 1e-6 && Math.abs(py) <= h / 2 + 1e-6; });
+  if (inside(1)) return 1; let lo = 1, hi = 4; if (!inside(hi)) return hi;
+  for (let i = 0; i < 22; i++) { const m = (lo + hi) / 2; if (inside(m)) hi = m; else lo = m; } return hi;
 }
 /** Analyse a video range and return clip.stab (corrections sampled by source time). */
 export async function stabilize(rec, a, b, level = 'med', onProgress = () => {}, { maxZoom = 1.4 } = {}) {
@@ -114,25 +111,34 @@ export async function stabilize(rec, a, b, level = 'med', onProgress = () => {},
   const src = await openSource(rec, a); let w = 0, h = 0, prev = null; const X = [0], Y = [0], A = [0], Sl = [0], q = [];
   try {
     for (let i = 0; i < N; i++) {
-      const f = await src.frameAt(Math.min(b - 1e-3, a + i / fps));
+      const f = await src.frameAt(Math.min(b - 1e-3, a + (i + .5) / fps));   // frame centres: no rounding at frame edges
       if (!w) { const k = 200 / Math.max(f.w, f.h); w = Math.max(32, Math.round(f.w * k)); h = Math.max(32, Math.round(f.h * k)); }
       const g = grey(f.img, f.w, f.h, w, h);
       if (prev) { const m = frameMotion(prev, g, w, h); q.push(m.n); X.push(X[X.length - 1] + m.dx); Y.push(Y[Y.length - 1] + m.dy); A.push(A[A.length - 1] + m.da); Sl.push(Sl[Sl.length - 1] + m.ds); }
       prev = g; if (i % 4 === 0) onProgress(i / N);
     }
   } finally { src.close(); }
+  const r6 = v => Math.round(v * 1e6) / 1e6;
+  return restab({ v: 1, fps, sfps: Math.round(sfps * 1000) / 1000, a, n: N, w, h, pts: q.length ? Math.round(q.reduce((s, v) => s + v, 0) / q.length) : 0,
+    raw: { x: X.map(v => r6(v / w)), y: Y.map(v => r6(v / h)), a: A.map(r6), s: Sl.map(r6) } }, level, maxZoom);
+}
+/** (Re)compute the corrections for a level from the analysed camera path (no new analysis needed). */
+export function restab(st, level = 'med', maxZoom = 1.4) {
+  const { fps, w, h, raw } = st, X = raw.x.map(v => v * w), Y = raw.y.map(v => v * h), A = raw.a, Sl = raw.s;
   const sig = STAB_LEVELS[level]?.sigma ?? .55, sg = Math.max(1, sig * fps), sX = gaussSmooth(X, sg), sY = gaussSmooth(Y, sg), sA = gaussSmooth(A, sg), sS = gaussSmooth(Sl, sg);
-  let dx = X.map((v, i) => sX[i] - v), dy = Y.map((v, i) => sY[i] - v), da = A.map((v, i) => sA[i] - v), ds = Sl.map((v, i) => sS[i] - v);
-  const need = f => Math.max(...dx.map((_, i) => coverZoom(dx[i] * f, dy[i] * f, da[i] * f, ds[i] * f, w, h)));
+  const dx = X.map((v, i) => sX[i] - v), dy = Y.map((v, i) => sY[i] - v), da = A.map((v, i) => sA[i] - v), ds = Sl.map((v, i) => sS[i] - v);
+  const need = f => { let z = 1; for (let i = 0; i < dx.length; i++) z = Math.max(z, coverZoom(dx[i] * f, dy[i] * f, da[i] * f, ds[i] * f, w, h)); return z; };
   let fac = 1, zoom = need(1);
   if (zoom > maxZoom) { let lo = 0, hi = 1; for (let it = 0; it < 14; it++) { const mid = (lo + hi) / 2; if (need(mid) > maxZoom) hi = mid; else lo = mid; } fac = lo; zoom = need(fac); }
   const r5 = v => Math.round(v * 1e5) / 1e5;
-  return { v: 1, level, fps, a, n: N, w, h, zoom: Math.round(zoom * 1e4) / 1e4, fac: Math.round(fac * 1000) / 1000,
-    dx: dx.map(v => r5(v * fac / w)), dy: dy.map(v => r5(v * fac / h)), da: da.map(v => r5(v * fac)), ds: ds.map(v => r5(v * fac)), raw: { x: X.map(v => r5(v / w)), y: Y.map(v => r5(v / h)) }, pts: q.length ? Math.round(q.reduce((s, v) => s + v, 0) / q.length) : 0 };
+  return { ...st, level, zoom: Math.round(zoom * 1e4) / 1e4, fac: Math.round(fac * 1000) / 1000,
+    dx: dx.map(v => r5(v * fac / w)), dy: dy.map(v => r5(v * fac / h)), da: da.map(v => r5(v * fac)), ds: ds.map(v => r5(v * fac)) };
 }
 /** Correction at a source time: { x, y (fractions of the frame), a (rad), s (scale), z (crop zoom) }. */
 export function stabAt(st, ts) {
-  if (!st || !st.dx || !st.dx.length) return null; const u = Math.max(0, Math.min(st.dx.length - 1, (ts - st.a) * st.fps)), i = Math.floor(u), j = Math.min(st.dx.length - 1, i + 1), f = u - i;
+  if (!st || !st.dx || !st.dx.length) return null;
+  // analysed at the source frame rate: the correction of the frame on screen (no blend across frames); else interpolate between frame centres
+  const same = !st.sfps || Math.abs(st.sfps - st.fps) < .05, u = Math.max(0, Math.min(st.dx.length - 1, same ? Math.floor((ts - st.a) * st.fps + 1e-4) : (ts - st.a) * st.fps - .5)), i = Math.floor(u), j = Math.min(st.dx.length - 1, i + 1), f = same ? 0 : u - i;
   const L = k => st[k][i] + (st[k][j] - st[k][i]) * f;
   return { x: L('dx'), y: L('dy'), a: L('da'), s: Math.exp(L('ds')), z: st.zoom || 1 };
 }
@@ -172,3 +178,48 @@ export function simplifyPath(P, tol = .002) {
   rec(0, P.length - 1); return P.filter((_, i) => keep[i]);
 }
 export { grey };
+
+/* ---------------- smooth slow motion (frame blending) ---------------- */
+/** Bake source range [a, b] slowed to `speed` (< 1) with blended in-between frames; returns an MP4 File. */
+export async function slowmoFile(rec, a, b, speed, onProgress = () => {}, { fps = 30, blend = true } = {}) {
+  const sfps = await sourceFps(rec), N = Math.max(1, Math.round((b - a) / speed * fps));
+  const probe = await openSource(rec, a), f0 = await probe.frameAt(a); probe.close();
+  const q = ((f0.rot || 0) % 180 + 180) % 180 === 90, sw = q ? f0.h : f0.w, sh = q ? f0.w : f0.h, k = Math.min(1, 1080 / Math.min(sw, sh));
+  const W = Math.max(2, Math.round(sw * k / 2) * 2), H = Math.max(2, Math.round(sh * k / 2) * 2);
+  const { pickCodecs, defaultBitrate } = await import('./export.js'), { decodeAudio } = await import('./media.js');
+  const codecs = await pickCodecs(W, H, fps, defaultBitrate(W, H, fps)); if (!codecs) throw new Error('This browser cannot encode video');
+  const abuf = rec.hasAudio === false ? null : await decodeAudio(rec, false).catch(() => null);
+  const target = new Mp4Muxer.ArrayBufferTarget();
+  const muxer = new Mp4Muxer.Muxer({ target, fastStart: false, firstTimestampBehavior: 'offset', video: { codec: codecs.video.mux, width: W, height: H }, ...(abuf ? { audio: { codec: codecs.audio.mux, sampleRate: 48000, numberOfChannels: 2 } } : {}) });
+  let fail = null;
+  const venc = new VideoEncoder({ output: (ch, m) => muxer.addVideoChunk(ch, m), error: e => { fail = e; } }); venc.configure(codecs.video.config);
+  if (abuf) {   // the sound of the same span, slowed down (lower pitch, like a real slow-motion camera)
+    const len = Math.max(1, Math.round((b - a) / speed * 48000)), oac = new OfflineAudioContext(2, len, 48000), src = oac.createBufferSource();
+    src.buffer = abuf; src.playbackRate.value = speed; src.connect(oac.destination); src.start(0, a, b - a); const mix = await oac.startRendering();
+    const aenc = new AudioEncoder({ output: (ch, m) => muxer.addAudioChunk(ch, m), error: e => { fail = e; } }); aenc.configure(codecs.audio.config);
+    const L = mix.getChannelData(0), R = mix.getChannelData(1);
+    for (let i = 0; i < mix.length; i += 4096) { const n = Math.min(4096, mix.length - i), data = new Float32Array(n * 2); data.set(L.subarray(i, i + n), 0); data.set(R.subarray(i, i + n), n);
+      const ad = new AudioData({ format: 'f32-planar', sampleRate: 48000, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(i / 48000 * 1e6), data }); aenc.encode(ad); ad.close(); }
+    await aenc.flush(); aenc.close();
+  }
+  const cv = new OffscreenCanvas(W, H), x = cv.getContext('2d', { alpha: false }); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+  const src = await openSource(rec, a), cache = new Map();   // source frame index -> ImageBitmap (upright, output size)
+  const frameIdx = async j => { if (cache.has(j)) return cache.get(j);
+    const f = await src.frameAt(Math.min(b - 1e-3, Math.max(a, (j + .5) / sfps)));
+    const c2 = new OffscreenCanvas(W, H), y = c2.getContext('2d'); y.translate(W / 2, H / 2); if (f.rot) y.rotate(f.rot * Math.PI / 180); const kk = (q ? H : W) / f.w; y.scale(kk, kk); y.drawImage(f.img, -f.w / 2, -f.h / 2, f.w, f.h);
+    const bm = await createImageBitmap(c2); cache.set(j, bm); for (const key of [...cache.keys()]) if (key < j - 2) { cache.get(key).close(); cache.delete(key); } return bm; };
+  try {
+    for (let i = 0; i < N; i++) {
+      if (fail) throw fail;
+      const ts = a + (i + .5) / fps * speed, u = ts * sfps - .5, j0 = Math.max(Math.floor(a * sfps), Math.floor(u)), w1 = blend ? Math.max(0, Math.min(1, u - j0)) : 0;
+      const A0 = await frameIdx(j0); x.globalAlpha = 1; x.drawImage(A0, 0, 0);
+      if (w1 > 1e-3 && (j0 + 1) / sfps < b) { const A1 = await frameIdx(j0 + 1); x.globalAlpha = w1; x.drawImage(A1, 0, 0); x.globalAlpha = 1; }
+      const vf = new VideoFrame(cv, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) }); venc.encode(vf, { keyFrame: i % fps === 0 }); vf.close();
+      if (venc.encodeQueueSize > 6) await new Promise(r => setTimeout(r, 5));
+      if (i % 6 === 0) onProgress(i / N);
+    }
+  } finally { src.close(); for (const bm of cache.values()) bm.close(); }
+  await venc.flush(); if (fail) throw fail; venc.close(); muxer.finalize();
+  const base = (rec.name || 'clip').replace(/\.[^.]+$/, '');
+  return new File([target.buffer], `${base}-slowmo-${Math.round(1 / speed)}x.mp4`, { type: 'video/mp4' });
+}

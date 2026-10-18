@@ -360,3 +360,6 @@ body.home-open .sheet{position:fixed;z-index:35}
 .laygrid { flex-wrap: nowrap; overflow-x: auto; }
 .laygrid .chipbtn { padding: 5px 8px; line-height: 0; }
 .mirgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+/* ---------- Batch 10: motion ---------- */
+.graphcv { display: block; width: 100%; aspect-ratio: 680 / 400; border-radius: 12px; touch-action: none; border: 1px solid rgba(255,255,255,.12); margin: 6px 0; }
+.bzpresets { flex-wrap: wrap; }
