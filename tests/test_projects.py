@@ -125,7 +125,7 @@ async def run():
         ok(await P(pg, 'document.querySelector("#tcur").textContent') == '00:00.0', 'time display reset on open')
         # templates make a NEW project
         await home(pg); n0 = len(await cards(pg)); await pg.click('#homeTemplates'); await pg.wait_for_selector('#sheet .tpl', timeout=10000)
-        await pg.click('#sheet .tpl >> nth=0'); await pg.wait_for_function('!document.body.classList.contains("home-open")', timeout=20000); await pg.wait_for_timeout(800)
+        await pg.click('#sheet .tpl >> nth=0'); await pg.click('#tplUse'); await pg.wait_for_function('!document.body.classList.contains("home-open")', timeout=20000); await pg.wait_for_timeout(800)
         tp = await P(pg, 'studio.S.project.id'); ok(tp not in (old_id, p2, dup[0]['id']), 'template opens as a new project')
         ok(await P(pg, f'(async()=>(await studio.projects.getProject("{old_id}")).tracks[0].clips.length)()') == 2, 'other projects untouched by the template')
         t_disp = await P(pg, '[document.querySelector("#tcur").textContent, studio.player.t]'); ok(t_disp[0] == f'00:{t_disp[1]:04.1f}', f'time display matches the playhead after a template {t_disp}')

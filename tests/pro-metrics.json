@@ -27,7 +27,7 @@
   "dodge": 0.4,
   "burn": 0.5
  },
- "reverse_seconds_3s_clip": 0.4,
+ "reverse_seconds_3s_clip": 0.3,
  "reverse_chirp_hz": [
   1095,
   435
