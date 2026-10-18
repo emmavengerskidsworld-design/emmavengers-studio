@@ -53,7 +53,7 @@ async def test_transitions(b):
     ctx, pg = await new_page(b)
     r = await P(pg, PROBE + '.then(m=>({p:m.probeTransitions(), t:m.timeTransitions()}))'); res, tms = r['p']['res'], r['t']
     ok(not r['p']['errors'], f'every transition renders without error {r["p"]["errors"][:3]}')
-    n = len(res); ok(n >= 80, f'{n} transitions registered')
+    n = len(res); ok(n >= 150, f'{n} transitions registered')
     cats = {}
     for k, v in res.items(): cats.setdefault(v['cat'], []).append(v['name'])
     for c, names in cats.items(): log(f'       {c} ({len(names)}): {", ".join(names)}')
@@ -72,22 +72,26 @@ async def test_transitions(b):
     mc = await main_clips(pg)
     await pg.locator(f'.joint[data-joint="{mc[1]["id"]}"]').click(); await pg.wait_for_selector('.trgrid .trtile')
     tabs = await P(pg, "[...document.querySelectorAll('.chips.tabs .chipbtn')].map(b=>b.dataset.v)")
-    ok(all(c in tabs for c in ('Motion', '3D', 'Split', 'Kids')), f'new picker tabs: {tabs}')
+    ok(all(c in tabs for c in ('Motion', '3D', 'Split', 'Kids', 'Comic', 'Magic')), f'new picker tabs: {tabs}')
     await pg.click('.chips.tabs .chipbtn[data-v="Kids"]'); await pg.wait_for_timeout(100)
     kids = await pg.locator('.trtile').count(); ok(kids == 1 + len(cats['Kids']), f'Kids tab shows None + {kids - 1} transitions')
     await pg.click('.trtile[data-tr="cloud"]'); await pg.wait_for_timeout(2300)
     await pg.screenshot(path=str(SHOTS / 'transition-picker-kids-390.png')); log('  shot transition-picker-kids-390.png')
     await pg.click('.chips.tabs .chipbtn[data-v="3D"]'); await pg.wait_for_timeout(1200); await pg.screenshot(path=str(SHOTS / 'transition-picker-3d-390.png')); log('  shot transition-picker-3d-390.png')
-    await pg.click('.trtile[data-tr="cubeL"]'); await pg.click('.sh-done')
-    await P(pg, f"studio.act(p=>{{const m=p.tracks.find(t=>t.kind==='main');m.clips[1].transitionIn={{id:'cubeL',dur:1}};m.clips[2].transitionIn={{id:'burn',dur:1}};}})")
+    await pg.click('.chips.tabs .chipbtn[data-v="Magic"]'); await pg.wait_for_timeout(100)
+    magic = await pg.locator('.trtile').count(); ok(magic == 1 + len(cats['Magic']), f'Magic (GPU) tab shows None + {magic - 1} transitions')
+    await pg.click('.trtile[data-tr="waterDrop"]'); await pg.wait_for_timeout(2300); await pg.screenshot(path=str(SHOTS / 'b8-transition-picker-magic-390.png')); log('  shot b8-transition-picker-magic-390.png')
+    await pg.click('.chips.tabs .chipbtn[data-v="Comic"]'); await pg.wait_for_timeout(1200); await pg.screenshot(path=str(SHOTS / 'b8-transition-picker-comic-390.png')); log('  shot b8-transition-picker-comic-390.png')
+    await pg.click('.trtile[data-tr="pow"]'); await pg.click('.sh-done')
+    await P(pg, f"studio.act(p=>{{const m=p.tracks.find(t=>t.kind==='main');m.clips[1].transitionIn={{id:'waterDrop',dur:1}};m.clips[2].transitionIn={{id:'heartsFloat',dur:1}};}})")
     mc = await main_clips(pg); t1, t2 = mc[1]['start'] + 0.5, mc[2]['start'] + 0.5
-    ok(mc[1]['tr']['id'] == 'cubeL' and mc[2]['tr']['id'] == 'burn', 'cube left + burn set on the two cuts')
+    ok(mc[1]['tr']['id'] == 'waterDrop' and mc[2]['tr']['id'] == 'heartsFloat', 'water drop (GPU) + floating hearts set on the two cuts')
     prev = {}
     for t in (t1, t2):
         await seek_exact(pg, t); im = OUT / f'tprev_{t}.png'; await pg.locator('#preview').screenshot(path=str(im)); prev[t] = Image.open(im).convert('RGB')
     st = {t: await still(pg, t) for t in (t1, t2)}
     st0 = await still(pg, 1.0); f = await export(pg, 'transitions2'); ref = psnr_lo(st0, frame(f, 1.0, 'tex_ref.png')); log(f'       reference: plain frame, export vs renderer PSNR(1/4 size) {ref:.1f} dB')
-    for t, nm in ((t1, 'cube left'), (t2, 'burn')):
+    for t, nm in ((t1, 'water drop (GPU)'), (t2, 'floating hearts')):
         ex = frame(f, t, f'tex_{t}.png'); ps = psnr_lo(st[t], ex); gd = grid_diff(prev[t], ex)
         ok(ps > 32, f'{nm}: export frame == renderer at {t:.2f}s (PSNR at 1/4 size {ps:.1f} dB; plain frame {ref:.1f})'); ok(gd < 60, f'{nm}: preview == export (max cell diff {gd})')
         a = await still(pg, t - 0.55); ok(psnr_lo(a, ex) < 25, f'{nm}: midpoint frame is mid-effect, not the outgoing clip')
@@ -102,8 +106,8 @@ async def test_anim_registries(b):
     for k, v in res.items(): cnt.setdefault((v['type'], v['kind']), []).append(v['name'])
     for (ty, kd), names in cnt.items(): log(f'       {"clip" if ty == "image" else "text"} {kd} ({len(names)}): {", ".join(names)}')
     nclip = sum(len(v) for (ty, _), v in cnt.items() if ty == 'image'); ntext = sum(len(v) for (ty, _), v in cnt.items() if ty == 'text')
-    ok(nclip >= 60, f'{nclip} clip animations (In {len(cnt[("image","in")])} / Out {len(cnt[("image","out")])} / Combo {len(cnt[("image","combo")])})')
-    ok(ntext >= 40, f'{ntext} text animations (In {len(cnt[("text","in")])} / Out {len(cnt[("text","out")])} / Loop {len(cnt[("text","loop")])})')
+    ok(nclip >= 150, f'{nclip} clip animations (In {len(cnt[("image","in")])} / Out {len(cnt[("image","out")])} / Combo {len(cnt[("image","combo")])})')
+    ok(ntext >= 100, f'{ntext} text animations (In {len(cnt[("text","in")])} / Out {len(cnt[("text","out")])} / Loop {len(cnt[("text","loop")])})')
     flat = [k for k, v in res.items() if v['mid'] < 0.9]; ok(not flat, f'every animation visibly changes the picture mid-way {flat}')
     ends = [k for k, v in res.items() if v['kind'] in ('in', 'out') and v['end'] > 0.5]; ok(not ends, f'In ends / Out starts on the untouched picture {ends}')
     after = [k for k, v in res.items() if v['kind'] in ('in', 'out') and v['after'] > 0.01]; ok(not after, f'outside the In / Out time the clip is untouched {after}')
@@ -126,7 +130,7 @@ async def test_anim_editor(b):
     ok(await pg.locator('#toolbar .tool[data-tool="anim"]').count() == 1, 'clip toolbar has Animation')
     await pg.click('#toolbar .tool[data-tool="anim"]'); await pg.wait_for_selector('.angrid .trtile')
     tabs = await P(pg, "[...document.querySelectorAll('.chips.animtabs .chipbtn')].map(b=>b.textContent)"); ok(tabs == ['In', 'Out', 'Combo'], f'tabs {tabs}')
-    nin = await pg.locator('.angrid .trtile').count(); ok(nin >= 26, f'In tab: None + {nin - 1} animated tiles')
+    nin = await pg.locator('.angrid .trtile').count(); ok(nin >= 55, f'In tab: None + {nin - 1} animated tiles')
     anim = await P(pg, "(async()=>{const c=document.querySelector('.angrid .trtile[data-an=\"zoomIn\"] canvas');const a=c.toDataURL();await new Promise(r=>setTimeout(r,300));return a!==c.toDataURL()})()")
     ok(anim, 'tiles are animated (drawn by the real renderer)')
     ok(await P(pg, "document.querySelector('#anDur').closest('label').hidden"), 'duration slider hidden until an animation is picked')
@@ -182,9 +186,9 @@ async def test_anim_export(b):
     await pg.wait_for_function('studio.S.project.tracks.find(t=>t.kind==="main").clips.length===2', timeout=20000)
     await P(pg, 'studio.select(null)'); await pg.click('#toolbar .tool[data-tool="text"]'); await pg.wait_for_timeout(300); await pg.click('.sh-done'); await P(pg, 'studio.select(null)')
     await P(pg, """studio.act(p=>{const m=p.tracks.find(t=>t.kind==='main'), a=m.clips[0], b=m.clips[1], t=p.tracks.find(t=>t.kind==='text').clips[0];
-      a.anim={in:{id:'spin',dur:1},combo:{id:'pulse',dur:1}}; a.enhance={on:true,strength:.6}; a.keyframes={x:[{t:0,v:.4,ease:'linear'},{t:3,v:.6,ease:'linear'}]};
-      b.anim={out:{id:'wipe',dur:1}}; b.transitionIn={id:'whipL',dur:.6};
-      t.start=0; t.dur=3; t.text.content='Jesus loves me'; t.anim={in:{id:'typewriter',dur:1.5},loop:{id:'wave',dur:1}};})""")
+      a.anim={in:{id:'spin',dur:1},combo:{id:'zoomPulse',dur:1}}; a.enhance={on:true,strength:.6}; a.keyframes={x:[{t:0,v:.4,ease:'linear'},{t:3,v:.6,ease:'linear'}]};
+      b.anim={out:{id:'springR',dur:1}}; b.transitionIn={id:'whipL',dur:.6};
+      t.start=0; t.dur=3; t.text.content='Jesus loves me'; t.anim={in:{id:'springLetters',dur:1.5},loop:{id:'glowWave',dur:1}};})""")
     await P(pg, 'studio.select(null)'); await pg.wait_for_timeout(200)
     D = await P(pg, 'studio.projectDuration(studio.S.project)'); times = [0.5, 1.2, 2.7, round(D - 0.5, 3)]
     prev, st = {}, {}

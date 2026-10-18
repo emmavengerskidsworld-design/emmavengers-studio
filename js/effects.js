@@ -238,10 +238,10 @@ function init() {
   } catch (e) { console.warn('effects GL', e); failed = true; return null; }
 }
 export const fxAvailable = () => !!init();
-function prog(key, body) {
+function prog(key, body, head = HEAD, main = MAIN) {
   let P = G.progs.get(key); if (P) return P;
   const gl = G.gl, sh = (type, s) => { const o = gl.createShader(type); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(key + ': ' + gl.getShaderInfoLog(o)); return o; };
-  const p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, HEAD + body + MAIN)); gl.bindAttribLocation(p, 0, 'p'); gl.linkProgram(p);
+  const p = gl.createProgram(); gl.attachShader(p, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, head + body + main)); gl.bindAttribLocation(p, 0, 'p'); gl.linkProgram(p);
   if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(key + ': ' + gl.getProgramInfoLog(p));
   const U = {}; const n = gl.getProgramParameter(p, gl.ACTIVE_UNIFORMS); for (let i = 0; i < n; i++) { const a = gl.getActiveUniform(p, i); U[a.name] = gl.getUniformLocation(p, a.name); }
   P = { p, U }; G.progs.set(key, P); return P;
@@ -294,4 +294,43 @@ export function gradeCss(id, a = 1) {
   const f = filterGL(id); if (!f) return ''; const q = { ...GRADE_DEFAULTS, ...f.p }, m = (x, y) => x + (y - x) * a;
   return [`brightness(${m(1, Math.pow(2, q.ex) * (1 + q.fade * .05)).toFixed(3)})`, `contrast(${m(1, q.con * (1 - q.fade * .2)).toFixed(3)})`, `saturate(${m(1, q.sat * (1 - q.bw) * (1 + q.vib * .5)).toFixed(3)})`,
     q.temp > 0 ? `sepia(${(q.temp * .35 * a).toFixed(3)})` : '', q.hue || q.temp < 0 ? `hue-rotate(${((q.hue + (q.temp < 0 ? q.temp * 14 : 0)) * a).toFixed(1)}deg)` : ''].filter(Boolean).join(' ');
+}
+
+/* ---------------- GPU transitions (js/transitions.js, cat "Magic") ----------------
+   body = GLSL defining vec4 tr(vec2 u, float p): u = 0..1 (y up), a(u) / b(u) = outgoing / incoming picture (premultiplied). */
+const THEAD = `#version 300 es
+precision highp float; in vec2 v; out vec4 o; uniform sampler2D TA, TB; uniform vec2 R; uniform float P;
+#define PI 3.14159265
+vec2 ASP; vec4 a(vec2 u){ return texture(TA, clamp(u, 0., 1.)); } vec4 b(vec2 u){ return texture(TB, clamp(u, 0., 1.)); }
+float hash(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y); }
+float fbm(vec2 p){ float s = 0., k = .5; for (int i = 0; i < 4; i++){ s += k * noise(p); p = p * 2.03 + 7.1; k *= .5; } return s; }
+float lum(vec3 c){ return dot(c, vec3(.299, .587, .114)); }
+mat2 rot(float t){ float c = cos(t), s = sin(t); return mat2(c, -s, s, c); }
+float bell(float p){ return sin(PI * clamp(p, 0., 1.)); }
+vec4 ab(vec2 u, float m){ return mix(a(u), b(u), clamp(m, 0., 1.)); }
+/* soft threshold: 0 while p' < v, 1 once p' > v + w (p' runs a bit past 0..1 so everything is covered at the ends) */
+float thr(float v, float p, float w){ return smoothstep(v, v + w, p * (1. + 2. * w) - w); }
+`;
+const TMAIN = `void main(){ ASP = vec2(R.x / min(R.x, R.y), R.y / min(R.x, R.y)); o = tr(v, P); }`;
+/** Draw a GPU transition. Returns the GL canvas (valid until the next GL call) or null when WebGL2 is missing. */
+export function glTransition(key, body, A, B, p, w, h) {
+  if (!init()) return null;
+  w = Math.max(2, Math.round(w)); h = Math.max(2, Math.round(h));
+  const gl = G.gl;
+  try {
+    targets(w, h); const P = prog('tr:' + key, body, THEAD, TMAIN);
+    if (!G.ta) { G.ta = gl.createTexture(); G.tb = gl.createTexture(); }
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+    for (const [t, img] of [[G.ta, A], [G.tb, B]]) { texSetup(gl, t); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img); }
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false); gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.useProgram(P.p); gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, w, h); gl.disable(gl.BLEND);
+    gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, G.ta); gl.uniform1i(P.U.TA, 0);
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, G.tb); gl.uniform1i(P.U.TB, 1); gl.activeTexture(gl.TEXTURE0);
+    gl.uniform2f(P.U.R, w, h); gl.uniform1f(P.U.P, p);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    return G.cv;
+  } catch (e) { console.warn('transition', key, e); return null; }
 }
