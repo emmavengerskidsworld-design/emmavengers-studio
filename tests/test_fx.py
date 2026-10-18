@@ -122,7 +122,7 @@ async def run():
         await pg.click('#kfBtn'); kf = await P(pg, f'studio.find(studio.S.project,"{ov}").clip.keyframes')
         ok(set(kf) == {'x', 'y', 'scale', 'rotation', 'opacity'} and all(len(v) == 1 and v[0]['t'] == 0 for v in kf.values()), f'◆ adds a keyframe for every property at the playhead ({sorted(kf)})')
         await seek_exact(pg, 2.0)
-        await pg.click('#toolbar .tool[data-tool="adjust"]'); await pg.wait_for_selector('#adj-x')
+        await pg.click('#toolbar .tool[data-tool="transform"]'); await pg.wait_for_selector('#adj-x')
         for k, v in (('x', 0.8), ('opacity', 0.2)): await P(pg, f"(()=>{{const r=document.querySelector('#adj-{k}');r.value={v};r.dispatchEvent(new Event('input'))}})()")
         await pg.click('.sh-done'); kf = await P(pg, f'studio.find(studio.S.project,"{ov}").clip.keyframes')
         ok([(x['t'], x['v']) for x in kf['x']] == [(0, 0.5), (2, 0.8)] and [(x['t'], x['v']) for x in kf['opacity']] == [(0, 1), (2, 0.2)], f'changing a property at the playhead auto-creates keyframes (x {kf["x"]})')

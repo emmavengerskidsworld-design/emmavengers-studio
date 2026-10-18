@@ -15,33 +15,63 @@ export function outputSize(aspect, short) {
 }
 const hasWebCodecs = () => typeof VideoEncoder !== 'undefined' && typeof AudioEncoder !== 'undefined' && typeof VideoFrame !== 'undefined' && typeof Mp4Muxer !== 'undefined';
 
-/* Sharp exports: ~0.23 bits per pixel per frame (VBR, quality mode) -> 1080x1920@30 ≈ 14.3 Mbps, 720x1280@30 ≈ 6.4 Mbps,
-   1080p60 capped at 20 Mbps. Never below 4 Mbps. */
-export const defaultBitrate = (W, H, fps) => Math.round(Math.max(4e6, Math.min(20e6, W * H * fps * 0.23)));
+/* Sharp exports. "High" (the default) = 0.23 bits per pixel per frame at 1080p30 (VBR, quality mode):
+   1080x1920@30 ≈ 14.3 Mbps, 720x1280@30 ≈ 6.4 Mbps. Above 1080p the bitrate grows with pixels^0.75
+   (2K ≈ 22 Mbps, 4K ≈ 40 Mbps), above 30 fps with sqrt(fps/30) (1080p60 ≈ 20 Mbps).
+   Standard = 0.6x, Best = 1.5x. */
+export const QUALITY = { standard: { name: 'Standard', k: 0.6 }, high: { name: 'High', k: 1 }, best: { name: 'Best', k: 1.5 } };
+export const RESOLUTIONS = [{ short: 720, label: '720p' }, { short: 1080, label: '1080p' }, { short: 1440, label: '2K' }, { short: 2160, label: '4K' }];
+const REF = 1080 * 1920, REF_BR = REF * 30 * 0.23;
+export function bitrateFor(W, H, fps, q = 'high') {
+  const px = W * H, pf = px <= REF ? px / REF : Math.pow(px / REF, 0.75), ff = fps <= 30 ? fps / 30 : Math.sqrt(fps / 30);
+  return Math.round(Math.max(2.5e6, Math.min(120e6, REF_BR * pf * ff * (QUALITY[q] || QUALITY.high).k)));
+}
+export const defaultBitrate = (W, H, fps) => bitrateFor(W, H, fps, 'high');
 /** Lowest video bitrate we still call good quality (used when fitting a video under the share size limit). */
 export const qualityFloor = (W, H) => Math.round(W * H * 2.0);   // ~4.1 Mbps at 1080x1920, ~1.8 Mbps at 720x1280
-const AUDIO_BR = 192000;
-/** Video bitrate so the whole file stays under maxBytes (with a safety margin), never above the normal bitrate. */
-export function planBitrate(W, H, fps, D, maxBytes) {
-  const full = defaultBitrate(W, H, fps); if (!maxBytes || !D) return full;
+export const AUDIO_BR = 192000;
+/** Estimated file size in bytes (video + audio + container). VBR usually lands a bit under this. */
+export const estimateBytes = (vbr, D) => Math.round((vbr + AUDIO_BR) * D / 8 * 1.01 + 40000);
+/** Video bitrate so the whole file stays under maxBytes (with a safety margin), never above the chosen quality. */
+export function planBitrate(W, H, fps, D, maxBytes, q = 'high') {
+  const full = bitrateFor(W, H, fps, q); if (!maxBytes || !D) return full;
   return Math.round(Math.max(400000, Math.min(full, maxBytes * 8 * 0.86 / D - AUDIO_BR - 30000)));
+}
+/** Smallest H.264 level that fits size, frame rate and bitrate (High profile limits). */
+export function avcLevel(W, H, fps, br) {
+  const mbs = Math.ceil(W / 16) * Math.ceil(H / 16), rate = mbs * fps;
+  const L = [['28', 8192, 245760, 25e6], ['2a', 8704, 522240, 62.5e6], ['32', 22080, 589824, 168.75e6], ['33', 36864, 983040, 300e6], ['34', 36864, 2073600, 300e6], ['3c', 139264, 8355840, 1000e6]];
+  for (const [l, f, r, b] of L) if (mbs <= f && rate <= r && br <= b) return l;
+  return '3c';
+}
+async function pickVideo(W, H, fps, bitrate) {
+  const lvl = avcLevel(W, H, fps, bitrate);
+  const vc = [['avc1.6400' + lvl, 'avc'], ['avc1.4d00' + lvl, 'avc'], ['avc1.42e0' + lvl, 'avc'], ['vp09.00.' + (W * H > 2228224 ? '51' : '40') + '.08', 'vp9'], ['av01.0.' + (W * H > 2228224 ? '12' : '08') + 'M.08', 'av1']];
+  for (const [codec, mux] of vc) {
+    const config = { codec, width: W, height: H, bitrate, bitrateMode: 'variable', framerate: fps, latencyMode: 'quality', ...(mux === 'avc' ? { avc: { format: 'avc' } } : {}) };
+    try { if ((await VideoEncoder.isConfigSupported(config)).supported) return { config, mux }; } catch (e) {}
+  }
+  return null;
 }
 export async function pickCodecs(W, H, fps, vbr) {
   if (!hasWebCodecs()) return null;
-  const bitrate = vbr || defaultBitrate(W, H, fps);
-  const lvl = W * H * fps > 1920 * 1088 * 30 ? '2a' : '28';
-  const vc = [['avc1.6400' + lvl, 'avc'], ['avc1.4d00' + lvl, 'avc'], ['avc1.42e0' + lvl, 'avc'], ['vp09.00.40.08', 'vp9'], ['av01.0.08M.08', 'av1']];
-  let video = null;
-  for (const [codec, mux] of vc) {
-    const config = { codec, width: W, height: H, bitrate, bitrateMode: 'variable', framerate: fps, latencyMode: 'quality', ...(mux === 'avc' ? { avc: { format: 'avc' } } : {}) };
-    try { if ((await VideoEncoder.isConfigSupported(config)).supported) { video = { config, mux }; break; } } catch (e) {}
-  }
+  const video = await pickVideo(W, H, fps, vbr || defaultBitrate(W, H, fps));
   let audio = null;
   for (const [codec, mux, br] of [['mp4a.40.2', 'aac', AUDIO_BR], ['opus', 'opus', 160000]]) {
     const config = { codec, sampleRate: SR, numberOfChannels: 2, bitrate: br };
     try { if ((await AudioEncoder.isConfigSupported(config)).supported) { audio = { config, mux }; break; } } catch (e) {}
   }
   return video && audio ? { video, audio } : null;
+}
+/** Which export resolutions this device can encode (asks VideoEncoder.isConfigSupported). 720p/1080p always work
+    (real-time recorder fallback); 2K/4K need a WebCodecs encoder that accepts that size. */
+export async function supportedResolutions(aspect, fps, q = 'high') {
+  const out = {};
+  for (const r of RESOLUTIONS) {
+    const { W, H } = outputSize(aspect, r.short);
+    out[r.short] = r.short <= 1080 ? true : hasWebCodecs() ? !!(await pickVideo(W, H, fps, bitrateFor(W, H, fps, q))) : false;
+  }
+  return out;
 }
 export function recorderMime() {
   if (typeof MediaRecorder === 'undefined') return null;
@@ -67,9 +97,9 @@ export async function mixAudio(p, D) {
 }
 
 export async function exportVideo(p, opt) {
-  const { short = 1080, fps = 30, onProgress = () => {}, signal = {}, mode, maxBytes } = opt;
+  const { short = 1080, fps = 30, onProgress = () => {}, signal = {}, mode, maxBytes, quality = 'high' } = opt;
   const D = projectDuration(p); if (!D) throw new Error('Nothing to export yet');
-  const { W, H } = outputSize(p.aspect, short), vbr = planBitrate(W, H, fps, D, maxBytes);
+  const { W, H } = outputSize(p.aspect, short), vbr = planBitrate(W, H, fps, D, maxBytes, quality);
   const codecs = mode === 'recorder' ? null : await pickCodecs(W, H, fps, vbr);
   try {
     if (codecs) return { ...(await encodeWebCodecs(p, D, W, H, fps, codecs, onProgress, signal)), bitrate: vbr };
@@ -143,7 +173,7 @@ async function encodeRecorder(p, D, W, H, fps, onProgress, signal, vbr) {
   player.ensureAudio();
   player.seek(0); await new Promise(r => setTimeout(r, 800)); player.draw();
   const stream = canvas.captureStream(fps); if (dest) dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
-  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: Math.round(Math.min(20e6, vbr || defaultBitrate(W, H, fps))), audioBitsPerSecond: 160000 });
+  const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: Math.round(Math.min(25e6, vbr || defaultBitrate(W, H, fps))), audioBitsPerSecond: 160000 });
   const chunks = []; rec.ondataavailable = e => e.data.size && chunks.push(e.data);
   const stopped = new Promise(r => rec.onstop = r);
   await new Promise(res => {

@@ -4,6 +4,7 @@
 import { TRACK_KINDS, propAt, filterCss, FONTS } from './registry.js';
 import { transitionById, helpers } from './transitions.js';
 import { clipEnd } from './project.js';
+import { processImage, hasAdjust, enhanceOn, maxSide, DEFAULT_STRENGTH } from './enhance.js';
 
 export function visualTracks(p) {
   return p.tracks.map((t, i) => ({ t, i })).filter(x => TRACK_KINDS[x.t.kind].visual)
@@ -23,7 +24,7 @@ export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
     const tr = { x: propAt(clip, 'x', local), y: propAt(clip, 'y', local), scale: propAt(clip, 'scale', local), rotation: propAt(clip, 'rotation', local), opacity: propAt(clip, 'opacity', local) };
     let box = null;
     if (clip.type === 'text') box = drawText(cx, W, H, clip, tr);
-    else { const s = getSource(clip, t); if (s) box = drawVisual(cx, W, H, s, clip, tr); }
+    else { const s = getSource(clip, t); if (s) box = drawVisual(cx, W, H, s, clip, tr, local, opts); }
     if (box) boxes.push({ id: clip.id, ...box, rotation: tr.rotation });
   };
   for (const track of visualTracks(p)) {
@@ -47,7 +48,8 @@ export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
   return boxes;
 }
 
-function drawVisual(ctx, W, H, s, clip, tr) {
+let pre = null;   // downscale scratch (big sources are first brought to on-screen size with high-quality smoothing)
+function drawVisual(ctx, W, H, s, clip, tr, local, opts) {
   const quarter = ((s.rot || 0) % 180 + 180) % 180 === 90;
   const dw = quarter ? s.h : s.w, dh = quarter ? s.w : s.h;   // displayed (rotated) size
   if (!dw || !dh) return null;
@@ -56,9 +58,27 @@ function drawVisual(ctx, W, H, s, clip, tr) {
   ctx.save();
   ctx.globalAlpha = Math.max(0, Math.min(1, tr.opacity));
   const f = filterCss(clip.filter); ctx.filter = f || 'none';
-  ctx.translate(cx, cy); ctx.rotate(tr.rotation * Math.PI / 180); ctx.scale(k, k);
-  if (s.rot) ctx.rotate(s.rot * Math.PI / 180);
-  ctx.drawImage(s.img, -s.w / 2, -s.h / 2, s.w, s.h);
+  // HD pipeline: enhance / colour adjust / any upscale go through the WebGL shaders (same code for preview and export)
+  const enh = !opts.plain && enhanceOn(clip) ? (clip.enhance.strength ?? DEFAULT_STRENGTH) : 0, adj = !opts.plain && hasAdjust(clip.adjust);
+  let out = null, ow = Math.round(s.w * k), oh = Math.round(s.h * k);
+  if (!opts.plain && (enh || adj || k > 1.001) && ow >= 2 && oh >= 2) {
+    const cap = Math.min(maxSide(), Math.ceil(Math.max(W, H) * 1.6)), lim = Math.max(ow, oh) > cap ? cap / Math.max(ow, oh) : 1;
+    ow = Math.max(2, Math.round(ow * lim)); oh = Math.max(2, Math.round(oh * lim));
+    let src = s.img, sw = s.w, sh = s.h;
+    if (ow < sw || oh < sh) {
+      if (!pre || pre.width !== ow || pre.height !== oh) pre = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(ow, oh) : Object.assign(document.createElement('canvas'), { width: ow, height: oh });
+      const x = pre.getContext('2d'); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high'; x.clearRect(0, 0, ow, oh); x.drawImage(s.img, 0, 0, ow, oh); src = pre; sw = ow; sh = oh;
+    }
+    out = processImage(src, sw, sh, ow, oh, { enhance: enh, adjust: adj ? clip.adjust : null, fast: !!opts.fast, seed: Math.floor((local || 0) * 30) % 997 });
+  }
+  const img = out || s.img;
+  if (out && !s.rot && Math.abs(tr.rotation % 360) < 1e-6 && Math.abs(ow - s.w * k) < 0.75 && Math.abs(oh - s.h * k) < 0.75) {
+    ctx.drawImage(img, Math.round(cx - ow / 2), Math.round(cy - oh / 2));   // pixel-exact, no second resample
+  } else {
+    ctx.translate(cx, cy); ctx.rotate(tr.rotation * Math.PI / 180); ctx.scale(k, k);
+    if (s.rot) ctx.rotate(s.rot * Math.PI / 180);
+    ctx.drawImage(img, -s.w / 2, -s.h / 2, s.w, s.h);
+  }
   ctx.restore();
   return { cx, cy, w: dw * k, h: dh * k };
 }

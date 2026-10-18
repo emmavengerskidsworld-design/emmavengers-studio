@@ -7,7 +7,9 @@ import { Player } from './player.js';
 import { Timeline, fmtS } from './timeline.js';
 import { openSheet, closeSheet, sheetOpen, slider, chips, swatches } from './panels.js';
 import { FILTERS, FONTS, COLORS, BG_COLORS, SPEED_PRESETS, KEYFRAME_PROPS, DEFAULT_TRANSFORM, TRACK_KINDS, propAt, kfPropsFor, EASING_LIST, TRANSFORM_PROPS } from './registry.js';
-import { exportVideo, outputSize, pickCodecs, recorderMime, planBitrate, qualityFloor } from './export.js';
+import { exportVideo, outputSize, pickCodecs, recorderMime, planBitrate, qualityFloor, QUALITY, RESOLUTIONS, supportedResolutions, estimateBytes, bitrateFor } from './export.js';
+import { ADJUST, DEFAULT_STRENGTH, enhanceOn, glAvailable } from './enhance.js';
+import { renderFrame } from './render.js';
 import { hitTest } from './render.js';
 import { icon } from './icons.js';
 
@@ -23,21 +25,21 @@ async function boot() {
   await load();
   await loadAll(mediaIds(S.project));
   player = new Player($('#preview'), { getProject: () => S.project, selected: () => S.sel, onTime: t => { timeline.setTime(t); showTime(); updateKf(); }, onState: setPlayIcon });
-  timeline = new Timeline({ getTime: () => player.t, seek: t => { player.seek(t); showTime(); updateKf(); }, onJoint: id => transitionSheet(id), isPlaying: () => player.playing, pause: () => player.pause(), onAdd: k => pick(k), afterEdit: afterEdit });
+  timeline = new Timeline({ getTime: () => player.t, seek: t => { player.seek(t, true); showTime(); updateKf(); }, onJoint: id => transitionSheet(id), isPlaying: () => player.playing, pause: () => player.pause(), onAdd: k => pick(k), afterEdit: afterEdit });
   on('change', () => { timeline.render(); player.seek(player.t); showTime(); refreshToolbar(); updateEmpty(); updateKf(); });
   on('select', () => { document.body.classList.toggle('has-sel', !!S.sel); timeline.render(); refreshToolbar(); player.requestDraw(); if (sheetOpen()) closeSheet(); updateKf(); });
   on('history', updateUndo);
   onMediaUpdate(() => { timeline.render(); player.requestDraw(); });
   wireUI(); layoutPreview(); timeline.fitZoom(); timeline.render(); refreshToolbar(); updateUndo(); updateEmpty(); showTime(); setPlayIcon(false);
   player.seek(0);
-  window.studio = { S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, ready: true };
+  window.studio = { S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, renderStill, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, ready: true };
   document.body.classList.add('ready');
 }
 function afterEdit() { player.seek(Math.min(player.t, projectDuration(S.project))); showTime(); refreshToolbar(); }
 function showTime() { $('#tcur').textContent = fmt(player.t); $('#ttot').textContent = fmt(projectDuration(S.project)); }
 function setPlayIcon(pl) { $('#playBtn').innerHTML = icon(pl ? 'pause' : 'play', 26); $('#playBtn').setAttribute('aria-label', pl ? 'Pause' : 'Play'); }
 function updateUndo() { $('#undoBtn').disabled = !canUndo(); $('#redoBtn').disabled = !canRedo(); }
-function updateEmpty() { const empty = !S.project.tracks.some(t => t.clips.length); $('#empty').hidden = !empty; $('#exportBtn').disabled = empty; }
+function updateEmpty() { const empty = !S.project.tracks.some(t => t.clips.length); $('#empty').hidden = !empty; $('#exportBtn').disabled = empty; $('#cmpBtn').hidden = !S.project.tracks.some(t => t.clips.some(isPic)); if ($('#cmpBtn').hidden && player.compare) setCompare(null); }
 export function toast(msg, ms = 2200) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), ms); }
 
 /* ---------------- preview canvas ---------------- */
@@ -46,6 +48,7 @@ function layoutPreview() {
   const W = stage.clientWidth - 16, H = stage.clientHeight - 12; if (W <= 0 || H <= 0) return;
   let w = W, h = W * b / a; if (h > H) { h = H; w = H * a / b; }
   cv.style.width = Math.round(w) + 'px'; cv.style.height = Math.round(h) + 'px';
+  const o = $('#cmp'); if (o) { o.style.width = cv.style.width; o.style.height = cv.style.height; }
   const dpr = Math.min(2, devicePixelRatio || 1), k = Math.min(dpr, 1080 / Math.min(w, h));
   cv.width = Math.round(w * k); cv.height = Math.round(h * k);
   player && player.draw();
@@ -255,7 +258,9 @@ const CLIP_TOOLS = [
   { id: 'speed', icon: 'speed', label: 'Speed', when: hasSource, run: speedSheet },
   { id: 'volume', icon: 'volume', label: 'Volume', when: hasSource, run: volumeSheet },
   { id: 'duration', icon: 'clock', label: 'Duration', when: c => !hasSource(c), run: durationSheet },
-  { id: 'adjust', icon: 'adjust', label: 'Adjust', when: isVisualClip, run: adjustSheet },
+  { id: 'hd', icon: 'hd', label: 'HD Enhance', when: c => c.type === 'video' || c.type === 'image', run: hdSheet },
+  { id: 'adjust', icon: 'adjust', label: 'Adjust', when: c => c.type === 'video' || c.type === 'image', run: colorSheet },
+  { id: 'transform', icon: 'move', label: 'Transform', when: isVisualClip, run: transformSheet },
   { id: 'filters', icon: 'filter', label: 'Filters', when: c => c.type === 'video' || c.type === 'image', run: filterSheet },
   { id: 'fit', icon: 'fit', label: 'Fit / Fill', when: c => c.type === 'video' || c.type === 'image', run: toggleFit },
   { id: 'curve', icon: 'curve', label: 'Curve', when: c => hasKeyframes(c), run: curveSheet },
@@ -312,9 +317,9 @@ function durationSheet() {
   const c = selected().clip;
   openSheet('Duration', body => body.append(slider('Duration', { min: 0.5, max: 30, step: 0.1, value: c.dur, fmt: v => v.toFixed(1) + 's', id: 'durRange', onInput: v => editSel(cl => { cl.dur = v; }) })));
 }
-function adjustSheet() {
+function transformSheet() {
   const c = selected().clip;
-  openSheet('Adjust', body => {
+  openSheet('Transform', body => {
     const sls = {};
     const L = localT(c);
     for (const k of TRANSFORM_PROPS) { const d = KEYFRAME_PROPS[k]; body.append(sls[k] = slider(d.label, { min: d.min, max: d.max, step: d.step, value: propAt(c, k, L), fmt: d.fmt, id: 'adj-' + k, onInput: v => editSel(cl => setProp(cl, k, v, L)) })); }
@@ -324,6 +329,76 @@ function adjustSheet() {
     const tip = document.createElement('p'); tip.className = 'hint'; tip.textContent = 'Tip: drag on the picture to move it, pinch with two fingers to resize and turn it.';
     body.append(r, tip);
   });
+}
+/* ---------------- HD Enhance + colour Adjust ---------------- */
+const srcSize = c => { const r = media.get(c.mediaId); return r && r.width ? { w: r.width, h: r.height } : null; };
+const isPic = c => c.type === 'video' || c.type === 'image';
+function hdSheet() {
+  const c = selected().clip;
+  openSheet('HD Enhance', body => {
+    const e = () => selected().clip.enhance || { on: false, strength: DEFAULT_STRENGTH };
+    const row = document.createElement('div'); row.className = 'hdrow';
+    const tg = document.createElement('button'); tg.id = 'hdToggle'; tg.className = 'hdtoggle';
+    const paint = () => { const on = enhanceOn(selected().clip); tg.classList.toggle('on', on); tg.innerHTML = `${icon('hd', 26)}<span><b>HD Enhance</b><small>${on ? 'On — sharper, cleaner, richer' : 'Off'}</small></span><i class="sw"></i>`; tg.setAttribute('aria-pressed', on); };
+    tg.onclick = () => { editSel(cl => { const x = cl.enhance || { strength: DEFAULT_STRENGTH }; cl.enhance = { ...x, on: !enhanceOn(cl), strength: x.strength || DEFAULT_STRENGTH }; }); paint(); };
+    row.append(tg); body.append(row); paint();
+    body.append(slider('Strength', { min: 0, max: 1, step: 0.01, value: e().strength ?? DEFAULT_STRENGTH, fmt: v => Math.round(v * 100) + '%', id: 'hdStrength',
+      onInput: v => { editSel(cl => { cl.enhance = { on: true, strength: v }; }); paint(); } }));
+    const sz = srcSize(c), out = outputSize(S.project.aspect, +(localStorage.getItem('studio.res') || 1080)), short = sz ? Math.min(sz.w, sz.h) : 0;
+    const tip = document.createElement('p'); tip.className = 'hint'; tip.id = 'hdInfo';
+    tip.textContent = (sz ? `This ${c.type === 'image' ? 'photo' : 'video'} is ${sz.w} × ${sz.h}. ` : '') + (sz && short < Math.min(out.W, out.H) ? `It is upscaled to ${Math.min(out.W, out.H)}p with the HD upscaler; HD Enhance also cleans noise and sharpens edges.` : 'HD Enhance cleans noise, sharpens edges and adds gentle clarity and colour.') + ' Tap ◐ on the picture to compare before / after.';
+    const all = document.createElement('div'); all.className = 'toggles';
+    const ba = document.createElement('button'); ba.className = 'chipbtn'; ba.id = 'hdAll'; ba.textContent = 'Apply to all clips';
+    ba.onclick = () => { const v = { ...e(), on: enhanceOn(selected().clip) }; live(p => { for (const t of p.tracks) for (const cl of t.clips) if (isPic(cl)) cl.enhance = { ...v }; }); toast(v.on ? 'HD Enhance on for every video and photo' : 'HD Enhance off for every clip'); };
+    all.append(ba); body.append(all, tip);
+  });
+}
+function colorSheet() {
+  const c = selected().clip; let cur = ADJUST[0].id;
+  openSheet('Adjust', body => {
+    const val = k => selected().clip.adjust?.[k] || 0, shown = (d, v) => (v > 0 && d.min < 0 ? '+' : '') + Math.round(v * 100);
+    const tabs = chips(ADJUST.map(d => ({ value: d.id, html: `<span>${d.label}</span><em></em>` })), cur, v => { cur = v; sync(); }, 'tabs adjtabs');
+    const def = () => ADJUST.find(d => d.id === cur);
+    const sl = slider('Amount', { min: -1, max: 1, step: 0.01, value: val(cur), fmt: v => shown(def(), v), id: 'colSlider',
+      onInput: v => { editSel(cl => { cl.adjust = { ...(cl.adjust || {}), [cur]: v }; }); marks(); } });
+    const sync = () => { const d = def(), inp = sl.querySelector('input'); inp.min = d.min; inp.max = d.max; sl.querySelector('.cl').textContent = d.label; sl.set(val(cur)); };
+    const marks = () => tabs.querySelectorAll('.chipbtn').forEach(b => { const v = val(b.dataset.v); b.classList.toggle('set', Math.abs(v) > 1e-4); b.querySelector('em').textContent = Math.abs(v) > 1e-4 ? shown(ADJUST.find(d => d.id === b.dataset.v), v) : ''; });
+    body.append(tabs, sl);
+    const row = document.createElement('div'); row.className = 'toggles';
+    const r = document.createElement('button'); r.className = 'chipbtn'; r.id = 'colReset'; r.textContent = 'Reset all';
+    r.onclick = () => { editSel(cl => { cl.adjust = null; }); sync(); marks(); };
+    const all = document.createElement('button'); all.className = 'chipbtn'; all.id = 'colAll'; all.textContent = 'Apply to all clips';
+    all.onclick = () => { const a = { ...(selected().clip.adjust || {}) }; live(p => { for (const t of p.tracks) for (const cl of t.clips) if (isPic(cl)) cl.adjust = { ...a }; }); toast('Adjustments copied to every video and photo'); };
+    row.append(r, all); body.append(row); sync(); marks();
+  });
+}
+/* before / after compare on the preview: tap ◐ for a split view (drag the line), press and hold for "before" */
+function setCompare(c) { player.compare = c; const o = $('#cmp'); o.hidden = !c || c.mode !== 'split'; if (c && c.mode === 'split') o.querySelector('.cmpline').style.left = (c.x * 100) + '%';
+  $('#cmpBtn').classList.toggle('on', !!c); $('#cmpTag').hidden = !c || c.mode !== 'before'; player.requestDraw(); }
+function compareUI() {
+  const b = $('#cmpBtn'); b.innerHTML = icon('compare', 20); let hold = null, held = false, prev = null, eat = false;
+  b.addEventListener('pointerdown', e => { e.preventDefault(); held = false; eat = false; prev = player.compare; hold = setTimeout(() => { held = true; setCompare({ mode: 'before' }); }, 280); });
+  const up = () => { clearTimeout(hold); if (held) { setCompare(prev); held = false; eat = true; setTimeout(() => { eat = false; }, 400); } };
+  b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', () => { if (held) up(); });
+  b.addEventListener('contextmenu', e => e.preventDefault());
+  b.addEventListener('click', () => { if (held || eat) { eat = false; return; } setCompare(player.compare && player.compare.mode === 'split' ? null : { mode: 'split', x: 0.5 }); if (player.compare) toast('Left: before · Right: after (HD + adjust). Drag the line.'); });
+  const o = $('#cmp'), line = o.querySelector('.cmpline');
+  line.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); line.setPointerCapture(e.pointerId);
+    const mv = ev => { const r = o.getBoundingClientRect(); setCompare({ mode: 'split', x: Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width)) }); };
+    const fin = () => { line.removeEventListener('pointermove', mv); line.removeEventListener('pointerup', fin); line.removeEventListener('pointercancel', fin); };
+    line.addEventListener('pointermove', mv); line.addEventListener('pointerup', fin); line.addEventListener('pointercancel', fin); });
+}
+/** Test/metrics hook: render the project at time t into a W x H canvas exactly like the exporter does. */
+async function renderStill({ t = 0, W, H, plain = false, fast = false, type = 'image/png' } = {}) {
+  if (!W) ({ W, H } = outputSize(S.project.aspect, 1080));
+  const { loadBitmap } = await import('./media.js');
+  const cv = new OffscreenCanvas(W, H), ctx = cv.getContext('2d', { alpha: false }), frames = new Map();
+  for (const tr of S.project.tracks) for (const c of tr.clips) if (c.type === 'image' && c.start <= t && t < clipEnd(c)) { const bm = await loadBitmap(media.get(c.mediaId)); frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); }
+  player.seek(t); await new Promise(r => setTimeout(r, 300));
+  renderFrame(ctx, W, H, S.project, t, c => frames.get(c.id) || player.source(c), { plain, fast });
+  const blob = await cv.convertToBlob({ type }); const buf = new Uint8Array(await blob.arrayBuffer());
+  let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+  return btoa(s);
 }
 function filterSheet() {
   const c = selected().clip;
@@ -397,7 +472,7 @@ const isAndroid = () => /Android/i.test(navigator.userAgent);
 function exportView() {
   if (player.playing) player.pause(); closeSheet();
   const v = $('#exportView'); v.hidden = false; document.body.classList.add('exporting'); $('#toast').classList.remove('show');
-  let short = +(localStorage.getItem('studio.res') || 1080), fps = +(localStorage.getItem('studio.fps') || 30), ctrl = null, result = null, small = null;
+  let short = +(localStorage.getItem('studio.res') || 1080), fps = +(localStorage.getItem('studio.fps') || 30), quality = QUALITY[localStorage.getItem('studio.q')] ? localStorage.getItem('studio.q') : 'high', ctrl = null, result = null, small = null, can = { 720: true, 1080: true };
   const D = projectDuration(S.project), shareOK = canShareVideo();
   // The saved video is always full quality (sharpness first). Only a "copy for posting" is ever made smaller.
   const plan = () => { const { W, H } = outputSize(S.project.aspect, short); return { W, H, maxBytes: null }; };
@@ -407,6 +482,9 @@ function exportView() {
       <div class="ex-set" id="exSet">
         <div class="ex-row"><span class="cl">Resolution</span><div id="exRes"></div></div>
         <div class="ex-row"><span class="cl">Frame rate</span><div id="exFps"></div></div>
+        <div class="ex-row"><span class="cl">Quality</span><div id="exQ"></div></div>
+        <p class="ex-size" id="exSize"></p>
+        <div class="ex-hd" id="exHd" hidden></div>
         <p class="ex-info" id="exInfo"></p>
         <button class="btn primary big" id="exGo">${icon('export', 20)} Export</button>
         <p class="hint">Keep this screen open while it exports.</p>
@@ -422,11 +500,25 @@ function exportView() {
         <div class="ex-links"><button class="link" id="exFile">Download file</button><button class="link" id="exBack">Back to editing</button></div>
       </div>
     </div></div>`;
-  const info = async () => { const { W, H, maxBytes } = plan(); const vbr = planBitrate(W, H, fps, D, maxBytes); const c = await pickCodecs(W, H, fps, vbr);
-    const mb = (vbr + 192000) * D / 8 / 1e6 * 0.85;
-    $('#exInfo').textContent = `${W} × ${H} · ${fmt(D)} · ${c ? 'MP4 (' + (c.video.mux === 'avc' ? 'H.264' : c.video.mux.toUpperCase()) + ')' : (recorderMime() || 'not supported').split(';')[0].replace('video/', '').toUpperCase() + ' (real-time)'} · ${(vbr / 1e6).toFixed(1)} Mbps · up to ${mb < 1 ? mb.toFixed(1) : Math.round(mb)} MB`; };
-  $('#exRes').append(chips([{ value: 720, label: '720p' }, { value: 1080, label: '1080p' }], short, x => { short = x; localStorage.setItem('studio.res', x); info(); }));
-  $('#exFps').append(chips([{ value: 24, label: '24' }, { value: 30, label: '30' }, { value: 60, label: '60' }], fps, x => { fps = x; localStorage.setItem('studio.fps', x); info(); }));
+  const info = async () => { const { W, H, maxBytes } = plan(); const vbr = planBitrate(W, H, fps, D, maxBytes, quality); const c = await pickCodecs(W, H, fps, vbr);
+    const mb = estimateBytes(vbr, D) / 1e6;
+    $('#exSize').innerHTML = `Estimated size: <b>about ${mb < 10 ? mb.toFixed(1) : Math.round(mb)} MB</b>`; $('#exSize').dataset.bytes = estimateBytes(vbr, D);
+    $('#exInfo').textContent = `${W} × ${H} · ${fps} fps · ${fmt(D)} · ${c ? 'MP4 (' + (c.video.mux === 'avc' ? 'H.264' : c.video.mux.toUpperCase()) + ')' : (recorderMime() || 'not supported').split(';')[0].replace('video/', '').toUpperCase() + ' (real-time)'} · ${(vbr / 1e6).toFixed(1)} Mbps`;
+    $('#exInfo').dataset.vbr = vbr;
+    // low-res sources: they are upscaled by the HD upscaler; offer HD Enhance for extra sharpness
+    const low = []; for (const t of S.project.tracks) for (const cl of t.clips) if (isPic(cl)) { const z = srcSize(cl); if (z && Math.min(z.w, z.h) < Math.min(W, H) * 0.95) low.push(cl); }
+    const off = low.filter(cl => !enhanceOn(cl)), hd = $('#exHd'); hd.hidden = !low.length;
+    hd.innerHTML = !low.length ? '' : off.length ? `${icon('hd', 18)}<span>${off.length} clip${off.length > 1 ? 's are' : ' is'} below ${Math.min(W, H)}p. They are upscaled with the HD upscaler — turn on <b>HD Enhance</b> for extra sharpness.</span><button class="chipbtn" id="exHdOn">Turn on</button>` : `${icon('hd', 18)}<span>HD Enhance is on for your low-resolution clips.</span>`;
+    const bt = $('#exHdOn'); if (bt) bt.onclick = () => { act(p => { for (const t of p.tracks) for (const cl of t.clips) if (isPic(cl) && low.some(x => x.id === cl.id)) cl.enhance = { on: true, strength: cl.enhance?.strength || DEFAULT_STRENGTH }; }); info(); };
+  };
+  const resChips = chips(RESOLUTIONS.map(r => ({ value: r.short, label: r.label })), short, x => { if (!can[x]) { toast(x === 2160 ? 'This phone can’t make 4K video' : 'This phone can’t make 2K video'); resChips.setActive(short); return; } short = x; localStorage.setItem('studio.res', x); info(); });
+  $('#exRes').append(resChips);
+  const checkRes = async () => { can = await supportedResolutions(S.project.aspect, fps, quality);
+    resChips.querySelectorAll('.chipbtn').forEach(b => { const ok = can[+b.dataset.v]; b.classList.toggle('off', !ok); b.setAttribute('aria-disabled', !ok); b.title = ok ? '' : 'Not supported on this device'; });
+    if (!can[short]) { short = 1080; resChips.setActive(short); } $('#exRes').dataset.checked = '1'; info(); };
+  $('#exFps').append(chips([{ value: 24, label: '24' }, { value: 25, label: '25' }, { value: 30, label: '30' }, { value: 60, label: '60' }], fps, x => { fps = x; localStorage.setItem('studio.fps', x); checkRes(); }));
+  $('#exQ').append(chips(Object.entries(QUALITY).map(([k, q]) => ({ value: k, label: q.name })), quality, x => { quality = x; localStorage.setItem('studio.q', x); info(); }));
+  checkRes();
   info();
   const close = () => { if (ctrl) ctrl.aborted = true; if (result) URL.revokeObjectURL(result.url); if (small) URL.revokeObjectURL(small.url); v.hidden = true; v.innerHTML = ''; document.body.classList.remove('exporting'); layoutPreview(); player.seek(player.t); };
   $('#exClose').onclick = close;
@@ -438,7 +530,7 @@ function exportView() {
     try {
       await save();
       const mode = new URLSearchParams(location.search).get('export');
-      const r = await exportVideo(S.project, { short, fps, signal: ctrl, mode, maxBytes, onProgress: pr => {
+      const r = await exportVideo(S.project, { short, fps, quality, signal: ctrl, mode, maxBytes, onProgress: pr => {
         const pct = Math.floor(pr.p * 100); $('#exPct').textContent = pct + '%'; $('#exBar').style.width = pct + '%';
         $('#exStatus').textContent = (label ? label + ' · ' : '') + (pr.phase === 'audio' ? 'Mixing sound…' : pr.phase === 'finishing' ? 'Finishing…' : pr.eta != null ? `About ${Math.max(1, Math.round(pr.eta))} s left` : 'Exporting…'); } });
       r.name = `Emmavengers-${stamp()}.${r.ext}`; r.url = URL.createObjectURL(r.blob);
@@ -512,7 +604,7 @@ function wireUI() {
   on('change', () => { $('#ratioBtn').textContent = S.project.aspect; layoutPreview(); });
   $('#ratioBtn').textContent = S.project.aspect;
   new ResizeObserver(layoutPreview).observe($('#stage'));
-  previewGestures();
+  previewGestures(); compareUI();
   addEventListener('keydown', e => {
     if (e.target.matches('input, textarea')) return;
     const mod = e.ctrlKey || e.metaKey;

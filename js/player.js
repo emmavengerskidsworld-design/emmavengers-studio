@@ -95,8 +95,8 @@ export class Player {
   /** Play just a section (used to preview a transition), then stop. */
   playRange(a, b) { this.pause(); this.seek(a); this.stopAt = b; this.play(); }
   toggle() { this.playing ? this.pause() : this.play(); }
-  seek(t) {
-    const d = this.duration; this.t = Math.max(0, Math.min(d || 0, t));
+  seek(t, scrub = false) {
+    const d = this.duration; this.t = Math.max(0, Math.min(d || 0, t)); if (scrub) this._lastSeek = performance.now();
     if (this.playing) { this.t0 = this.t; this.n0 = performance.now(); }
     this.sync(this.t); this.requestDraw();
   }
@@ -112,7 +112,19 @@ export class Player {
   requestDraw() { if (this._drawQueued) return; this._drawQueued = true; requestAnimationFrame(() => { this._drawQueued = false; this.draw(); }); }
   draw() {
     const { canvas, ctx } = this, p = this.project; if (!p) return;
-    this.boxes = renderFrame(ctx, canvas.width, canvas.height, p, this.t, c => this.source(c), { selectedId: this.o.showSelection === false ? null : this.o.selected && this.o.selected() });
+    // lighter HD pass while playing / scrubbing; the full pass is drawn as soon as the picture settles
+    const now = performance.now(), fast = this.playing || now - (this._lastSeek || 0) < 220;
+    if (fast && !this.playing) { clearTimeout(this._settle); this._settle = setTimeout(() => this.requestDraw(), 240); }
+    const sel = this.o.showSelection === false ? null : this.o.selected && this.o.selected(), cmp = this.compare;
+    const src = c => this.source(c);
+    if (cmp && cmp.mode === 'before') { this.boxes = renderFrame(ctx, canvas.width, canvas.height, p, this.t, src, { plain: true, selectedId: sel }); return; }
+    this.boxes = renderFrame(ctx, canvas.width, canvas.height, p, this.t, src, { selectedId: cmp ? null : sel, fast });
+    if (cmp && cmp.mode === 'split') {   // left of the line: original (plain), right: with HD / adjust
+      const w = canvas.width, h = canvas.height, x = Math.max(0, Math.min(w, Math.round(cmp.x * w)));
+      if (!this._before || this._before.width !== w || this._before.height !== h) this._before = Object.assign(document.createElement('canvas'), { width: w, height: h });
+      renderFrame(this._before.getContext('2d'), w, h, p, this.t, src, { plain: true });
+      if (x > 0) ctx.drawImage(this._before, 0, 0, x, h, 0, 0, x, h);
+    }
   }
   source(c) {
     const rec = media.get(c.mediaId); if (!rec) return null;

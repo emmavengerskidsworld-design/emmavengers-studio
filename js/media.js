@@ -6,7 +6,7 @@ export const media = new Map();          // id -> record (runtime, with url/bitm
 const listeners = new Set();
 export const onMediaUpdate = f => listeners.add(f);
 const emit = rec => listeners.forEach(f => f(rec));
-const MAX_IMG = 2048;                    // decoded image long side (keeps phone memory low; export is ≤1080p)
+const MAX_IMG = 3840;                    // decoded image long side (sharp up to 4K exports, still bounded for phone memory)
 export const TILE = 56;                  // timeline thumbnail tile size (px)
 
 export function kindOf(file) {
