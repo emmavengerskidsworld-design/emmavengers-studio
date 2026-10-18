@@ -7,6 +7,7 @@ import { renderFrame, visualTracks, activeAt } from './render.js';
 import { projectDuration, clipEnd, clipDur, srcTime, hasSource, ASPECTS, gainAt } from './project.js';
 import { openSource, dropDemuxCache } from './framesource.js';
 import { Player } from './player.js';
+import { needsBake, ensureBaked, bakedPos, bakedRate } from './audio.js';
 
 const SR = 48000;
 export function outputSize(aspect, short) {
@@ -79,19 +80,23 @@ export function recorderMime() {
 }
 
 /** Mix every audible clip into one stereo AudioBuffer (same gain/speed rules as the preview). */
-export async function mixAudio(p, D) {
+export async function mixAudio(p, D, onProgress) {
   const oac = new OfflineAudioContext(2, Math.max(1, Math.ceil(D * SR)), SR);
-  for (const track of p.tracks) for (const c of track.clips) {
-    if (!hasSource(c) || c.start >= D) continue;
+  const all = p.tracks.flatMap(t => t.clips).filter(c => hasSource(c) && c.start < D && !c.muteAudio), todo = all.filter(needsBake); let done = 0;
+  for (const c of all) {
     const rec = media.get(c.mediaId); if (!rec || rec.hasAudio === false) continue;
-    const buf = await decodeAudio(rec); if (!buf) continue;
-    const src = oac.createBufferSource(); src.buffer = buf; src.playbackRate.value = c.speed;
+    // processed clips: the same baked buffer the preview plays
+    const bk = needsBake(c) ? await ensureBaked(c) : null; if (bk) onProgress && onProgress(++done / Math.max(1, todo.length));
+    const buf = bk ? bk.buf : await decodeAudio(rec); if (!buf) continue;
+    const src = oac.createBufferSource(); src.buffer = buf; src.playbackRate.value = bk ? bakedRate(bk, c) : c.speed;
     // gain curve = volume keyframes x transition crossfade (same function the preview uses)
     const g = oac.createGain(), len = Math.min(clipDur(c), D - c.start), n = Math.max(2, Math.ceil(len * 100)), curve = new Float32Array(n);
     for (let i = 0; i < n; i++) curve[i] = gainAt(p, c, c.start + len * i / (n - 1));
     g.gain.value = curve[0]; if (len > 0.001) g.gain.setValueCurveAtTime(curve, c.start, len);
     src.connect(g).connect(oac.destination);
-    src.start(c.start, Math.min(c.in, buf.duration), Math.max(0, Math.min(c.out, buf.duration) - c.in)); src.stop(Math.min(D, clipEnd(c)));
+    if (bk) { const o = Math.max(0, bakedPos(bk, c, c.start)); src.start(c.start, Math.min(o, buf.duration), Math.max(0, Math.min(buf.duration - o, clipDur(c) * bakedRate(bk, c)))); }
+    else src.start(c.start, Math.min(c.in, buf.duration), Math.max(0, Math.min(c.out, buf.duration) - c.in));
+    src.stop(Math.min(D, clipEnd(c)));
   }
   return oac.startRendering();
 }
@@ -121,7 +126,7 @@ async function encodeWebCodecs(p, D, W, H, fps, codecs, onProgress, signal) {
 
   // 1) sound
   onProgress({ phase: 'audio', p: 0 });
-  const mix = await mixAudio(p, D);
+  const mix = await mixAudio(p, D, x => onProgress({ phase: 'audio', p: x }));
   const L = mix.getChannelData(0), R = mix.getChannelData(1), CH = 4096;
   for (let i = 0; i < mix.length; i += CH) {
     const n = Math.min(CH, mix.length - i), data = new Float32Array(n * 2); data.set(L.subarray(i, i + n), 0); data.set(R.subarray(i, i + n), n);

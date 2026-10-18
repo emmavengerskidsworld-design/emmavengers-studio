@@ -4,6 +4,7 @@
 import { media, bitmapOf } from './media.js';
 import { renderFrame } from './render.js';
 import { clipEnd, projectDuration, srcTime, hasSource, gainAt } from './project.js';
+import { needsBake, bakedFor, bakedPos, bakedRate, keepPitch } from './audio.js';
 
 const PRELOAD = 1.5, RESYNC = 0.3, MAX_EL = 10;
 
@@ -11,8 +12,10 @@ export class Player {
   constructor(canvas, o) {
     this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.o = o;
     this.t = 0; this.playing = false; this.slots = new Map(); this.pool = []; this.boxes = []; this.count = 0;
-    this._raf = 0; this._drawQueued = false;
+    this._raf = 0; this._drawQueued = false; this.voices = new Map(); this.muted = false;
   }
+  /** Mute everything (used while recording a voice-over so the mic doesn't pick up the video). */
+  setMuted(m) { this.muted = !!m; if (this.master) this.master.gain.value = m ? 0 : 1; }
   get project() { return this.o.getProject(); }
   get duration() { return projectDuration(this.project); }
 
@@ -20,7 +23,7 @@ export class Player {
   ensureAudio() {
     if (!this.ac) {
       const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
-      this.ac = new AC({ latencyHint: 'interactive' }); this.master = this.ac.createGain(); if (!this.o.silent) this.master.connect(this.ac.destination);
+      this.ac = new AC({ latencyHint: 'interactive' }); this.master = this.ac.createGain(); this.master.gain.value = this.muted ? 0 : 1; if (!this.o.silent) this.master.connect(this.ac.destination);
       if (this.o.recordDest) this.master.connect(this.o.recordDest(this.ac));
       for (const s of [...this.slots.values(), ...this.pool]) this.route(s);
     }
@@ -51,6 +54,7 @@ export class Player {
       if (active || soon) want.set(c.id, { c, active });
     }
     for (const [id, s] of this.slots) if (!want.has(id) || want.get(id).c.mediaId !== s.mediaId) { this.slots.delete(id); this.release(s); }
+    for (const id of [...this.voices.keys()]) if (!want.has(id) || !want.get(id).active) this.stopVoice(id);
     for (const [id, w] of want) {
       let s = this.slots.get(id);
       if (!s) {
@@ -62,7 +66,11 @@ export class Player {
       }
       const { c, active } = w, el = s.el, target = active ? srcTime(c, t) : c.in;
       const vol = active ? gainAt(p, c, t) : 0;
-      if (s.gain) s.gain.gain.value = vol; else el.volume = Math.max(0, Math.min(1, vol));
+      // processed sound (enhance / voice effect / pitch-kept speed) plays from the baked buffer; the element only gives the picture
+      const bk = needsBake(c) ? bakedFor(c, () => { if (this.playing) this.sync(this.t); }) : null, useBk = !!(bk && this.ac);
+      if (s.gain) s.gain.gain.value = useBk ? 0 : vol; else el.volume = useBk ? 0 : Math.max(0, Math.min(1, vol));
+      this.voice(c, useBk ? bk : null, t, vol, active);
+      const pp = keepPitch(c) && !useBk; if (el.preservesPitch !== pp) el.preservesPitch = pp;
       if (active && this.playing) {
         if (el.playbackRate !== c.speed) el.playbackRate = c.speed;
         if (el.paused) { if (Math.abs(el.currentTime - target) > 0.05) el.currentTime = target; el.play().catch(() => {}); }
@@ -73,6 +81,20 @@ export class Player {
       }
     }
   }
+  /** Keep a Web Audio voice for a baked clip running in step with the clock (restarts if it drifts > 50 ms). */
+  voice(c, bk, t, vol, active) {
+    let v = this.voices.get(c.id);
+    if (!bk || !active || !this.playing || !this.ac) { if (v) this.stopVoice(c.id); return; }
+    const rate = bakedRate(bk, c), pos = bakedPos(bk, c, t), now = this.ac.currentTime;
+    if (v && (v.buf !== bk.buf || Math.abs(v.rate - rate) > 1e-6 || Math.abs(v.off + (now - v.t0) * rate - pos) > 0.05)) { this.stopVoice(c.id); v = null; }
+    if (!v) {
+      if (pos >= bk.buf.duration) return;
+      const src = this.ac.createBufferSource(), g = this.ac.createGain(); src.buffer = bk.buf; src.playbackRate.value = rate; g.gain.value = vol;
+      src.connect(g).connect(this.master); src.start(now, Math.max(0, pos));
+      this.voices.set(c.id, v = { src, g, buf: bk.buf, rate, off: Math.max(0, pos), t0: now });
+    } else v.g.gain.setTargetAtTime(vol, now, 0.008);
+  }
+  stopVoice(id) { const v = this.voices.get(id); if (!v) return; this.voices.delete(id); try { v.src.stop(); } catch (e) {} try { v.src.disconnect(); v.g.disconnect(); } catch (e) {} }
   stalled() {
     for (const s of this.slots.values()) { const f = this.project && this.slots.get(s.clipId) && s.el;
       if (f && s.el.tagName === 'VIDEO' && !s.el.paused && (s.el.seeking || s.el.readyState < 3)) return true; }
@@ -90,6 +112,7 @@ export class Player {
   pause() {
     this.stopAt = null; if (!this.playing) return; this.playing = false; cancelAnimationFrame(this._raf);
     for (const s of this.slots.values()) s.el.pause();
+    for (const id of [...this.voices.keys()]) this.stopVoice(id);
     this.sync(this.t); this.draw(); this.o.onState && this.o.onState(false);
   }
   /** Play just a section (used to preview a transition), then stop. */
@@ -135,5 +158,5 @@ export class Player {
   /** Drop elements for media that was removed (keeps phone decoders free). */
   gc() { const ids = new Set(); for (const t of this.project.tracks) for (const c of t.clips) ids.add(c.mediaId);
     this.pool = this.pool.filter(s => { if (ids.has(s.mediaId)) return true; s.el.removeAttribute('src'); s.el.load(); this.count--; return false; }); }
-  destroy() { this.pause(); for (const s of [...this.slots.values(), ...this.pool]) { s.el.pause(); s.el.removeAttribute('src'); s.el.load(); } this.slots.clear(); this.pool = []; if (this.ac) this.ac.close(); }
+  destroy() { this.pause(); for (const id of [...this.voices.keys()]) this.stopVoice(id); for (const s of [...this.slots.values(), ...this.pool]) { s.el.pause(); s.el.removeAttribute('src'); s.el.load(); } this.slots.clear(); this.pool = []; if (this.ac) this.ac.close(); }
 }

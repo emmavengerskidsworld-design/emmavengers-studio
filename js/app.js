@@ -12,6 +12,11 @@ import { ADJUST, DEFAULT_STRENGTH, enhanceOn, glAvailable } from './enhance.js';
 import { renderFrame, drawVisual, drawText } from './render.js';
 import { CLIP_ANIMS, TEXT_ANIMS, animSetFor, animById, animSpans, DEFAULT_ANIM_DUR, DEFAULT_LOOP_DUR, MIN_ANIM, MAX_ANIM, MIN_LOOP, MAX_LOOP, loopKind } from './animations.js';
 import { hitTest } from './render.js';
+import { initAudioPanels, enhanceVoiceSheet, voiceFxSheet, recordSheet, speechSheet } from './audiopanels.js';
+import { soundsSheet } from './library.js';
+import { extractAudio, MAX_FADE, fadeAt } from './project.js';
+import { onBaked, keepPitch, VOICE_FX, needsBake, bakedFor } from './audio.js';
+import * as audiofx from './audiofx.js';
 import { icon } from './icons.js';
 
 const $ = s => document.querySelector(s);
@@ -31,9 +36,11 @@ async function boot() {
   on('select', () => { document.body.classList.toggle('has-sel', !!S.sel); timeline.render(); refreshToolbar(); player.requestDraw(); if (sheetOpen()) closeSheet(); updateKf(); });
   on('history', updateUndo);
   onMediaUpdate(() => { timeline.render(); player.requestDraw(); });
+  initAudioPanels({ player, timeline, toast });
+  onBaked(() => { timeline.render(); if (player.playing) player.sync(player.t); });
   wireUI(); layoutPreview(); timeline.fitZoom(); timeline.render(); refreshToolbar(); updateUndo(); updateEmpty(); showTime(); setPlayIcon(false);
   player.seek(0);
-  window.studio = { S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, ready: true };
+  window.studio = { S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, ready: true };
   document.body.classList.add('ready');
 }
 function afterEdit() { player.seek(Math.min(player.t, projectDuration(S.project))); showTime(); refreshToolbar(); }
@@ -304,6 +311,9 @@ const isVisualClip = c => c.type !== 'audio';
 const ROOT_TOOLS = [
   { id: 'media', icon: 'media', label: 'Media', run: () => pick('main') },
   { id: 'audio', icon: 'music', label: 'Audio', run: () => pick('audio') },
+  { id: 'sounds', icon: 'sounds', label: 'Sounds', run: () => soundsSheet({ player, timeline, toast }) },
+  { id: 'record', icon: 'mic', label: 'Record', run: recordSheet },
+  { id: 'speech', icon: 'speech', label: 'Add speech', run: speechSheet },
   { id: 'text', icon: 'text', label: 'Text', run: addText },
   { id: 'overlay', icon: 'overlay', label: 'Overlay', run: () => pick('overlay') },
   { id: 'split', icon: 'split', label: 'Split', run: doSplit },
@@ -316,6 +326,10 @@ const CLIP_TOOLS = [
   { id: 'anim', icon: 'anim', label: 'Animation', when: isVisualClip, run: () => animSheet() },
   { id: 'speed', icon: 'speed', label: 'Speed', when: hasSource, run: speedSheet },
   { id: 'volume', icon: 'volume', label: 'Volume', when: hasSource, run: volumeSheet },
+  { id: 'enhvoice', icon: 'enhvoice', label: 'Enhance voice', when: hasSource, run: enhanceVoiceSheet },
+  { id: 'voicefx', icon: 'voicefx', label: 'Voice effects', when: hasSource, run: voiceFxSheet },
+  { id: 'extract', icon: 'extract', label: 'Extract audio', when: c => c.type === 'video', run: doExtract },
+  { id: 'mute', icon: 'mute', label: 'Mute sound', when: c => c.type === 'video', run: () => { act(p => { const c = find(p, S.sel).clip; c.muteAudio = !c.muteAudio; }); toast(selected().clip.muteAudio ? 'Original sound muted' : 'Original sound on'); } },
   { id: 'duration', icon: 'clock', label: 'Duration', when: c => !hasSource(c), run: durationSheet },
   { id: 'hd', icon: 'hd', label: 'HD Enhance', when: c => c.type === 'video' || c.type === 'image', run: hdSheet },
   { id: 'adjust', icon: 'adjust', label: 'Adjust', when: c => c.type === 'video' || c.type === 'image', run: colorSheet },
@@ -337,6 +351,11 @@ function refreshToolbar() {
     tools.map(t => `<button class="tool" data-tool="${t.id}">${icon(t.icon)}<span>${t.label}</span></button>`).join('');
   bar.onclick = e => { const b = e.target.closest('.tool'); if (!b) return; if (b.dataset.tool === 'back') { select(null); return; }
     const t = tools.find(x => x.id === b.dataset.tool); if (player.playing) player.pause(); t && t.run(); };
+}
+function doExtract() {
+  const f = selected(); if (!f) return; const r = media.get(f.clip.mediaId);
+  if (r && r.hasAudio === false) { toast('This video has no sound'); return; }
+  const a = act(p => extractAudio(p, f.clip.id)); if (a) { select(a.id); toast('Sound extracted to the audio line — the video is now muted'); }
 }
 function doSplit() {
   const t = player.t; let f = selected();
@@ -360,7 +379,11 @@ function speedSheet() {
     const upd = () => { const cc = selected().clip; info.textContent = `Clip length: ${fmtS(clipDur(cc))} (original ${fmtS(cc.out - cc.in)})`; };
     const sl = slider('Speed', { min: 0, max: 1, step: 0.001, value: toU(c.speed), fmt: u => toS(u).toFixed(2).replace(/0$/, '') + 'x', id: 'speedRange', onInput: u => { editSel((cl, p) => setSpeed(p, cl.id, toS(u))); ch.setActive(toS(u)); upd(); } });
     const ch = chips(SPEED_PRESETS.map(v => ({ value: v, label: v + 'x' })), c.speed, v => { editSel((cl, p) => setSpeed(p, cl.id, v)); sl.set(toU(v)); upd(); });
-    body.append(sl, ch, info); upd();
+    const row = document.createElement('div'); row.className = 'toggles';
+    const kp = document.createElement('button'); kp.id = 'speedPitch'; kp.className = 'chipbtn' + (keepPitch(c) ? ' on' : ''); kp.textContent = 'Keep voice pitch';
+    kp.onclick = () => { editSel(cl => { cl.keepPitch = !keepPitch(cl); }); kp.classList.toggle('on', keepPitch(selected().clip)); };
+    row.append(kp);
+    body.append(sl, ch, row, info, Object.assign(document.createElement('p'), { className: 'hint', textContent: 'Keep voice pitch (on): faster or slower without chipmunk or slow-motion voices.' })); upd();
   });
 }
 function volumeSheet() {
@@ -370,6 +393,11 @@ function volumeSheet() {
     body.append(slider('Volume', { min: 0, max: 2, step: 0.01, value: cur, fmt: v => Math.round(v * 100) + '%', id: 'volRange', onInput: v => editSel(cl => setProp(cl, 'volume', v, L)) }));
     body.append(chips([{ value: 0, label: 'Mute' }, { value: 0.5, label: '50%' }, { value: 1, label: '100%' }, { value: 1.5, label: '150%' }, { value: 2, label: '200%' }], cur, v => { editSel(cl => setProp(cl, 'volume', v, L)); body.querySelector('label.ctl').set(v); }));
     if (hasKeyframes(c)) body.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: `Animated clip: this sets the volume at ${fmtS(L)} (a keyframe).` }));
+    const mx = () => Math.max(0.1, Math.min(MAX_FADE, Math.floor(clipDur(selected().clip) * 10) / 10));
+    body.append(slider('Fade in', { min: 0, max: mx(), step: 0.1, value: c.fadeIn || 0, fmt: v => v.toFixed(1) + 's', id: 'fadeIn', onInput: v => { editSel(cl => { cl.fadeIn = v || undefined; if (!v) delete cl.fadeIn; }); timeline.render(); } }));
+    body.append(slider('Fade out', { min: 0, max: mx(), step: 0.1, value: c.fadeOut || 0, fmt: v => v.toFixed(1) + 's', id: 'fadeOut', onInput: v => { editSel(cl => { cl.fadeOut = v || undefined; if (!v) delete cl.fadeOut; }); timeline.render(); } }));
+    if (c.type === 'video') { const row = document.createElement('div'); row.className = 'toggles'; const m = document.createElement('button'); m.id = 'muteOrig'; m.className = 'chipbtn' + (c.muteAudio ? ' on' : ''); m.textContent = 'Mute original sound';
+      m.onclick = () => { editSel(cl => { cl.muteAudio = !cl.muteAudio; if (!cl.muteAudio) delete cl.muteAudio; }); m.classList.toggle('on', !!selected().clip.muteAudio); timeline.render(); }; row.append(m); body.append(row); }
   });
 }
 function durationSheet() {

@@ -103,6 +103,8 @@ export function split(p, clipId, t) {
   }
   // animations: the In stays on the first part, the Out moves to the second part, a loop keeps running on both
   if (c.anim) { if (c.anim.out) delete c.anim.out; if (b.anim && b.anim.in) delete b.anim.in; }
+  // sound fades: the fade-in stays at the start of A, the fade-out moves to the end of B
+  delete c.fadeOut; delete b.fadeIn;
   f.track.clips.splice(f.index + 1, 0, b);
   normalize(p); return b;
 }
@@ -194,7 +196,24 @@ export function xfadeAt(track, c, t) {
   const n = track.clips[i + 1]; if (n && n.transitionIn) { const e = clipEnd(c) - n.start; if (e > 0 && t > n.start) g *= Math.cos(Math.min(1, (t - n.start) / e) * Math.PI / 2); }
   return g;
 }
-export function gainAt(p, c, t) { const f = find(p, c.id); return Math.max(0, propAt(c, 'volume', t - c.start)) * xfadeAt(f && f.track, c, t); }
+/** Fade in / fade out envelope (linear, clip-local). */
+export const MAX_FADE = 10;
+export function fadeAt(c, t) {
+  const L = t - c.start, d = clipDur(c), fi = Math.min(c.fadeIn || 0, d), fo = Math.min(c.fadeOut || 0, d); let g = 1;
+  if (fi > 0 && L < fi) g *= Math.max(0, L / fi);
+  if (fo > 0 && L > d - fo) g *= Math.max(0, (d - L) / fo);
+  return g;
+}
+export function gainAt(p, c, t) { if (c.muteAudio) return 0; const f = find(p, c.id); return Math.max(0, propAt(c, 'volume', t - c.start)) * fadeAt(c, t) * xfadeAt(f && f.track, c, t); }
+/** "Extract audio": a new audio clip playing the video's sound (same file, same timing); the video is muted. */
+export function extractAudio(p, clipId) {
+  const f = find(p, clipId); if (!f || f.clip.type !== 'video') return null; const v = f.clip;
+  const a = newClip('audio', { mediaId: v.mediaId, in: v.in, out: v.out, speed: v.speed, start: v.start, volume: v.volume ?? 1 });
+  for (const k of ['keepPitch', 'fadeIn', 'fadeOut']) if (v[k] != null) a[k] = v[k];
+  if (v.voice) a.voice = { ...v.voice };
+  if (v.keyframes && v.keyframes.volume) a.keyframes = { volume: v.keyframes.volume.map(x => ({ ...x })) };
+  v.muteAudio = true; placeFree(p, 'audio', a); normalize(p); return a;
+}
 export const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 
 /** Remove references to media that no longer exist (e.g. storage was cleared). */

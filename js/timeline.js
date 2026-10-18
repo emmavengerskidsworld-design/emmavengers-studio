@@ -3,7 +3,9 @@
 import { animSpans, loopKind } from './animations.js';
 import { S, live, begin, end, select } from './store.js';
 import { TRACK_KINDS } from './registry.js';
-import { clipDur, clipEnd, projectDuration, hasSource, reorder, moveTo, trim, find, kfTimes } from './project.js';
+import { clipDur, clipEnd, projectDuration, hasSource, reorder, moveTo, trim, find, kfTimes, fadeAt, MAX_FADE } from './project.js';
+import { propAt } from './registry.js';
+import { voiceFxById } from './audiofx.js';
 import { transitionById } from './transitions.js';
 import { media, TILE, PEAK_RATE } from './media.js';
 import { icon } from './icons.js';
@@ -91,7 +93,9 @@ export class Timeline {
     else if (c.type === 'audio') badges.push(`<span class="cname">${esc(rec ? rec.name : 'Audio')}</span>`);
     if (S.sel === c.id || c.type === 'video') badges.push(`<span class="dur">${fmtS(d)}</span>`);
     if (c.speed !== 1) badges.push(`<span class="spd">${c.speed}x</span>`);
-    if (hasSource(c) && c.volume === 0) badges.push(`<span class="spd">${icon('volume', 11)}✕</span>`);
+    if (hasSource(c) && (c.volume === 0 || c.muteAudio)) badges.push(`<span class="spd">${icon('volume', 11)}✕</span>`);
+    if (c.voice && c.voice.enhance) badges.push('<span class="spd" title="Enhance voice">✨</span>');
+    if (c.voice && c.voice.fx && voiceFxById(c.voice.fx)) badges.push(`<span class="spd" title="${voiceFxById(c.voice.fx).name}">${voiceFxById(c.voice.fx).emoji}</span>`);
     if (c.filter && c.filter.id) badges.push(`<span class="spd">FX</span>`);
     if (!rec && c.type !== 'text') badges.push('<span class="spd">missing</span>');
     el.insertAdjacentHTML('beforeend', `<div class="badges">${badges.join('')}</div>`);
@@ -101,14 +105,24 @@ export class Timeline {
       if (lp && lp.id) el.insertAdjacentHTML('beforeend', '<i class="anloop">∞</i>'); }
     const kts = kfTimes(c); if (kts.length) el.insertAdjacentHTML('beforeend', kts.filter(k => k <= d + 1e-6).map(k => `<i class="kfd" style="left:${(k * this.pps).toFixed(1)}px"></i>`).join(''));
     if (S.sel === c.id) el.insertAdjacentHTML('beforeend', '<div class="h l" data-edge="left"><i></i></div><div class="h r" data-edge="right"><i></i></div>');
+    if (S.sel === c.id && hasSource(c) && wpx > 60) el.insertAdjacentHTML('beforeend', `<b class="fh fi" data-fade="in" style="left:${Math.max(10, (c.fadeIn || 0) * this.pps).toFixed(1)}px" title="Fade in"></b><b class="fh fo" data-fade="out" style="right:${Math.max(10, (c.fadeOut || 0) * this.pps).toFixed(1)}px" title="Fade out"></b>`);
     return el;
+  }
+  /** Waveform (peaks, shaped by the volume envelope: keyframes x fades), envelope line and fade ramps. */
+  paintWave(ctx, c, rec, cw, y0, h, pps, color, line) {
+    const pk = rec.peaks, gAt = x => { const L = x / pps; return Math.max(0, propAt(c, 'volume', L)) * fadeAt(c, c.start + L) * (c.muteAudio ? 0 : 1); };
+    if (pk) { ctx.fillStyle = color; for (let x = 0; x < cw; x += 2) { const st = c.in + (x / pps) * c.speed, v = pk[Math.min(pk.length - 1, Math.floor(st * PEAK_RATE))] || 0, bh = Math.max(1, Math.min(1, v * Math.min(2, gAt(x))) * (h - 4)); ctx.fillRect(x, y0 + (h - bh) / 2, 1.4, bh); } }
+    const d = clipDur(c), fi = Math.min(c.fadeIn || 0, d) * pps, fo = Math.min(c.fadeOut || 0, d) * pps;
+    ctx.fillStyle = 'rgba(0,0,0,.38)';
+    if (fi > 0) { ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(fi, y0); ctx.lineTo(0, y0 + h); ctx.fill(); }
+    if (fo > 0) { ctx.beginPath(); ctx.moveTo(cw, y0); ctx.lineTo(cw - fo, y0); ctx.lineTo(cw, y0 + h); ctx.fill(); }
+    if (line) { ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 1.5; ctx.beginPath(); for (let x = 0; x <= cw; x += 3) { const yy = y0 + h - 2 - Math.min(2, gAt(Math.min(x, cw - 0.01))) / 2 * (h - 4); x ? ctx.lineTo(x, yy) : ctx.moveTo(x, yy); } ctx.stroke(); }
   }
   paintClip(ctx, c, rec, cw, h, k) {
     const pps = this.pps * k;
     if (c.type === 'audio' || (c.type === 'video' && !rec.thumbBitmap && rec.peaks)) {
       ctx.fillStyle = '#1d6b57'; ctx.fillRect(0, 0, cw, h);
-      if (rec.peaks) { ctx.fillStyle = '#7ef0c8'; const pk = rec.peaks;
-        for (let x = 0; x < cw; x += 2) { const st = c.in + (x / pps) * c.speed, v = pk[Math.min(pk.length - 1, Math.floor(st * PEAK_RATE))] || 0, bh = Math.max(1, v * (h - 6)); ctx.fillRect(x, (h - bh) / 2, 1.4, bh); } }
+      this.paintWave(ctx, c, rec, cw, 0, h, pps, '#7ef0c8', c.type === 'audio');
       return;
     }
     const bm = rec.thumbBitmap; if (!bm) { ctx.fillStyle = '#333'; ctx.fillRect(0, 0, cw, h); return; }
@@ -118,6 +132,8 @@ export class Timeline {
       if (c.type === 'video') { const st = c.in + ((x + h / 2) / pps) * c.speed; idx = Math.max(0, Math.min(n - 1, Math.floor(st / rec.duration * n))); }
       ctx.drawImage(bm, idx * TILE, 0, TILE, TILE, x, 0, h, h);
     }
+    // the video's own sound: a waveform strip along the bottom
+    if (c.type === 'video' && rec.peaks && rec.hasAudio !== false) { const wh = Math.round(h * 0.34); ctx.fillStyle = 'rgba(10,40,32,.72)'; ctx.fillRect(0, h - wh, cw, wh); this.paintWave(ctx, c, rec, cw, h - wh, wh, pps, c.muteAudio ? '#6a7a74' : '#7ef0c8', false); }
   }
   drawRuler() {
     const cv = this.ruler, dpr = Math.min(2, devicePixelRatio || 1), W = cv.clientWidth, H = cv.clientHeight; if (!W) return;
@@ -139,6 +155,10 @@ export class Timeline {
     const add = e.target.closest('[data-add]'); if (add) { this.o.onAdd(add.dataset.add); return; }
     const jt = e.target.closest('[data-joint]'); if (jt) { e.preventDefault(); if (this.o.isPlaying()) this.o.pause(); this.o.onJoint(jt.dataset.joint); return; }
     if (e.button > 0) return;
+    const fh = e.target.closest('.fh');
+    if (fh) { const ce = fh.closest('.clip'), f0 = find(S.project, ce.dataset.id); if (!f0) return; e.preventDefault(); e.stopPropagation();
+      this.drag = { id: f0.clip.id, el: ce, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, sl0: this.scroll.scrollLeft, pid: e.pointerId, mode: 'fade', fade: fh.dataset.fade, v0: f0.clip[fh.dataset.fade === 'in' ? 'fadeIn' : 'fadeOut'] || 0, active: false, orig: '' };
+      this.startDrag(); try { ce.setPointerCapture(e.pointerId); } catch (er) {} return; }
     const clipEl = e.target.closest('.clip'), handle = e.target.closest('.h');
     if (this.o.isPlaying()) this.o.pause();
     if (!clipEl) { this.downEmpty = { x: e.clientX, y: e.clientY }; return; }
@@ -174,6 +194,10 @@ export class Timeline {
   apply() {
     const d = this.drag, p = S.project, pps = this.pps;
     const dt = (d.x - d.x0 + this.scroll.scrollLeft - d.sl0) / pps, f = find(p, d.id); if (!f) return;
+    if (d.mode === 'fade') {
+      const v = Math.round(Math.max(0, Math.min(MAX_FADE, clipDur(f.clip), d.v0 + (d.fade === 'in' ? dt : -dt))) * 10) / 10, key = d.fade === 'in' ? 'fadeIn' : 'fadeOut';
+      live(pp => { const c = find(pp, d.id).clip; if (v > 0) c[key] = v; else delete c[key]; }); this.render(); this.showTip((d.fade === 'in' ? 'Fade in ' : 'Fade out ') + v.toFixed(1) + 's', d.x); return;
+    }
     if (d.mode === 'trim') {
       Object.assign(f.clip, JSON.parse(d.orig));
       const c0 = JSON.parse(d.orig), t = this.o.getTime(); let dd = dt;

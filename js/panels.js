@@ -5,12 +5,12 @@ import { icon } from './icons.js';
 const sheet = () => document.getElementById('sheet');
 let onClose = null;
 export const sheetOpen = () => !sheet().classList.contains('hidden');
-export function openSheet(title, build, { gesture = true, className = '' } = {}) {
+export function openSheet(title, build, { gesture = true, className = '', onClose: extraClose = null } = {}) {
   closeSheet();
   const el = sheet(); el.className = 'sheet ' + className;
   el.innerHTML = `<div class="sh-head"><b>${title}</b><button class="ib sh-done" aria-label="Done">${icon('check')}</button></div><div class="sh-body"></div>`;
   if (gesture) begin();
-  onClose = () => { if (gesture) end(); };
+  onClose = () => { try { extraClose && extraClose(); } finally { if (gesture) end(); } };
   el.querySelector('.sh-done').onclick = () => closeSheet();
   build(el.querySelector('.sh-body'));
   document.body.classList.add('sheet-open');

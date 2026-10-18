@@ -1,5 +1,14 @@
 /* Inline SVG icon set (stroke icons, 24px grid). */
 const P = {
+  mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M8 22h8"/>',
+  speech: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/>',
+  voicefx: '<path d="M2 12h2M6 8v8M10 4v16M14 7v10M18 10v4M22 12h0"/><circle cx="20" cy="5" r="1.5"/>',
+  enhvoice: '<path d="M4 10v4M8 7v10M12 4v16M16 8v8"/><path d="M20 3l.8 1.7L22.5 5.5l-1.7.8L20 8l-.8-1.7-1.7-.8 1.7-.8z"/>',
+  extract: '<rect x="2" y="3" width="13" height="10" rx="2"/><path d="M15 6l5-3v10l-5-3"/><path d="M5 21v-3M9 21v-6M13 21v-4M17 21v-2"/>',
+  sounds: '<path d="M3 18V8l7-2v10"/><circle cx="3" cy="18" r="0"/><path d="M14 4l1.2 2.6L18 7.5l-2.8.9L14 11l-1.2-2.6L10 7.5l2.8-.9z"/><circle cx="7" cy="17" r="3"/><path d="M17 14v6M14 17h6"/>',
+  star: '<path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  mute: '<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M23 9l-6 6M17 9l6 6"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   media: '<rect x="2" y="5" width="14" height="14" rx="2"/><path d="M22 7l-6 5 6 5z"/>',
   music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
