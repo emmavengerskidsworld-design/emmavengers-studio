@@ -123,7 +123,7 @@ export class Player {
   seek(t, scrub = false) {
     const d = this.duration; this.t = Math.max(0, Math.min(d || 0, t)); if (scrub) this._lastSeek = performance.now();
     if (this.playing) { this.t0 = this.t; this.n0 = performance.now(); }
-    this.sync(this.t); this.requestDraw();
+    this.sync(this.t); this.requestDraw(); this.o.onSeek && this.o.onSeek(this.t);
   }
   loop() {
     const now = performance.now();
@@ -143,7 +143,7 @@ export class Player {
     const sel = this.o.showSelection === false ? null : this.o.selected && this.o.selected(), cmp = this.compare;
     const src = c => this.source(c);
     if (cmp && cmp.mode === 'before') { this.boxes = renderFrame(ctx, canvas.width, canvas.height, p, this.t, src, { plain: true, selectedId: sel }); if (this.guides) drawGuides(ctx, canvas.width, canvas.height, this.guides); return; }
-    this.boxes = renderFrame(ctx, canvas.width, canvas.height, p, this.t, src, { selectedId: cmp ? null : sel, fast });
+    this.boxes = renderFrame(ctx, canvas.width, canvas.height, p, this.t, src, { selectedId: cmp || this.cropEdit ? null : sel, fast, cropEdit: cmp ? null : this.cropEdit });
     if (cmp && cmp.mode === 'split') {   // left of the line: original (plain), right: with HD / adjust
       const w = canvas.width, h = canvas.height, x = Math.max(0, Math.min(w, Math.round(cmp.x * w)));
       if (!this._before || this._before.width !== w || this._before.height !== h) this._before = Object.assign(document.createElement('canvas'), { width: w, height: h });

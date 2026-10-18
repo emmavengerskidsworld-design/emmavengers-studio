@@ -9,6 +9,8 @@ import { openSource, dropDemuxCache } from './framesource.js';
 import { Player } from './player.js';
 import { ensureProjectFonts } from './fonts.js';
 import { needsBake, ensureBaked, bakedPos, bakedRate } from './audio.js';
+import { encodeWav } from './wav.js';
+import { GifWriter, buildPalette, indexFrame } from './gif.js';
 
 const SR = 48000;
 export function outputSize(aspect, short) {
@@ -46,8 +48,9 @@ export function avcLevel(W, H, fps, br) {
   for (const [l, f, r, b] of L) if (mbs <= f && rate <= r && br <= b) return l;
   return '3c';
 }
-async function pickVideo(W, H, fps, bitrate) {
+async function pickVideo(W, H, fps, bitrate, strict = false) {
   const lvl = avcLevel(W, H, fps, bitrate);
+  if (strict) { const v = await pickVideo(W, H, fps, bitrate * 1, false); if (v) { const c = { ...v.config, bitrateMode: 'constant' }; try { if ((await VideoEncoder.isConfigSupported(c)).supported) return { config: c, mux: v.mux }; } catch (e) {} } return v; }
   const vc = [['avc1.6400' + lvl, 'avc'], ['avc1.4d00' + lvl, 'avc'], ['avc1.42e0' + lvl, 'avc'], ['vp09.00.' + (W * H > 2228224 ? '51' : '40') + '.08', 'vp9'], ['av01.0.' + (W * H > 2228224 ? '12' : '08') + 'M.08', 'av1']];
   for (const [codec, mux] of vc) {
     const config = { codec, width: W, height: H, bitrate, bitrateMode: 'variable', framerate: fps, latencyMode: 'quality', ...(mux === 'avc' ? { avc: { format: 'avc' } } : {}) };
@@ -55,9 +58,10 @@ async function pickVideo(W, H, fps, bitrate) {
   }
   return null;
 }
-export async function pickCodecs(W, H, fps, vbr) {
+/** strict: the user set a bitrate / file size, so ask for a constant bitrate (variable overshoots on busy pictures). */
+export async function pickCodecs(W, H, fps, vbr, strict = false) {
   if (!hasWebCodecs()) return null;
-  const video = await pickVideo(W, H, fps, vbr || defaultBitrate(W, H, fps));
+  const video = await pickVideo(W, H, fps, vbr || defaultBitrate(W, H, fps), strict);
   let audio = null;
   for (const [codec, mux, br] of [['mp4a.40.2', 'aac', AUDIO_BR], ['opus', 'opus', 160000]]) {
     const config = { codec, sampleRate: SR, numberOfChannels: 2, bitrate: br };
@@ -102,20 +106,105 @@ export async function mixAudio(p, D, onProgress) {
   return oac.startRendering();
 }
 
+/** Time range to export: opt.range = [t0, t1] (seconds), clamped to the project. Default: everything. */
+export function rangeOf(p, range) {
+  const D = projectDuration(p); let [a, b] = range || [0, D]; a = Math.max(0, Math.min(D, +a || 0)); b = Math.max(0, Math.min(D, b == null ? D : +b));
+  return b - a >= 0.05 ? [a, b] : [0, D];
+}
 export async function exportVideo(p, opt) {
-  const { short = 1080, fps = 30, onProgress = () => {}, signal = {}, mode, maxBytes, quality = 'high' } = opt;
-  const D = projectDuration(p); if (!D) throw new Error('Nothing to export yet');
+  const { short = 1080, fps = 30, onProgress = () => {}, signal = {}, mode, maxBytes, quality = 'high', vbr: forceBr } = opt;
+  if (!projectDuration(p)) throw new Error('Nothing to export yet');
+  const [t0, t1] = rangeOf(p, opt.range), D = t1 - t0;
   await ensureProjectFonts(p);
-  const { W, H } = outputSize(p.aspect, short), vbr = planBitrate(W, H, fps, D, maxBytes, quality);
-  const codecs = mode === 'recorder' ? null : await pickCodecs(W, H, fps, vbr);
+  const { W, H } = outputSize(p.aspect, short), vbr = forceBr ? Math.round(Math.max(3e5, Math.min(120e6, forceBr))) : planBitrate(W, H, fps, D, maxBytes, quality);
+  const strict = !!(forceBr || maxBytes), codecs = mode === 'recorder' ? null : await pickCodecs(W, H, fps, vbr, strict);
   try {
-    if (codecs) return { ...(await encodeWebCodecs(p, D, W, H, fps, codecs, onProgress, signal)), bitrate: vbr };
-    if (recorderMime()) return { ...(await encodeRecorder(p, D, W, H, fps, onProgress, signal, vbr)), bitrate: vbr };
+    if (codecs) {
+      let r = { ...(await encodeWebCodecs(p, D, W, H, fps, codecs, onProgress, signal, t0)), bitrate: vbr, range: [t0, t1] };
+      // a file-size target that was missed (encoders drift on very busy pictures): one more pass at a corrected bitrate
+      const goal = opt.targetBytes || maxBytes;
+      if (goal && r.blob.size > goal * 1.03 && !signal.aborted) {
+        const br2 = Math.round(Math.max(2e5, vbr * goal / r.blob.size * 0.9)), c2 = await pickCodecs(W, H, fps, br2, true);
+        if (c2) { onProgress({ phase: 'smaller', p: 0 }); const r2 = { ...(await encodeWebCodecs(p, D, W, H, fps, c2, onProgress, signal, t0)), bitrate: br2, range: [t0, t1] }; if (r2.blob.size < r.blob.size) r = r2; }
+      }
+      return r;
+    }
+    if (recorderMime()) return { ...(await encodeRecorder(p, D, W, H, fps, onProgress, signal, vbr, t0)), bitrate: vbr, range: [t0, t1] };
     throw new Error('This browser cannot export video. Please use Chrome.');
   } finally { dropAudioCache(); dropDemuxCache(); }
 }
+/** The project's sound between t0 and t1 as an AudioBuffer-like { L, R, length }. */
+async function mixRange(p, t0, t1, onProgress) {
+  const mix = await mixAudio(p, t1, onProgress), a = Math.min(mix.length, Math.round(t0 * SR)), b = Math.min(mix.length, Math.round(t1 * SR));
+  return { L: mix.getChannelData(0).subarray(a, b), R: mix.getChannelData(1).subarray(a, b), length: b - a };
+}
+/** Audio only: 'm4a' (AAC in MP4; Opus in MP4 when this browser has no AAC encoder) or 'wav' (16-bit PCM). */
+export async function exportAudio(p, { format = 'm4a', range, onProgress = () => {} } = {}) {
+  if (!projectDuration(p)) throw new Error('Nothing to export yet');
+  const [t0, t1] = rangeOf(p, range), t = performance.now();
+  try {
+    onProgress({ phase: 'audio', p: 0 });
+    const m = await mixRange(p, t0, t1, x => onProgress({ phase: 'audio', p: x * .5 }));
+    if (format === 'wav') { const blob = encodeWav([m.L, m.R], SR); return { blob, ext: 'wav', mime: 'audio/wav', codec: 'PCM 16-bit', duration: t1 - t0, range: [t0, t1], seconds: (performance.now() - t) / 1000 }; }
+    let audio = null;
+    for (const [codec, mux, br] of [['mp4a.40.2', 'aac', AUDIO_BR], ['opus', 'opus', 160000]]) { const config = { codec, sampleRate: SR, numberOfChannels: 2, bitrate: br };
+      try { if (typeof AudioEncoder !== 'undefined' && (await AudioEncoder.isConfigSupported(config)).supported) { audio = { config, mux }; break; } } catch (e) {} }
+    if (!audio || typeof Mp4Muxer === 'undefined') { const blob = encodeWav([m.L, m.R], SR); return { blob, ext: 'wav', mime: 'audio/wav', codec: 'PCM 16-bit (no compressed audio encoder here)', duration: t1 - t0, range: [t0, t1], fallback: true }; }
+    const target = new Mp4Muxer.ArrayBufferTarget(), muxer = new Mp4Muxer.Muxer({ target, fastStart: 'in-memory', firstTimestampBehavior: 'offset', audio: { codec: audio.mux, sampleRate: SR, numberOfChannels: 2 } });
+    let fail = null; const enc = new AudioEncoder({ output: (c, md) => muxer.addAudioChunk(c, md), error: e => { fail = e; } }); enc.configure(audio.config);
+    const CH = 4096;
+    for (let i = 0; i < m.length; i += CH) { const n = Math.min(CH, m.length - i), data = new Float32Array(n * 2); data.set(m.L.subarray(i, i + n), 0); data.set(m.R.subarray(i, i + n), n);
+      const ad = new AudioData({ format: 'f32-planar', sampleRate: SR, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(i / SR * 1e6), data }); enc.encode(ad); ad.close();
+      if (enc.encodeQueueSize > 16) await drain(enc, 4); if (i % (CH * 40) === 0) onProgress({ phase: 'audio', p: .5 + .5 * i / m.length }); if (fail) throw fail; }
+    await enc.flush(); if (fail) throw fail; enc.close(); muxer.finalize();
+    return { blob: new Blob([target.buffer], { type: 'audio/mp4' }), ext: 'm4a', mime: 'audio/mp4', codec: audio.mux === 'aac' ? 'AAC 192 kbps' : 'Opus 160 kbps', duration: t1 - t0, range: [t0, t1], seconds: (performance.now() - t) / 1000 };
+  } finally { dropAudioCache(); }
+}
+/** Frame-exact picture of time t at full export resolution (same decoders as the video export). */
+async function framesAt(p, t, sources, clips) {
+  const frames = new Map();
+  for (const tr of visualTracks(p)) for (const c of activeAt(tr, t)) {
+    if (c.type === 'image') { const r = media.get(c.mediaId); if (r) { const bm = await loadBitmap(r); frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); } continue; }
+    if (c.type !== 'video') continue;
+    let s = sources.get(c.id); if (!s) { s = await openSource(media.get(c.mediaId), srcTime(c, t)); sources.set(c.id, s); clips.set(c.id, c); }
+    frames.set(c.id, await s.frameAt(Math.max(0, srcTime(c, t))));
+  }
+  for (const [id, s] of sources) if (clipEnd(clips.get(id)) <= t + 1e-9 || clips.get(id).start > t + 1e-9) { s.close(); sources.delete(id); }
+  return frames;
+}
+export async function exportStill(p, t, { short = 1080, type = 'image/png', quality = .92 } = {}) {
+  await ensureProjectFonts(p); const D = projectDuration(p); t = Math.max(0, Math.min(Math.max(0, D - 1e-3), t));
+  const { W, H } = outputSize(p.aspect, short), cv = new OffscreenCanvas(W, H), ctx = cv.getContext('2d', { alpha: false }); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  const sources = new Map(), clips = new Map();
+  try { const fr = await framesAt(p, t, sources, clips); renderFrame(ctx, W, H, p, t, c => fr.get(c.id)); }
+  finally { for (const s of sources.values()) s.close(); dropDemuxCache(); }
+  const blob = await cv.convertToBlob(type === 'image/jpeg' ? { type, quality } : { type });
+  return { blob, ext: type === 'image/jpeg' ? 'jpg' : 'png', mime: type, W, H, t };
+}
+export const GIF_MAX = 15;   // seconds: GIFs get very big, so only short clips
+/** Animated GIF of a short range (max 15 s): width 240-480 px, 8-15 fps. */
+export async function exportGif(p, { range, width = 360, fps = 12, onProgress = () => {}, signal = {} } = {}) {
+  await ensureProjectFonts(p);
+  let [t0, t1] = rangeOf(p, range); if (t1 - t0 > GIF_MAX) t1 = t0 + GIF_MAX;
+  const { W: W0, H: H0 } = outputSize(p.aspect, 1080), W = Math.round(width / 2) * 2, H = Math.round(W * H0 / W0 / 2) * 2, N = Math.max(1, Math.round((t1 - t0) * fps)), tm = performance.now();
+  const cv = new OffscreenCanvas(W, H), ctx = cv.getContext('2d', { alpha: false, willReadFrequently: true }); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  const sources = new Map(), clips = new Map(), grab = async t => { const fr = await framesAt(p, t, sources, clips); renderFrame(ctx, W, H, p, t, c => fr.get(c.id)); return ctx.getImageData(0, 0, W, H).data; };
+  try {
+    const samples = [], step = Math.max(1, Math.floor(N / 12));
+    for (let i = 0; i < N; i += step) { samples.push(new Uint8ClampedArray(await grab(t0 + i / fps))); onProgress({ phase: 'palette', p: i / N * .2 }); }
+    for (const s of sources.values()) s.close(); sources.clear(); clips.clear();
+    const { pal, lut } = buildPalette(samples), gw = new GifWriter(W, H, pal); let acc = 0;
+    for (let i = 0; i < N; i++) {
+      if (signal.aborted) throw new DOMException('Export cancelled', 'AbortError');
+      const d = await grab(t0 + i / fps), next = Math.round((i + 1) * 100 / fps), delay = next - acc; acc = next;
+      gw.add(indexFrame(d, W, H, lut), delay); onProgress({ phase: 'video', p: .2 + .8 * (i + 1) / N, frame: i + 1, frames: N });
+      if (i % 4 === 3) await new Promise(r => setTimeout(r, 0));
+    }
+    return { blob: gw.finish(), ext: 'gif', mime: 'image/gif', W, H, fps, frames: N, duration: t1 - t0, range: [t0, t1], seconds: (performance.now() - tm) / 1000 };
+  } finally { for (const s of sources.values()) s.close(); dropDemuxCache(); }
+}
 
-async function encodeWebCodecs(p, D, W, H, fps, codecs, onProgress, signal) {
+async function encodeWebCodecs(p, D, W, H, fps, codecs, onProgress, signal, tStart = 0) {
   const t0 = performance.now();
   const target = new Mp4Muxer.ArrayBufferTarget();
   const muxer = new Mp4Muxer.Muxer({ target, fastStart: false, firstTimestampBehavior: 'offset',
@@ -128,8 +217,8 @@ async function encodeWebCodecs(p, D, W, H, fps, codecs, onProgress, signal) {
 
   // 1) sound
   onProgress({ phase: 'audio', p: 0 });
-  const mix = await mixAudio(p, D, x => onProgress({ phase: 'audio', p: x }));
-  const L = mix.getChannelData(0), R = mix.getChannelData(1), CH = 4096;
+  const mix = await mixRange(p, tStart, tStart + D, x => onProgress({ phase: 'audio', p: x }));
+  const L = mix.L, R = mix.R, CH = 4096;
   for (let i = 0; i < mix.length; i += CH) {
     const n = Math.min(CH, mix.length - i), data = new Float32Array(n * 2); data.set(L.subarray(i, i + n), 0); data.set(R.subarray(i, i + n), n);
     const ad = new AudioData({ format: 'f32-planar', sampleRate: SR, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round(i / SR * 1e6), data });
@@ -145,7 +234,7 @@ async function encodeWebCodecs(p, D, W, H, fps, codecs, onProgress, signal) {
   for (let i = 0; i < N; i++) {
     if (signal.aborted) throw new DOMException('Export cancelled', 'AbortError');
     if (fail) throw fail;
-    const t = i / fps, frames = new Map();
+    const t = tStart + i / fps, frames = new Map();
     for (const tr of vtracks) for (const c of activeAt(tr, t)) {
       if (c.type === 'image') { const r = media.get(c.mediaId); if (r) { const bm = await loadBitmap(r); frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); } continue; }
       if (c.type !== 'video') continue;
@@ -172,21 +261,21 @@ function drain(enc, below) {
 }
 
 /* Real-time fallback: plays the project into a hidden canvas and records it (takes as long as the video). */
-async function encodeRecorder(p, D, W, H, fps, onProgress, signal, vbr) {
+async function encodeRecorder(p, D, W, H, fps, onProgress, signal, vbr, tStart = 0) {
   const t0 = performance.now(), mime = recorderMime();
   const canvas = Object.assign(document.createElement('canvas'), { width: W, height: H });
   let dest = null;
   const player = new Player(canvas, { getProject: () => p, showSelection: false, silent: true, recordDest: ac => (dest = ac.createMediaStreamDestination()) });
   player.ensureAudio();
-  player.seek(0); await new Promise(r => setTimeout(r, 800)); player.draw();
+  player.seek(tStart); await new Promise(r => setTimeout(r, 800)); player.draw();
   const stream = canvas.captureStream(fps); if (dest) dest.stream.getAudioTracks().forEach(t => stream.addTrack(t));
   const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: Math.round(Math.min(25e6, vbr || defaultBitrate(W, H, fps))), audioBitsPerSecond: 160000 });
   const chunks = []; rec.ondataavailable = e => e.data.size && chunks.push(e.data);
   const stopped = new Promise(r => rec.onstop = r);
   await new Promise(res => {
     player.o.onEnd = res;
-    player.o.onTime = t => { onProgress({ phase: 'video', p: t / D, eta: D - t }); if (signal.aborted) res(); };
-    rec.start(500); player.play();
+    player.o.onTime = t => { onProgress({ phase: 'video', p: (t - tStart) / D, eta: D - (t - tStart) }); if (signal.aborted) res(); };
+    rec.start(500); player.stopAt = tStart + D; player.play();
   });
   await new Promise(r => setTimeout(r, 250)); rec.stop(); await stopped; player.destroy();
   if (signal.aborted) throw new DOMException('Export cancelled', 'AbortError');

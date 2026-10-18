@@ -32,7 +32,7 @@ export function initHome(ctx) {
   let tm = 0; $('#homeSearch').oninput = e => { clearTimeout(tm); tm = setTimeout(() => { q = e.target.value; render(); }, 120); };
   $('#homeBackupAll').onclick = () => backup('all');
   $('#homeImport').onclick = () => { $('#homeFile').value = ''; $('#homeFile').click(); };
-  $('#homeFile').onchange = e => e.target.files[0] && restore(e.target.files[0]);
+  $('#homeFile').onchange = async e => { const f = e.target.files[0]; if (f) await restore(f); e.target.value = ''; };
 }
 export async function showHome() {
   if (S.project) await X.leaveProject();

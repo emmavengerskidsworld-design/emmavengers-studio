@@ -211,7 +211,7 @@ async def run():
         log('== Freeze frame')
         await reset(pg); await add(pg, ['tone.mp4'], 1); vid = (await main_ids(pg))[0]
         await seek(pg, 1.5); ref = await still(pg, 1.5); d0 = await P(pg, 'studio.projectDuration(studio.S.project)')
-        await tool(pg, vid, 'freeze'); await pg.wait_for_function('studio.S.project.tracks.find(t=>t.kind==="main").clips.length===3', timeout=20000)
+        await tool(pg, vid, 'freeze'); await pg.click('.freezedur .chipbtn:has-text("3 s")'); await pg.click('#freezeGo'); await pg.wait_for_function('studio.S.project.tracks.find(t=>t.kind==="main").clips.length===3', timeout=20000)
         cl = await P(pg, 'studio.S.project.tracks.find(t=>t.kind==="main").clips.map(c=>({type:c.type,start:c.start,dur:c.dur,in:c.in,out:c.out}))'); d1 = await P(pg, 'studio.projectDuration(studio.S.project)')
         ok([c['type'] for c in cl] == ['video', 'image', 'video'] and abs(cl[1]['start'] - 1.5) < 0.02 and abs(cl[1]['dur'] - 3) < 1e-6 and abs(d1 - d0 - 3) < 0.02, f'freeze inserts a 3 s still at the playhead and splits the clip ({[(c["type"], round(c["start"], 2)) for c in cl]}, {d0:.2f}s → {d1:.2f}s)')
         fz = await still(pg, 2.5); bx0, bx1 = barx(ref), barx(fz); ok(abs(bx0 - bx1) <= 2, f'the still shows the frame at the playhead (bar at x={bx0:.1f} vs {bx1:.1f})')

@@ -39,15 +39,9 @@ function shownSize(c) {
 /* ---------------- Crop / straighten / flip / rotate ---------------- */
 export function cropSheet() {
   const c0 = cur(); if (!c0) return;
+  X.player.cropEdit = c0.id; X.player.requestDraw();
   openSheet('Crop', body => {
     const L = () => Lt(cur()), crop = () => cropAt(cur(), L()) || { x: 0, y: 0, w: 1, h: 1, angle: 0 };
-    const ensure = cl => { cl.crop ||= { x: 0, y: 0, w: 1, h: 1, angle: 0, ratio: 'free' }; };
-    const setC = (cl, o) => { ensure(cl); const t = Lt(cl); for (const [k, p] of [['x', 'cropX'], ['y', 'cropY'], ['w', 'cropW'], ['h', 'cropH'], ['angle', 'straighten']]) if (o[k] != null) setProp(cl, p, Math.round(o[k] * 10000) / 10000, t); };
-    const ratioOf = id => { const R = CROP_RATIOS.find(r => r.id === id); if (!R || !R.r) return 0; if (R.r < 0) { const s = shownSize(cur()); return s.w / s.h; } return R.r; };
-    // keep the centre, fit the requested ratio inside the picture
-    const fitRatio = (o, r, size) => { const s = shownSize(cur()), cx = o.x + o.w / 2, cy = o.y + o.h / 2; let w = size ?? o.w, h = w * s.w / (s.h * r);
-      if (h > 1) { const k = 1 / h; h = 1; w *= k; } if (w > 1) { const k = 1 / w; w = 1; h *= k; }
-      return { w, h, x: Math.max(0, Math.min(1 - w, cx - w / 2)), y: Math.max(0, Math.min(1 - h, cy - h / 2)) }; };
     const ratioChips = chips(CROP_RATIOS.map(r => ({ value: r.id, label: r.name })), c0.crop?.ratio || 'free', id => {
       editSel(cl => { ensure(cl); cl.crop.ratio = id; const r = ratioOf(id); if (r) setC(cl, fitRatio(cropAt(cl, Lt(cl)), r, 1)); }); sync(); }, 'tabs cropratios');
     const sz = slider('Size', { min: 0.05, max: 1, step: 0.001, value: crop().w, fmt: v => Math.round(v * 100) + '%', id: 'cropSize', onInput: v => editSel(cl => { ensure(cl); const o = cropAt(cl, Lt(cl)), r = ratioOf(cl.crop.ratio);
@@ -62,9 +56,62 @@ export function cropSheet() {
     const fh = btn(icon('fliph', 16) + ' Flip ↔', 'flipH', !!c0.flipH, () => { editSel(cl => { cl.flipH = !cl.flipH; if (!cl.flipH) delete cl.flipH; }); fh.classList.toggle('on', !!cur().flipH); });
     const fv = btn(icon('flipv', 16) + ' Flip ↕', 'flipV', !!c0.flipV, () => { editSel(cl => { cl.flipV = !cl.flipV; if (!cl.flipV) delete cl.flipV; }); fv.classList.toggle('on', !!cur().flipV); });
     const rs = btn('Reset', 'cropReset', false, () => { editSel(cl => { delete cl.crop; delete cl.flipH; delete cl.flipV; delete cl.rot90; for (const k of CROP_PROPS) delete (cl.keyframes || {})[k]; }); ratioChips.setActive('free'); fh.classList.remove('on'); fv.classList.remove('on'); sync(); });
-    body.append(ratioChips, sz, ws, hs, px, py, st, row(r90, fh, fv, rs), kfNote(c0)); sync();
-  }, { className: 'tall' });
+    cropSync = sync;
+    body.append(hint('Drag the corners or edges on the picture to crop; drag inside to move the crop.'), ratioChips, sz, ws, hs, px, py, st, row(r90, fh, fv, rs), kfNote(c0)); sync();
+  }, { className: 'tall', onClose: () => { X.player.cropEdit = null; cropSync = null; cropDrag = null; X.player.requestDraw(); } });
 }
+
+/* crop handles on the preview (while the Crop sheet is open) */
+let cropSync = null, cropDrag = null;
+const ensure = cl => { cl.crop ||= { x: 0, y: 0, w: 1, h: 1, angle: 0, ratio: 'free' }; };
+const setC = (cl, o) => { ensure(cl); const t = Lt(cl); for (const [k, p] of [['x', 'cropX'], ['y', 'cropY'], ['w', 'cropW'], ['h', 'cropH'], ['angle', 'straighten']]) if (o[k] != null) setProp(cl, p, Math.round(o[k] * 10000) / 10000, t); };
+const ratioOf = id => { const R = CROP_RATIOS.find(r => r.id === id); if (!R || !R.r) return 0; if (R.r < 0) { const s = shownSize(cur()); return s.w / s.h; } return R.r; };
+// keep the centre, fit the requested ratio inside the picture
+const fitRatio = (o, r, size) => { const s = shownSize(cur()), cx = o.x + o.w / 2, cy = o.y + o.h / 2; let w = size ?? o.w, h = w * s.w / (s.h * r);
+  if (h > 1) { const k = 1 / h; h = 1; w *= k; } if (w > 1) { const k = 1 / w; w = 1; h *= k; }
+  return { w, h, x: Math.max(0, Math.min(1 - w, cx - w / 2)), y: Math.max(0, Math.min(1 - h, cy - h / 2)) }; };
+const cropBox = () => X.player.cropEdit && X.player.boxes && X.player.boxes.find(b => b.id === X.player.cropEdit && b.cropEdit);
+const toUV = (b, pos) => { const a = -(b.rotation || 0) * Math.PI / 180, dx = pos.x - b.cx, dy = pos.y - b.cy;
+  return { u: (dx * Math.cos(a) - dy * Math.sin(a)) / b.w + 0.5, v: (dx * Math.sin(a) + dy * Math.cos(a)) / b.h + 0.5 }; };
+/** Pointer down on the preview: grab a crop corner / edge / the inside. Returns true when the crop took the pointer. */
+export function cropDragStart(pos) {
+  const b = cropBox(), c = cur(); if (!b || !c || c.id !== X.player.cropEdit) return false;
+  const o = cropAt(c, Lt(c)) || { x: 0, y: 0, w: 1, h: 1 }, { u, v } = toUV(b, pos);
+  const tu = Math.max(14 * (X.player.canvas.width / X.player.canvas.getBoundingClientRect().width || 1), 0) / b.w, tv = tu * b.w / b.h;   // ~14 css px
+  const nearL = Math.abs(u - o.x) < tu, nearR = Math.abs(u - (o.x + o.w)) < tu, nearT = Math.abs(v - o.y) < tv, nearB = Math.abs(v - (o.y + o.h)) < tv;
+  const inU = u > o.x - tu && u < o.x + o.w + tu, inV = v > o.y - tv && v < o.y + o.h + tv;
+  let mode = '';
+  if (inV && nearL) mode += 'l'; else if (inV && nearR) mode += 'r';
+  if (inU && nearT) mode += 't'; else if (inU && nearB) mode += 'b';
+  if (!mode && u > o.x && u < o.x + o.w && v > o.y && v < o.y + o.h) mode = 'move';
+  if (!mode) return false;
+  cropDrag = { mode, o: { ...o }, u, v };
+  return true;
+}
+export function cropDragMove(pos) {
+  if (!cropDrag) return; const b = cropBox(); if (!b) return;
+  const { u, v } = toUV(b, pos), d = cropDrag, o = d.o, m = d.mode, MIN = 0.05, cl01 = x => Math.max(0, Math.min(1, x));
+  editSel(cl => {
+    ensure(cl); const r = ratioOf(cl.crop.ratio);
+    if (m === 'move') { setC(cl, { x: Math.max(0, Math.min(1 - o.w, o.x + u - d.u)), y: Math.max(0, Math.min(1 - o.h, o.y + v - d.v)) }); return; }
+    let x0 = o.x, y0 = o.y, x1 = o.x + o.w, y1 = o.y + o.h;
+    if (m.includes('l')) x0 = Math.min(x1 - MIN, cl01(u)); if (m.includes('r')) x1 = Math.max(x0 + MIN, cl01(u));
+    if (m.includes('t')) y0 = Math.min(y1 - MIN, cl01(v)); if (m.includes('b')) y1 = Math.max(y0 + MIN, cl01(v));
+    if (r) {   // locked ratio: the dragged side drives the size, the opposite corner / edge centre stays put
+      const s = shownSize(cl), k = s.w / (s.h * r);   // h = w * k in normalised units
+      let w = x1 - x0, h = y1 - y0;
+      if (m === 't' || m === 'b') w = h / k; else h = w * k;
+      const ax = m.includes('l') ? o.x + o.w : m.includes('r') ? o.x : o.x + o.w / 2, ay = m.includes('t') ? o.y + o.h : m.includes('b') ? o.y : o.y + o.h / 2;
+      const fx = m.includes('l') ? 1 : m.includes('r') ? 0 : 0.5, fy = m.includes('t') ? 1 : m.includes('b') ? 0 : 0.5;
+      const lim = Math.min(fx ? ax / fx : Infinity, fx < 1 ? (1 - ax) / (1 - fx) : Infinity, (fy ? ay / fy : Infinity) / k, (fy < 1 ? (1 - ay) / (1 - fy) : Infinity) / k);
+      w = Math.max(MIN, Math.min(w, lim)); h = w * k;
+      x0 = ax - fx * w; y0 = ay - fy * h; x1 = x0 + w; y1 = y0 + h;
+    }
+    setC(cl, { x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+  });
+  cropSync && cropSync();
+}
+export function cropDragEnd() { const was = !!cropDrag; cropDrag = null; return was; }
 
 /* ---------------- Mask ---------------- */
 const shapeIcon = id => {
@@ -166,6 +213,18 @@ async function grabFrame(c, t) {
   finally { src.close(); }
 }
 const COPY = ['transform', 'filter', 'adjust', 'enhance', 'crop', 'mask', 'blend', 'key', 'flipH', 'flipV', 'rot90', 'fit'];
+export const FREEZE_DURS = [1, 2, 3, 5];
+/** Pick how long the frozen picture stays on screen, then freeze. */
+export function freezeSheet() {
+  const f = selected(); if (!f || f.clip.type !== 'video') { X.toast('Select a video clip'); return; }
+  let dur = +localStorage.getItem('studio.freezeDur') || 3; if (!FREEZE_DURS.includes(dur)) dur = 3;
+  openSheet('Freeze frame', body => {
+    const ch = chips(FREEZE_DURS.map(d => ({ value: d, label: d + ' s' })), dur, v => { dur = +v; }, 'tabs freezedur');
+    const go = el('button', 'btn primary big', 'Freeze'); go.id = 'freezeGo';
+    go.onclick = () => { localStorage.setItem('studio.freezeDur', dur); closeSheet(); freezeFrame(dur); };
+    body.append(hint('The picture under the white line stays still for:'), ch, go);
+  }, { gesture: false });
+}
 export async function freezeFrame(dur = 3) {
   const f = selected(); if (!f || f.clip.type !== 'video') { X.toast('Select a video clip'); return null; }
   const c = f.clip, t = X.player.t; if (!(t >= c.start - 1e-6 && t <= clipEnd(c) + 1e-6)) { X.toast('Move the white line onto the clip'); return null; }

@@ -18,7 +18,7 @@ import { FILTER_CATS } from './registry.js';
 import { ensureFont, ensureProjectFonts, onFontLoad } from './fonts.js';
 import { TEXT_STYLES, BUBBLES, TITLES, applyStyle, applyTitle } from './textstyles.js';
 import { FILTERS, FONTS, COLORS, BG_COLORS, SPEED_PRESETS, KEYFRAME_PROPS, DEFAULT_TRANSFORM, TRACK_KINDS, propAt, kfPropsFor, EASING_LIST, TRANSFORM_PROPS } from './registry.js';
-import { exportVideo, outputSize, pickCodecs, recorderMime, planBitrate, qualityFloor, QUALITY, RESOLUTIONS, supportedResolutions, estimateBytes, bitrateFor } from './export.js';
+import { exportVideo, exportAudio, exportStill, exportGif, GIF_MAX, AUDIO_BR, outputSize, pickCodecs, recorderMime, planBitrate, qualityFloor, QUALITY, RESOLUTIONS, supportedResolutions, estimateBytes, bitrateFor } from './export.js';
 import { ADJUST, DEFAULT_STRENGTH, enhanceOn, glAvailable } from './enhance.js';
 import { renderFrame, drawVisual, drawText } from './render.js';
 import { CLIP_ANIMS, TEXT_ANIMS, animSetFor, animById, animSpans, DEFAULT_ANIM_DUR, DEFAULT_LOOP_DUR, MIN_ANIM, MAX_ANIM, MIN_LOOP, MAX_LOOP, loopKind } from './animations.js';
@@ -35,7 +35,7 @@ import * as projectApi from './project.js';
 
 const $ = s => document.querySelector(s);
 const fmt = t => { const m = Math.floor(t / 60), s = t - m * 60; return String(m).padStart(2, '0') + ':' + s.toFixed(1).padStart(4, '0'); };
-let player, timeline;
+let player, timeline, seekQ = false;
 
 /* ---------------- boot ---------------- */
 async function boot() {
@@ -44,7 +44,7 @@ async function boot() {
   $('#exportBtn').innerHTML = icon('export', 18) + '<span>Export</span>';
   await load(); await projects.migrate();
   await useMedia(mediaIds(S.project));
-  player = new Player($('#preview'), { getProject: () => S.project, selected: () => S.sel, onTime: t => { timeline.setTime(t); showTime(); updateKf(); }, onState: setPlayIcon });
+  player = new Player($('#preview'), { getProject: () => S.project, selected: () => S.sel, onTime: t => { timeline.setTime(t); showTime(); updateKf(); }, onSeek: () => { if (!seekQ) { seekQ = true; requestAnimationFrame(() => { seekQ = false; showTime(); }); } }, onState: setPlayIcon });
   timeline = new Timeline({ getTime: () => player.t, seek: t => { player.seek(t, true); showTime(); updateKf(); }, onJoint: id => transitionSheet(id), isPlaying: () => player.playing, pause: () => player.pause(), onAdd: k => pick(k), afterEdit: afterEdit });
   on('change', () => { timeline.render(); player.seek(player.t); showTime(); refreshToolbar(); updateEmpty(); updateKf(); });
   on('select', () => { document.body.classList.toggle('has-sel', !!S.sel); timeline.render(); refreshToolbar(); player.requestDraw(); if (sheetOpen()) closeSheet(); updateKf(); });
@@ -127,18 +127,20 @@ function previewGestures() {
     if (player.playing) player.pause();
     if (pts.size === 1) {
       const pos = toCanvas(e); if (pro.previewTap(pos)) { pts.delete(e.pointerId); return; }
+      if (pro.cropDragStart(pos)) { g = { crop: true }; tap = null; return; }
       const hit = hitTest(player.boxes, pos.x, pos.y);
       tap = { x: e.clientX, y: e.clientY, hit: hit && hit.id };
       const f = S.sel && find(S.project, S.sel);
       const id = f && player.boxes.some(b => b.id === S.sel) ? S.sel : hit && hit.id;
       if (id) { const ff = find(S.project, id); g = { id, x0: e.clientX, y0: e.clientY, tr: trAt(ff.clip), r: pos.r, started: false }; }
-    } else if (pts.size === 2 && g) {
+    } else if (pts.size === 2 && g && !g.crop) {
       const [a, b] = [...pts.values()]; g.pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), ang: Math.atan2(b.y - a.y, b.x - a.x), tr: trAt(find(S.project, g.id).clip) };
     }
   });
   cv.addEventListener('pointermove', e => {
     if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (!g) return;
+    if (g.crop) { pro.cropDragMove(toCanvas(e)); return; }
     if (!g.started && Math.hypot(e.clientX - g.x0, e.clientY - g.y0) < 4 && pts.size < 2) return;
     if (!g.started) { g.started = true; begin(); if (S.sel !== g.id) select(g.id); }
     live(p => { const c = find(p, g.id)?.clip; if (!c) return;
@@ -155,10 +157,11 @@ function previewGestures() {
   const upH = e => {
     pts.delete(e.pointerId);
     if (pts.size === 0) {
-      if (g && g.started) end();
+      if (g && g.crop) pro.cropDragEnd();
+      else if (g && g.started) end();
       else if (tap && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 6) select(tap.hit || null);
       g = null; tap = null;
-    } else if (g) { const ff = find(S.project, g.id); const [p0] = [...pts.values()]; g.x0 = p0.x; g.y0 = p0.y; g.tr = trAt(ff.clip); g.pinch = null; }
+    } else if (g && !g.crop) { const ff = find(S.project, g.id); const [p0] = [...pts.values()]; g.x0 = p0.x; g.y0 = p0.y; g.tr = trAt(ff.clip); g.pinch = null; }
   };
   cv.addEventListener('pointerup', upH); cv.addEventListener('pointercancel', upH);
 }
@@ -399,7 +402,7 @@ const CLIP_TOOLS = [
   { id: 'blend', icon: 'blend', label: 'Blend', when: c => isPic(c), run: pro.blendSheet },
   { id: 'tooverlay', icon: 'overlay', label: 'Overlay', when: c => isPic(c) && find(S.project, c.id)?.track.kind === 'main', run: () => pro.toTrack('overlay') },
   { id: 'tomain', icon: 'tomain', label: 'Main track', when: c => isPic(c) && find(S.project, c.id)?.track.kind === 'overlay', run: () => pro.toTrack('main') },
-  { id: 'freeze', icon: 'freeze', label: 'Freeze', when: c => c.type === 'video', run: () => pro.freezeFrame() },
+  { id: 'freeze', icon: 'freeze', label: 'Freeze', when: c => c.type === 'video', run: () => pro.freezeSheet() },
   { id: 'reverse', icon: 'reverse', label: 'Reverse', when: c => c.type === 'video', run: () => pro.reverseClip() },
   { id: 'replace', icon: 'replace', label: 'Replace', when: c => isPic(c) && !(c.placeholder && c.placeholder !== 'text'), run: pro.replaceClip },
   { id: 'volume', icon: 'volume', label: 'Volume', when: hasSource, run: volumeSheet },
@@ -817,19 +820,33 @@ function exportView() {
   // The saved video is always full quality (sharpness first). Only a "copy for posting" is ever made smaller.
   const plan = () => { const { W, H } = outputSize(S.project.aspect, short); return { W, H, maxBytes: null }; };
   v.innerHTML = `<div class="ex">
-    <div class="ex-head"><button class="ib" id="exClose" aria-label="Close">${icon('x')}</button><b>Export video</b><span></span></div>
+    <div class="ex-head"><button class="ib" id="exClose" aria-label="Close">${icon('x')}</button><b id="exTitle">Export video</b><span></span></div>
     <div class="ex-body">
       <div class="ex-set" id="exSet">
-        <div class="ex-row"><span class="cl">Resolution</span><div id="exRes"></div></div>
-        <div class="ex-row"><span class="cl">Frame rate</span><div id="exFps"></div></div>
-        <div class="ex-row"><span class="cl">Quality</span><div id="exQ"></div></div>
+        <div class="ex-row"><span class="cl">Make</span><div id="exType"></div></div>
+        <div class="ex-row" data-for="video audio gif"><span class="cl">Part</span><div id="exRange"></div></div>
+        <div id="exRangeCtl" class="ex-range" hidden></div>
+        <div class="ex-row" data-for="video still"><span class="cl">Resolution</span><div id="exRes"></div></div>
+        <div class="ex-row" data-for="video"><span class="cl">Frame rate</span><div id="exFps"></div></div>
+        <div class="ex-row" data-for="video"><span class="cl">Quality</span><div id="exQ"></div></div>
+        <div class="ex-row" data-for="video"><span class="cl">Size</span><div id="exSizeMode"></div></div>
+        <div id="exSizeCtl" class="ex-range" data-for="video" hidden></div>
+        <div class="ex-row" data-for="audio"><span class="cl">Format</span><div id="exAFmt"></div></div>
+        <div class="ex-row" data-for="still"><span class="cl">Format</span><div id="exPFmt"></div></div>
+        <div class="ex-row" data-for="gif"><span class="cl">Width</span><div id="exGW"></div></div>
+        <div class="ex-row" data-for="gif"><span class="cl">Frame rate</span><div id="exGF"></div></div>
         <p class="ex-size" id="exSize"></p>
-        <div class="ex-hd" id="exHd" hidden></div>
+        <div class="ex-hd" id="exHd" data-for="video" hidden></div>
         <p class="ex-info" id="exInfo"></p>
         <button class="btn primary big" id="exGo">${icon('export', 20)} Export</button>
         <p class="hint">Keep this screen open while it exports.</p>
       </div>
       <div class="ex-prog" id="exProg" hidden><div class="ring"><b id="exPct">0%</b></div><div class="bar"><i id="exBar"></i></div><p id="exStatus">Preparing…</p><button class="btn ghost" id="exCancel">Cancel</button></div>
+      <div class="ex-done" id="exOut" hidden><div id="exOutPrev" class="ex-outprev"></div><p class="ex-ready">${icon('check', 18)} <span id="exOutReady">Ready!</span></p>
+        <button class="btn primary huge" id="exOutSave">${icon('save', 24)}<span>Save to phone</span></button>
+        <button class="btn huge post" id="exOutShare">${icon('share', 22)}<span>Share…</span><small>WhatsApp · Drive · Files · YouTube</small></button>
+        <div class="ex-msg" id="exOutMsg" hidden></div><p class="ex-info small" id="exOutInfo"></p>
+        <div class="ex-links"><button class="link" id="exOutAgain">Export something else</button><button class="link" id="exOutBack">Back to editing</button></div></div>
       <div class="ex-done" id="exDone" hidden>
         <video id="exVideo" controls playsinline></video>
         <p class="ex-ready" id="exReady">${icon('check', 18)} Your video is ready!</p>
@@ -840,14 +857,34 @@ function exportView() {
         <div class="ex-links"><button class="link" id="exFile">Download file</button><button class="link" id="exBack">Back to editing</button></div>
       </div>
     </div></div>`;
-  const info = async () => { const { W, H, maxBytes } = plan(); const vbr = planBitrate(W, H, fps, D, maxBytes, quality); const c = await pickCodecs(W, H, fps, vbr);
-    const mb = estimateBytes(vbr, D) / 1e6;
+  // what to make + which part (whole video / the selected clip / a custom range)
+  let type = localStorage.getItem('studio.exType') || 'video'; if (!['video', 'audio', 'still', 'gif'].includes(type)) type = 'video';
+  const selClip = S.sel && find(S.project, S.sel)?.clip, playT = player.t;
+  let part = 'all', r0 = 0, r1 = D, sizeMode = 'auto', mbps = 8, targetMB = 20, afmt = localStorage.getItem('studio.afmt') || 'm4a', pfmt = 'png', gw = 360, gf = 12;
+  const range = () => part === 'clip' && selClip ? [selClip.start, Math.min(D, clipEnd(selClip))] : part === 'custom' ? [Math.min(r0, r1), Math.max(r0, r1)] : [0, D];
+  const span = () => { const [a, b] = range(); return Math.max(0, b - a); };
+  const sizeBr = (W, H) => sizeMode === 'bitrate' ? mbps * 1e6 : sizeMode === 'size' ? Math.max(3e5, targetMB * 1e6 * 8 * 0.93 / Math.max(0.1, span()) - AUDIO_BR - 30000) : null;
+  const info = async () => {
+    $('#exTitle').textContent = { video: 'Export video', audio: 'Export sound', still: 'Export picture', gif: 'Export GIF' }[type];
+    v.querySelectorAll('[data-for]').forEach(el => { el.hidden = !el.dataset.for.split(' ').includes(type) || (el.id === 'exSizeCtl' && sizeMode === 'auto') || (el.id === 'exHd' && el.dataset.empty === '1'); });
+    $('#exRangeCtl').hidden = part !== 'custom' || type === 'still';
+    const [a, b] = range(), DD = b - a;
+    if (type !== 'video') {
+      $('#exInfo').dataset.vbr = ''; const { W, H } = outputSize(S.project.aspect, short);
+      if (type === 'audio') { $('#exSize').innerHTML = `Estimated size: <b>about ${(afmt === 'wav' ? DD * 48000 * 4 / 1e6 : DD * 200000 / 8e6).toFixed(1)} MB</b>`; $('#exInfo').textContent = `${afmt === 'wav' ? 'WAV (16-bit, 48 kHz, stereo)' : 'M4A (AAC) · plays everywhere'} · ${fmt(a)} – ${fmt(b)}`; }
+      if (type === 'still') { $('#exSize').innerHTML = `Frame at <b>${fmt(playT)}</b> (where the white line is)`; $('#exInfo').textContent = `${W} × ${H} · ${pfmt.toUpperCase()}`; }
+      if (type === 'gif') { const gl = Math.min(DD, GIF_MAX), H2 = Math.round(gw * H / W / 2) * 2; $('#exSize').innerHTML = DD > GIF_MAX + 0.05 ? `GIFs are for short clips: the first <b>${GIF_MAX} s</b> of this part will be used.` : `About <b>${Math.max(0.1, gl * gf * gw * H2 * 0.12 / 1e6).toFixed(1)} MB</b> (GIF files are big)`;
+        $('#exInfo').textContent = `${gw} × ${H2} · ${gf} fps · ${fmt(gl)} · loops`; }
+      return;
+    }
+    const { W, H, maxBytes } = plan(); const vbr = sizeBr(W, H) || planBitrate(W, H, fps, DD, maxBytes, quality); const c = await pickCodecs(W, H, fps, vbr, sizeMode !== 'auto');
+    const mb = estimateBytes(vbr, DD) / 1e6; { const D = DD;   // the chosen part, not the whole video
     $('#exSize').innerHTML = `Estimated size: <b>about ${mb < 10 ? mb.toFixed(1) : Math.round(mb)} MB</b>`; $('#exSize').dataset.bytes = estimateBytes(vbr, D);
     $('#exInfo').textContent = `${W} × ${H} · ${fps} fps · ${fmt(D)} · ${c ? 'MP4 (' + (c.video.mux === 'avc' ? 'H.264' : c.video.mux.toUpperCase()) + ')' : (recorderMime() || 'not supported').split(';')[0].replace('video/', '').toUpperCase() + ' (real-time)'} · ${(vbr / 1e6).toFixed(1)} Mbps`;
-    $('#exInfo').dataset.vbr = vbr;
+    $('#exInfo').dataset.vbr = vbr; }
     // low-res sources: they are upscaled by the HD upscaler; offer HD Enhance for extra sharpness
     const low = []; for (const t of S.project.tracks) for (const cl of t.clips) if (isPic(cl)) { const z = srcSize(cl); if (z && Math.min(z.w, z.h) < Math.min(W, H) * 0.95) low.push(cl); }
-    const off = low.filter(cl => !enhanceOn(cl)), hd = $('#exHd'); hd.hidden = !low.length;
+    const off = low.filter(cl => !enhanceOn(cl)), hd = $('#exHd'); hd.hidden = !low.length; hd.dataset.empty = low.length ? '0' : '1';
     hd.innerHTML = !low.length ? '' : off.length ? `${icon('hd', 18)}<span>${off.length} clip${off.length > 1 ? 's are' : ' is'} below ${Math.min(W, H)}p. They are upscaled with the HD upscaler — turn on <b>HD Enhance</b> for extra sharpness.</span><button class="chipbtn" id="exHdOn">Turn on</button>` : `${icon('hd', 18)}<span>HD Enhance is on for your low-resolution clips.</span>`;
     const bt = $('#exHdOn'); if (bt) bt.onclick = () => { act(p => { for (const t of p.tracks) for (const cl of t.clips) if (isPic(cl) && low.some(x => x.id === cl.id)) cl.enhance = { on: true, strength: cl.enhance?.strength || DEFAULT_STRENGTH }; }); info(); };
   };
@@ -858,9 +895,21 @@ function exportView() {
     if (!can[short]) { short = 1080; resChips.setActive(short); } $('#exRes').dataset.checked = '1'; info(); };
   $('#exFps').append(chips([{ value: 24, label: '24' }, { value: 25, label: '25' }, { value: 30, label: '30' }, { value: 60, label: '60' }], fps, x => { fps = x; localStorage.setItem('studio.fps', x); checkRes(); }));
   $('#exQ').append(chips(Object.entries(QUALITY).map(([k, q]) => ({ value: k, label: q.name })), quality, x => { quality = x; localStorage.setItem('studio.q', x); info(); }));
+  const ctlRow = (host, label, id, min, max, step, val, f, on) => { const w = slider(label, { min, max, step, value: val, fmt: f, id, onInput: x => { on(x); info(); } }); host.append(w); return w; };
+  $('#exType').append(chips([{ value: 'video', html: icon('media', 16) + ' Video' }, { value: 'audio', html: icon('audio', 16) + ' Sound' }, { value: 'still', html: icon('image', 16) + ' Picture' }, { value: 'gif', html: icon('gif', 16) + ' GIF' }], type, x => { type = x; localStorage.setItem('studio.exType', x); if (x === 'gif' && part === 'all' && D > GIF_MAX) { part = 'custom'; r0 = 0; r1 = GIF_MAX; rangeChips.setActive('custom'); fromS.set(r0); toS.set(r1); } info(); }, 'tabs extype'));
+  const rangeChips = chips([{ value: 'all', label: 'Whole video' }, ...(selClip ? [{ value: 'clip', label: 'Selected clip' }] : []), { value: 'custom', label: 'Choose part' }], part, x => { part = x; if (x === 'custom' && r1 - r0 < 0.1) { r0 = 0; r1 = D; } info(); }, 'tabs exrange');
+  $('#exRange').append(rangeChips);
+  const fromS = ctlRow($('#exRangeCtl'), 'From', 'exFrom', 0, D, 0.1, r0, fmt, x => { r0 = x; }), toS = ctlRow($('#exRangeCtl'), 'To', 'exTo', 0, D, 0.1, r1, fmt, x => { r1 = x; });
+  $('#exSizeMode').append(chips([{ value: 'auto', label: 'Auto' }, { value: 'bitrate', label: 'Bitrate' }, { value: 'size', label: 'File size' }], 'auto', x => { sizeMode = x; $('#exMbpsW').hidden = x !== 'bitrate'; $('#exMBW').hidden = x !== 'size'; info(); }, 'tabs exsizemode'));
+  const mbW = ctlRow($('#exSizeCtl'), 'Bitrate', 'exMbps', 1, 60, 0.5, mbps, x => x.toFixed(1) + ' Mbps', x => { mbps = x; }); mbW.id = 'exMbpsW';
+  const szW = ctlRow($('#exSizeCtl'), 'Target file size', 'exMB', 2, 500, 1, targetMB, x => Math.round(x) + ' MB', x => { targetMB = x; }); szW.id = 'exMBW'; szW.hidden = true;
+  $('#exAFmt').append(chips([{ value: 'm4a', label: 'M4A (AAC)' }, { value: 'wav', label: 'WAV' }], afmt, x => { afmt = x; localStorage.setItem('studio.afmt', x); info(); }, 'tabs'));
+  $('#exPFmt').append(chips([{ value: 'png', label: 'PNG' }, { value: 'jpg', label: 'JPG' }], pfmt, x => { pfmt = x; info(); }, 'tabs'));
+  $('#exGW').append(chips([{ value: 240, label: '240' }, { value: 360, label: '360' }, { value: 480, label: '480' }], gw, x => { gw = x; info(); }, 'tabs'));
+  $('#exGF').append(chips([{ value: 8, label: '8' }, { value: 12, label: '12' }, { value: 15, label: '15' }], gf, x => { gf = x; info(); }, 'tabs'));
   checkRes();
   info();
-  const close = () => { if (ctrl) ctrl.aborted = true; if (result) URL.revokeObjectURL(result.url); if (small) URL.revokeObjectURL(small.url); v.hidden = true; v.innerHTML = ''; document.body.classList.remove('exporting'); layoutPreview(); player.seek(player.t); };
+  const close = () => { if (ctrl) ctrl.aborted = true; v.hidden = true; v.innerHTML = ''; if (result) URL.revokeObjectURL(result.url); if (small) URL.revokeObjectURL(small.url); document.body.classList.remove('exporting'); layoutPreview(); player.seek(player.t); };
   $('#exClose').onclick = close;
   const msg = (html, kind = 'ok') => { const m = $('#exMsg'); m.className = 'ex-msg ' + kind; m.innerHTML = html; m.hidden = false; };
   const run = async (maxBytes, label) => {
@@ -870,9 +919,10 @@ function exportView() {
     try {
       await save();
       const mode = new URLSearchParams(location.search).get('export');
-      const r = await exportVideo(S.project, { short, fps, quality, signal: ctrl, mode, maxBytes, onProgress: pr => {
+      const { W: VW, H: VH } = outputSize(S.project.aspect, short), forced = maxBytes ? null : sizeBr(VW, VH);
+      const r = await exportVideo(S.project, { short, fps, quality, signal: ctrl, mode, maxBytes, range: range(), vbr: forced, targetBytes: !maxBytes && sizeMode === 'size' ? targetMB * 1e6 : null, onProgress: pr => {
         const pct = Math.floor(pr.p * 100); $('#exPct').textContent = pct + '%'; $('#exBar').style.width = pct + '%';
-        $('#exStatus').textContent = (label ? label + ' · ' : '') + (pr.phase === 'audio' ? 'Mixing sound…' : pr.phase === 'finishing' ? 'Finishing…' : pr.eta != null ? `About ${Math.max(1, Math.round(pr.eta))} s left` : 'Exporting…'); } });
+        $('#exStatus').textContent = (label ? label + ' · ' : '') + (pr.phase === 'audio' ? 'Mixing sound…' : pr.phase === 'finishing' ? 'Finishing…' : pr.phase === 'smaller' ? 'Making it smaller…' : pr.eta != null ? `About ${Math.max(1, Math.round(pr.eta))} s left` : 'Exporting…'); } });
       r.name = `Emmavengers-${stamp()}.${r.ext}`; r.url = URL.createObjectURL(r.blob);
       return r;
     } finally { try { lock && lock.release(); } catch (e) {} $('#exProg').hidden = true; }
@@ -890,7 +940,33 @@ function exportView() {
   const where = () => isAndroid()
     ? `<b>Saved to your phone!</b> Open <b>Gallery</b> → <b>Albums</b> → <b>Download</b> (or <b>Google Photos</b> → <b>Collections</b> → <b>Download</b>). If Chrome asks, tap <b>Download</b>.`
     : `<b>Saved!</b> Look in your <b>Downloads</b> folder.`;
+  let out = null;
+  const showOut = r => {
+    out = r; r.name = `Emmavengers-${stamp()}.${r.ext}`; r.url = URL.createObjectURL(r.blob); window.studioLastExport = r;
+    $('#exSet').hidden = true; $('#exProg').hidden = true; $('#exOut').hidden = false; $('#exOutMsg').hidden = true;
+    const pv = $('#exOutPrev'); pv.innerHTML = r.mime.startsWith('audio') ? `<audio controls src="${r.url}"></audio>` : `<img alt="" src="${r.url}">`;
+    $('#exOutReady').textContent = { audio: 'Your sound is ready!', still: 'Your picture is ready!', gif: 'Your GIF is ready!' }[type] || 'Ready!';
+    $('#exOutInfo').textContent = `${r.W ? r.W + ' × ' + r.H + ' · ' : ''}${r.duration ? fmt(r.duration) + ' · ' : ''}${r.codec ? r.codec + ' · ' : ''}${(r.blob.size / 1e6).toFixed(2)} MB · ${r.name}`;
+    const f = new File([r.blob], r.name, { type: r.mime }); let ok = false; try { ok = !!(navigator.share && navigator.canShare && navigator.canShare({ files: [f] })); } catch (e) {} $('#exOutShare').hidden = !ok;
+  };
+  $('#exOutSave').onclick = () => { if (!out) return; downloadBlob(out.blob, out.name); const m = $('#exOutMsg'); m.className = 'ex-msg ok'; m.hidden = false;
+    m.innerHTML = isAndroid() ? (type === 'audio' ? '<b>Saved!</b> Find it in the <b>Files</b> app → <b>Downloads</b> (or in your music player).' : '<b>Saved to your phone!</b> Open <b>Gallery</b> → <b>Download</b>.') : '<b>Saved!</b> Look in your <b>Downloads</b> folder.'; };
+  $('#exOutShare').onclick = async () => { if (!out) return; try { await navigator.share({ files: [new File([out.blob], out.name, { type: out.mime })], title: 'Emmavengers' }); } catch (e) { if (e.name !== 'AbortError') { downloadBlob(out.blob, out.name); } } };
+  const dropOut = () => { $('#exOutPrev').innerHTML = ''; if (out) URL.revokeObjectURL(out.url); out = null; };
+  $('#exOutAgain').onclick = () => { dropOut(); $('#exOut').hidden = true; $('#exSet').hidden = false; };
+  $('#exOutBack').onclick = () => { dropOut(); close(); };
+  const runOther = async () => {
+    $('#exSet').hidden = true; $('#exProg').hidden = false; ctrl = { aborted: false }; $('#exPct').textContent = '0%'; $('#exBar').style.width = '0%';
+    $('#exCancel').textContent = 'Cancel'; $('#exCancel').onclick = () => { ctrl.aborted = true; $('#exStatus').textContent = 'Cancelling…'; };
+    const prog = pr => { const pct = Math.floor(pr.p * 100); $('#exPct').textContent = pct + '%'; $('#exBar').style.width = pct + '%'; $('#exStatus').textContent = pr.phase === 'audio' ? 'Mixing sound…' : pr.phase === 'palette' ? 'Choosing colours…' : 'Making it…'; };
+    try { await save();
+      if (type === 'audio') return await exportAudio(S.project, { format: afmt, range: range(), onProgress: prog });
+      if (type === 'still') return await exportStill(S.project, playT, { short, type: pfmt === 'jpg' ? 'image/jpeg' : 'image/png' });
+      return await exportGif(S.project, { range: range(), width: gw, fps: gf, onProgress: prog, signal: ctrl });
+    } finally { $('#exProg').hidden = true; }
+  };
   $('#exGo').onclick = async () => {
+    if (type !== 'video') { try { const r = await runOther(); if (ctrl && ctrl.aborted) { close(); return; } showOut(r); } catch (e) { fail(e); } return; }
     const { maxBytes } = plan();
     try { result = await run(maxBytes); small = null; showDone(); } catch (e) { fail(e); }
   };

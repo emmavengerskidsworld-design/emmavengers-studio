@@ -78,7 +78,7 @@ export function drawVisual(ctx, W, H, s, clip, tr, local, opts = {}) {
   const rot = (s.rot || 0) + 90 * (clip.rot90 || 0), quarter = (rot % 180 + 180) % 180 === 90;
   const dw = quarter ? s.h : s.w, dh = quarter ? s.w : s.h;   // displayed (rotated) size
   if (!dw || !dh) return null;
-  const pro = isPro(clip), cr = cropAt(clip, local || 0), mk = opts.noMask ? null : maskAt(clip, local || 0);
+  const pro = isPro(clip), crEdit = opts.cropEdit === clip.id, cr0 = cropAt(clip, local || 0), cr = crEdit ? null : cr0, mk = opts.noMask ? null : maskAt(clip, local || 0);
   const cw = cr ? dw * cr.w : dw, ch = cr ? dh * cr.h : dh;   // size after crop
   const fit = clip.fit === 'cover' ? Math.max(W / cw, H / ch) : Math.min(W / cw, H / ch);
   const k = fit * tr.scale, cx = tr.x * W, cy = tr.y * H, box = { cx, cy, w: cw * k, h: ch * k };
@@ -144,7 +144,23 @@ export function drawVisual(ctx, W, H, s, clip, tr, local, opts = {}) {
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = alpha; ctx.filter = 'none'; ctx.globalCompositeOperation = clip.blend && clip.blend !== 'normal' ? blendOp(clip.blend) : 'source-over';
     ctx.drawImage(target.canvas, 0, 0); ctx.restore();
   }
+  if (crEdit) { box.cropEdit = true; drawCropUI(ctx, box, tr.rotation, cr0 || { x: 0, y: 0, w: 1, h: 1 }, Math.min(W, H) / 400); }
   return box;
+}
+/** Preview only: the whole picture with the area outside the crop dimmed, a frame, thirds and corner / edge handles. */
+function drawCropUI(ctx, b, rotation, c, u) {
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-over';
+  ctx.translate(b.cx, b.cy); ctx.rotate(rotation * Math.PI / 180);
+  const x0 = -b.w / 2, y0 = -b.h / 2, x = x0 + c.x * b.w, y = y0 + c.y * b.h, w = c.w * b.w, h = c.h * b.h;
+  ctx.beginPath(); ctx.rect(x0, y0, b.w, b.h); ctx.rect(x, y, w, h); ctx.fillStyle = 'rgba(0,0,0,.58)'; ctx.fill('evenodd');
+  ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = u;
+  ctx.beginPath(); for (const f of [1 / 3, 2 / 3]) { ctx.moveTo(x + w * f, y); ctx.lineTo(x + w * f, y + h); ctx.moveTo(x, y + h * f); ctx.lineTo(x + w, y + h * f); } ctx.stroke();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5 * u; ctx.strokeRect(x, y, w, h);
+  const L = Math.min(18 * u, w / 3, h / 3); ctx.lineWidth = 4.5 * u; ctx.lineCap = 'round'; ctx.strokeStyle = '#ffd23f';
+  ctx.beginPath();
+  for (const [px, py, sx, sy] of [[x, y, 1, 1], [x + w, y, -1, 1], [x, y + h, 1, -1], [x + w, y + h, -1, -1]]) { ctx.moveTo(px + sx * L, py); ctx.lineTo(px, py); ctx.lineTo(px, py + sy * L); }
+  for (const [px, py, hor] of [[x + w / 2, y, 1], [x + w / 2, y + h, 1], [x, y + h / 2, 0], [x + w, y + h / 2, 0]]) { if (hor) { ctx.moveTo(px - L / 2, py); ctx.lineTo(px + L / 2, py); } else { ctx.moveTo(px, py - L / 2); ctx.lineTo(px, py + L / 2); } }
+  ctx.stroke(); ctx.restore();
 }
 
 export function fontCss(text, px) { return (FONTS[text.font] || FONTS.bold).css.replace('SIZE', px.toFixed(1)); }
