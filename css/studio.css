@@ -312,3 +312,20 @@ body.home-open .sheet{position:fixed;z-index:35}
 #adMake{width:100%;margin:8px 0 10px;display:flex;justify-content:center;gap:8px}
 .hm-ad{width:100%;display:flex;align-items:center;gap:12px;justify-content:flex-start;margin:-2px 0 12px;padding:10px 14px;text-align:left;background:linear-gradient(120deg,#7a3cff,#ff3d7f);color:#fff;border-radius:16px;min-height:62px}
 .hm-ad span{display:flex;flex-direction:column}.hm-ad b{font-size:16px}.hm-ad small{font-size:12px;opacity:.9}
+/* Batch 9: template browser */
+.tplsearch{width:100%;box-sizing:border-box;margin:4px 0 8px;padding:11px 14px;border-radius:14px;border:1px solid #3a3a48;background:#1b1b22;color:#fff;font:inherit;font-size:15px}
+.tplcats{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.tplcats .chipbtn{white-space:nowrap;flex:0 0 auto}
+.tplcats .chipbtn small{opacity:.6;font-size:11px;margin-left:3px}
+.tplpic{aspect-ratio:9/16}
+.tplbeat{position:absolute;left:6px;top:6px;font-style:normal;font-size:11px;font-weight:700;background:#ff3d7f;color:#fff;border-radius:8px;padding:1px 6px;display:flex;align-items:center;gap:3px}
+.tplbeat svg{width:12px;height:12px}
+.tpldetail{display:flex;flex-direction:column;gap:8px;padding:2px 0 10px}
+.tpldetail #tplBack{align-self:flex-start}
+.tplanim{width:62%;align-self:center;aspect-ratio:9/16;border-radius:16px;background-size:400% 100%,cover;background-repeat:no-repeat;background-position:0 0,center;animation:tplanim 4.8s steps(4) infinite;box-shadow:0 6px 20px rgba(0,0,0,.45)}
+@keyframes tplanim{from{background-position:0 0,center}to{background-position:133.333% 0,center}}
+.tplh{margin:6px 0 0;font-size:20px}
+.tplmeta{margin:0;color:#ffcc33;font-size:13px;font-weight:700}
+.tpldesc2{margin:0;color:#d8d8e4;font-size:14px;line-height:1.4}
+.tplslots{margin:0;color:#a9a9b8;font-size:12.5px;line-height:1.5}
+.tplempty{text-align:center;padding:20px 0}

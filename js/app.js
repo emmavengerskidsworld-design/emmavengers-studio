@@ -65,7 +65,7 @@ async function boot() {
   setTimeout(async () => { try { await projects.askPersist(); await projects.cleanUp(); if (!(await projects.getThumb(S.project.id))) makeThumb(); } catch (e) { console.warn('clean-up', e); } }, 2500);
   const qs = new URLSearchParams(location.search);
   if (qs.has('home') || (matchMedia('(display-mode: standalone)').matches && !qs.has('editor'))) showHome();
-  window.studio = { projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, ready: true };
+  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, ready: true };
   document.body.classList.add('ready');
 }
 /* ---------------- projects ---------------- */
@@ -763,20 +763,47 @@ function adCtx() {
     afterEdit: () => { $('#ratioBtn').textContent = S.project.aspect; layoutPreview(); timeline.render(); afterEdit(); } };
 }
 /* ---------------- Templates ---------------- */
-function templatesSheet() {
-  let cat = '';
+/* Browser: search + category chips + a grid of preview cards (lib/templates/previews, rendered by
+   tools/templates/render_previews.py with the real renderer). Tapping a card opens its detail page: an animated
+   preview (4 frames), what it contains, and "Use this template". */
+function templatesSheet(pre = {}) {
+  let cat = pre.cat || '', q = pre.q || '';
   openSheet('Templates', body => {
-    const tabs = chips([{ value: '', label: 'All' }, ...templates.TEMPLATE_CATS.map(([v, l]) => ({ value: v, label: l }))], '', v => { cat = v; grid.querySelectorAll('.tpl').forEach(b => { b.hidden = !!cat && b.dataset.cat !== cat; }); }, 'tabs tplcats');
+    const T0 = templates.TEMPLATES, count = c => T0.filter(T => !c || T.cat === c).length;
+    const search = Object.assign(document.createElement('input'), { type: 'search', id: 'tplSearch', className: 'tplsearch', placeholder: `Search ${T0.length} templates (birthday, quiz, ABC…)`, value: q });
+    const tabs = chips([{ value: '', label: `All ${T0.length}` }, ...templates.TEMPLATE_CATS.map(([v, l]) => ({ value: v, label: `${l} <small>${count(v)}</small>` }))], cat, v => { cat = v; filter(); }, 'tabs tplcats');
     const grid = document.createElement('div'); grid.className = 'tplgrid'; grid.id = 'tplGrid';
-    for (const T of templates.TEMPLATES) {
+    const empty = Object.assign(document.createElement('p'), { className: 'hint tplempty', id: 'tplEmpty', hidden: true, textContent: 'No template matches. Try another word.' });
+    const detail = document.createElement('div'); detail.id = 'tplDetail'; detail.className = 'tpldetail'; detail.hidden = true;
+    for (const T of T0) {
       const b = document.createElement('button'); b.className = 'tpl'; b.dataset.id = T.id; b.dataset.cat = T.cat;
-      const st = T.layers.find(l => l.k === 'sticker'), ti = T.layers.find(l => l.k === 'text');
-      b.innerHTML = `<span class="tplpic" style="background-image:url(lib/templates/${T.scenes[0].bg}.webp)">${st ? `<img loading="lazy" alt="" src="lib/stickers/${st.id}.webp">` : ''}${ti ? `<b>${esc(ti.content.split('\n')[0])}</b>` : ''}<i>${Math.round(templates.templateDur(T))}s</i></span><span class="tplname">${esc(T.name)}</span><span class="tpldesc">${esc(T.desc)}</span>`;
-      b.onclick = () => useTemplate(T); grid.append(b);
+      const slots = tplSlots(T);
+      b.innerHTML = `<span class="tplpic" style="background-image:url(lib/templates/previews/${T.id}.webp),url(lib/templates/${T.scenes[0].bg}.webp)">${T.beat ? `<em class="tplbeat">${icon('beat', 12)} beat</em>` : ''}<i>${Math.round(templates.templateDur(T))}s</i></span><span class="tplname">${esc(T.name)}</span><span class="tpldesc">${esc(templates.catName(T.cat))} · ${slots} to replace</span>`;
+      b.onclick = () => showDetail(T); grid.append(b);
     }
-    body.append(tabs, grid, Object.assign(document.createElement('p'), { className: 'hint', textContent: 'A template makes a ready project. Then tap a picture marked “Replace”, and tap Replace me to use your own photo or video. Tap any words to change them.' }));
+    const filter = () => {
+      const ok = new Set(templates.searchTemplates(q, cat).map(T => T.id)); let n = 0;
+      grid.querySelectorAll('.tpl').forEach(b => { b.hidden = !ok.has(b.dataset.id); n += !b.hidden; }); empty.hidden = n > 0;
+    };
+    search.oninput = () => { q = search.value; filter(); };
+    const showDetail = T => {
+      const slots = templates.placeholdersOf ? templates.placeholdersOf(T) : [];
+      detail.innerHTML = `<button class="btn ghost small" id="tplBack">${icon('back', 16)} All templates</button>
+        <div class="tplanim" style="background-image:url(lib/templates/previews/${T.id}-s.webp),url(lib/templates/previews/${T.id}.webp)"></div>
+        <h3 class="tplh">${esc(T.name)}</h3><p class="tplmeta">${esc(templates.catName(T.cat))} · ${Math.round(templates.templateDur(T))} s${T.beat ? ` · cut on the beat (${T.bpm} BPM)` : ''}</p>
+        <p class="tpldesc2">${esc(T.desc)}</p>
+        <p class="tplslots"><b>Replace with your own:</b> ${slots.map(esc).join(' · ') || 'pictures'}<br><b>Words to change:</b> ${T.layers.filter(l => l.k === 'text' || l.k === 'caps').length}</p>
+        <button class="btn primary big" id="tplUse">${icon('templates', 18)} Use this template</button>`;
+      for (const el of [search, tabs, grid, empty, hint]) el.hidden = true; detail.hidden = false; body.scrollTop = 0;
+      detail.querySelector('#tplBack').onclick = () => { detail.hidden = true; for (const el of [search, tabs, grid, hint]) el.hidden = false; filter(); };
+      detail.querySelector('#tplUse').onclick = () => useTemplate(T);
+    };
+    const hint = Object.assign(document.createElement('p'), { className: 'hint', textContent: 'A template makes a ready project. Then tap a picture marked “Replace”, and tap Replace me to use your own photo or video. Tap any words to change them.' });
+    body.append(search, tabs, grid, empty, detail, hint); filter();
+    if (pre.id) { const T = templates.templateById(pre.id); if (T) showDetail(T); }
   }, { className: 'tall', gesture: false });
 }
+const tplSlots = T => templates.placeholdersOf(T).length;
 const busy = (on, txt) => { $('#busy').hidden = !on; if (txt) $('#busyText').textContent = txt; };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 async function useTemplate(T) {
