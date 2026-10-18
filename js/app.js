@@ -18,6 +18,9 @@ import { FILTER_CATS } from './registry.js';
 import { ensureFont, ensureProjectFonts, onFontLoad } from './fonts.js';
 import { onLut } from './colorpro.js';
 import { canvasClip } from './canvasbg.js';
+import { decodeAudio } from './media.js';
+import { initMixPanel, mixSheet, projectMixSheet, addMark, fillMarks } from './mixpanel.js';
+import { setDecoder, setMediaGetter, onEnvelope, loudOn } from './audiomix.js';
 import { initMotionPanel, stabSheet, trackSheet, graphSheet, slowmoSheet, stabilizeClip, trackClip, pasteKeyframes, copyKeyframes, slowmoClip } from './motionpanel.js';
 import { initLayoutPanel, canvasSheet, layoutSheet, mirrorSheet, applyLayout, fillCells, clearLayout } from './layoutpanel.js';
 import { initColorPanel, colorSheet as colorProSheet, addAdjustmentLayer, isAdjLayer, pickWhite } from './colorpanel.js';
@@ -63,17 +66,20 @@ async function boot() {
   pro.initProTools({ player, timeline, toast, speedSheet });
   initColorPanel({ player, timeline, toast });
   initMotionPanel({ player, timeline, toast, busy: (on, txt) => { $('#busy').hidden = !on; if (txt) $('#busyText').textContent = txt; } });
+  setMediaGetter(id => media.get(id)); setDecoder(rec => decodeAudio(rec)); onEnvelope(() => { player.requestDraw(); if (player.playing) player.sync && player.sync(player.t); });
+  initMixPanel({ player, timeline, toast, loudness: () => measureLoudness() });
   initLayoutPanel({ player, timeline, toast, busy: (on, txt) => { $('#busy').hidden = !on; if (txt) $('#busyText').textContent = txt; } });
   onBaked(() => { timeline.render(); if (player.playing) player.sync(player.t); });
   wireUI(); layoutPreview(); timeline.fitZoom(); timeline.render(); refreshToolbar(); updateUndo(); updateEmpty(); showTime(); setPlayIcon(false);
   player.seek(0);
   initHome({ toast, busy, menuSheet, templatesSheet, adSheet: () => adSheet(adCtx()), afterSwitch, leaveProject, deliver });
+  on('change', scheduleLoudness);
   on('change', () => { clearTimeout(thumbTimer); thumbTimer = setTimeout(makeThumb, 4000); });
   addEventListener('pagehide', () => makeThumb());
   setTimeout(async () => { try { await projects.askPersist(); await projects.cleanUp(); if (!(await projects.getThumb(S.project.id))) makeThumb(); } catch (e) { console.warn('clean-up', e); } }, 2500);
   const qs = new URLSearchParams(location.search);
   if (qs.has('home') || (matchMedia('(display-mode: standalone)').matches && !qs.has('editor'))) showHome();
-  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, layout: { apply: (id, o) => applyLayout(id, o), fill: (f, id, o) => fillCells(f, id, o), clear: () => clearLayout(), sheet: () => layoutSheet(), canvas: t => canvasSheet(t) }, motion: { stab: (id, lv) => stabilizeClip(id, lv), track: (id, x, y, o) => trackClip(id, x, y, o), copy: id => copyKeyframes(find(S.project, id).clip), paste: (id, L) => pasteKeyframes(id, L), slowmo: (id, s, bl) => slowmoClip(id, s, bl) }, ready: true };
+  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async (o = { raw: true }) => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project), null, o) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, layout: { apply: (id, o) => applyLayout(id, o), fill: (f, id, o) => fillCells(f, id, o), clear: () => clearLayout(), sheet: () => layoutSheet(), canvas: t => canvasSheet(t) }, motion: { stab: (id, lv) => stabilizeClip(id, lv), track: (id, x, y, o) => trackClip(id, x, y, o), copy: id => copyKeyframes(find(S.project, id).clip), paste: (id, L) => pasteKeyframes(id, L), slowmo: (id, s, bl) => slowmoClip(id, s, bl) }, mix: { sheet: t => mixSheet(t), project: () => projectMixSheet(), addMark: (id, t) => addMark(id, t), fillMarks: (id, b, f) => fillMarks(id, b, f), loudness: () => measureLoudness() }, ready: true };
   document.body.classList.add('ready');
 }
 /* ---------------- projects ---------------- */
@@ -390,6 +396,7 @@ const ROOT_TOOLS = [
   { id: 'audio', icon: 'music', label: 'Audio', run: () => pick('audio') },
   { id: 'sounds', icon: 'sounds', label: 'Sounds', run: () => soundsSheet({ player, timeline, toast }) },
   { id: 'record', icon: 'mic', label: 'Record', run: recordSheet },
+  { id: 'mix', icon: 'duck', label: 'Mix', run: () => projectMixSheet() },
   { id: 'speech', icon: 'speech', label: 'Add speech', run: speechSheet },
   { id: 'text', icon: 'text', label: 'Text', run: addText },
   { id: 'titles', icon: 'titles', label: 'Titles', run: addTitle },
@@ -424,6 +431,8 @@ const CLIP_TOOLS = [
   { id: 'reverse', icon: 'reverse', label: 'Reverse', when: c => c.type === 'video', run: () => pro.reverseClip() },
   { id: 'replace', icon: 'replace', label: 'Replace', when: c => isPic(c) && !(c.placeholder && c.placeholder !== 'text'), run: pro.replaceClip },
   { id: 'volume', icon: 'volume', label: 'Volume', when: hasSource, run: volumeSheet },
+  { id: 'audiomix', icon: 'eq', label: 'EQ & mix', when: hasSource, run: () => mixSheet() },
+  { id: 'marks', icon: 'marks', label: 'Beat marks', when: hasSource, run: () => mixSheet('marks') },
   { id: 'enhvoice', icon: 'enhvoice', label: 'Enhance voice', when: hasSource, run: enhanceVoiceSheet },
   { id: 'voicefx', icon: 'voicefx', label: 'Voice effects', when: hasSource, run: voiceFxSheet },
   { id: 'extract', icon: 'extract', label: 'Extract audio', when: c => c.type === 'video', run: doExtract },
@@ -1092,3 +1101,13 @@ function wireUI() {
   addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files.length) onFiles(e.dataTransfer.files, 'main'); });
 }
 boot().catch(e => { console.error(e); document.body.insertAdjacentHTML('beforeend', `<div class="fatal">Sorry, the editor could not start: ${e.message}</div>`); });
+
+/* ---------------- loudness: the preview plays at the level of the -14 LUFS export ---------------- */
+let loudTimer = 0, loudSeq = 0, loudLast = null;
+async function measureLoudness() {
+  const p = S.project, seq = ++loudSeq; if (!p) return null;
+  const D = projectDuration(p); if (!D || !p.tracks.some(t => t.clips.some(c => hasSource(c)))) { player.setLoud(1); return loudLast = null; }
+  const ex = await import('./export.js'), mix = await ex.mixAudio(p, D, null, { raw: true }); if (seq !== loudSeq) return loudLast;
+  const r = ex.loudnessOf(mix); player.setLoud(loudOn(p) && isFinite(r.lufs) ? r.gain : 1); return loudLast = r;
+}
+function scheduleLoudness() { clearTimeout(loudTimer); loudTimer = setTimeout(() => measureLoudness().catch(e => console.warn('loudness', e)), 1500); }

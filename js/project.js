@@ -3,6 +3,7 @@
    all work from the same data. New features (transitions, keyframes, stickers, filters...) are new fields on a clip
    plus an entry in js/registry.js — no rewrite of the timeline or the renderer. */
 import { TRACK_KINDS, DEFAULT_TRANSFORM, propAt, kfPropsFor, KEYFRAME_PROPS, setBase } from './registry.js';
+import { duckAt } from './audiomix.js';
 import { MIN_TRANSITION, MAX_TRANSITION } from './transitions.js';
 import { cvMean, cvV, curveSrc, subCurve, validCurve } from './speedcurve.js';
 
@@ -262,7 +263,11 @@ export function fadeAt(c, t) {
   if (fo > 0 && L > d - fo) g *= Math.max(0, (d - L) / fo);
   return g;
 }
-export function gainAt(p, c, t) { if (c.muteAudio) return 0; const f = find(p, c.id); return Math.max(0, propAt(c, 'volume', t - c.start)) * fadeAt(c, t) * xfadeAt(f && f.track, c, t); }
+export function gainAt(p, c, t) { if (c.muteAudio) return 0; const f = find(p, c.id); return Math.max(0, propAt(c, 'volume', t - c.start)) * fadeAt(c, t) * xfadeAt(f && f.track, c, t) * duckAt(p, c, t, srcTime); }
+/** Stereo position -1 (left) .. 1 (right) of a clip at project time t (pan keyframes). */
+export const panAt = (c, t) => Math.max(-1, Math.min(1, propAt(c, 'pan', t - c.start) || 0));
+/** Timeline times of a clip's tapped beat marks (c.marks are file seconds). */
+export function markTimes(c) { if (!c.marks || !c.marks.length || !hasSource(c)) return []; const sp = c.speed || 1; return c.marks.filter(m => m >= c.in - 1e-6 && m <= c.out + 1e-6).map(m => c.start + (m - c.in) / sp); }
 /** "Extract audio": a new audio clip playing the video's sound (same file, same timing); the video is muted. */
 export function extractAudio(p, clipId) {
   const f = find(p, clipId); if (!f || f.clip.type !== 'video') return null; const v = f.clip;

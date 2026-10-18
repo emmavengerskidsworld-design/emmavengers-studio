@@ -363,3 +363,19 @@ body.home-open .sheet{position:fixed;z-index:35}
 /* ---------- Batch 10: motion ---------- */
 .graphcv { display: block; width: 100%; aspect-ratio: 680 / 400; border-radius: 12px; touch-action: none; border: 1px solid rgba(255,255,255,.12); margin: 6px 0; }
 .bzpresets { flex-wrap: wrap; }
+/* ---- Batch 10: audio mix, beat marks, teleprompter ---- */
+.mixpane{display:flex;flex-direction:column;gap:6px}
+.eqbands{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px}
+.eqbands .slider label,.eqbands label{font-size:12px}
+.tapbig{width:100%;height:96px;border-radius:18px;border:0;background:linear-gradient(135deg,#1fb6d6,#4fe3ff);color:#04222b;font:900 34px/1 system-ui,sans-serif;letter-spacing:.1em;touch-action:manipulation;margin:6px 0}
+.tapbig.hit{animation:taphit .18s ease-out}
+@keyframes taphit{0%{transform:scale(.94);filter:brightness(1.4)}100%{transform:none;filter:none}}
+.mixh{margin:10px 0 2px;font:700 14px/1.2 system-ui,sans-serif;color:#cfd2dc}
+#prompter{position:absolute;left:0;right:0;top:0;height:46%;overflow:hidden;z-index:5;pointer-events:none;background:linear-gradient(#000c,#0009 80%,#0000);padding:14px 16px 0}
+#prompter[hidden],#camLive[hidden]{display:none}
+#prompter .tpinner{color:#fff;font-weight:700;line-height:1.35;text-shadow:0 2px 6px #000;white-space:pre-wrap;padding-top:22%;will-change:transform}
+#prompter .tpline{position:absolute;left:8px;right:8px;top:30%;height:2px;background:#ff4d4d88}
+#camLive{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:4;transform:scaleX(-1);background:#000}
+.tpbox{display:flex;flex-direction:column;gap:4px}
+.tpbox[hidden]{display:none}
+#tpText{width:100%;box-sizing:border-box;background:#1c1c24;color:#fff;border:1px solid #33343f;border-radius:10px;padding:8px;font:15px/1.35 system-ui,sans-serif;resize:vertical}

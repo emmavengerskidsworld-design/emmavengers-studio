@@ -3,6 +3,7 @@
    export mixes the very same buffer with OfflineAudioContext — so what you hear is exactly what you export.
    Only the used part of the file (+1 s margin) is processed; results are cached by their settings. */
 import { media, decodeAudio } from './media.js';
+import { eqOn, compOn, mixOpt, mixKey } from './audiomix.js';
 import { processAudio } from './audiofx.js';
 import { validCurve } from './speedcurve.js';
 import { clipDur } from './project.js';
@@ -14,17 +15,17 @@ export const enhanceLevel = c => c.voice && c.voice.enhance ? (c.voice.strength 
 export function needsBake(c) {
   if (c.type !== 'audio' && c.type !== 'video') return false;
   const r = media.get(c.mediaId); if (!r || r.hasAudio === false) return false;
-  return enhanceLevel(c) > 0 || !!(c.voice && c.voice.fx) || (Math.abs(c.speed - 1) > 1e-4 && keepPitch(c)) || validCurve(c.curve);
+  return enhanceLevel(c) > 0 || !!(c.voice && c.voice.fx) || eqOn(c) || compOn(c) || (Math.abs(c.speed - 1) > 1e-4 && keepPitch(c)) || validCurve(c.curve);
 }
 function plan(c) {
   const r = media.get(c.mediaId), dur = r && r.duration > 0 ? r.duration : Infinity;
   const a = Math.max(0, Math.floor(c.in - MARGIN)), b = Math.min(dur, Math.ceil(c.out + MARGIN)), rate = keepPitch(c) && Math.abs(c.speed - 1) > 1e-4 ? c.speed : 1;
-  const opt = { enhance: enhanceLevel(c), fx: (c.voice && c.voice.fx) || null, rate };
+  const opt = { enhance: enhanceLevel(c), fx: (c.voice && c.voice.fx) || null, rate, ...mixOpt(c) };
   if (validCurve(c.curve)) {   // speed curve: bake the whole clip on its own timeline (variable speed, pitch kept or not)
     const cv = c.curve; opt.rate = 1; opt.map = { pts: cv.pts, u0: cv.u0 ?? 0, u1: cv.u1 ?? 1, off: c.in - a, len: c.out - c.in, D: clipDur(c), speed: c.speed, keep: keepPitch(c) };
-    return { a, b, rate: 1, curve: true, opt, key: [c.mediaId, a, isFinite(b) ? b : 'end', 'curve', c.in, c.out, c.speed, opt.map.keep, JSON.stringify(cv), opt.enhance, opt.fx || ''].join('|') };
+    return { a, b, rate: 1, curve: true, opt, key: [c.mediaId, a, isFinite(b) ? b : 'end', 'curve', c.in, c.out, c.speed, opt.map.keep, JSON.stringify(cv), opt.enhance, opt.fx || '', mixKey(c)].join('|') };
   }
-  return { a, b, rate, opt, key: [c.mediaId, a, isFinite(b) ? b : 'end', rate, opt.enhance, opt.fx || ''].join('|') };
+  return { a, b, rate, opt, key: [c.mediaId, a, isFinite(b) ? b : 'end', rate, opt.enhance, opt.fx || '', mixKey(c)].join('|') };
 }
 export const bakeKey = c => plan(c).key;
 

@@ -94,7 +94,7 @@ export function pitchOf(x, sr, fmin = 60, fmax = 1200, from = 0.25, len = 0.5) {
 }
 
 /* ---------- dynamics ---------- */
-function compress(ch, sr, { thr = -24, ratio = 3, att = 0.005, rel = 0.12, knee = 6 } = {}) {
+export function compress(ch, sr, { thr = -24, ratio = 3, att = 0.005, rel = 0.12, knee = 6 } = {}) {
   const n = ch[0].length, aa = Math.exp(-1 / (att * sr)), ar = Math.exp(-1 / (rel * sr)); let e = 0;
   const out = clone(ch);
   for (let i = 0; i < n; i++) {
@@ -297,12 +297,26 @@ export const VOICE_FX = [
 ];
 export const voiceFxById = id => VOICE_FX.find(f => f.id === id) || null;
 
-/** The whole per-clip chain: enhance -> effect -> tempo (speed with pitch kept). */
-export function processAudio(ch, sr, { enhance: es = 0, fx = null, rate = 1, map = null, reverse = false } = {}) {
+/** 10-band EQ (31 Hz .. 16 kHz): shelves at the ends, peaking filters between. gains in dB. */
+const EQF = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+export function eq10(ch, sr, gains) {
+  const cs = []; gains.forEach((g, i) => { if (Math.abs(g) < .05) return; const f = EQF[i]; if (f >= sr * .45) return; cs.push(biquad(i === 0 ? 'lowshelf' : i === 9 ? 'highshelf' : 'peak', f, i === 0 || i === 9 ? .7 : 1.4, g, sr)); });
+  return cs.length ? ch.map(c => chain(c, cs)) : clone(ch);
+}
+/** Compressor (+ make-up gain) then a peak limiter at the ceiling. */
+export function dynamics(ch, sr, { thr = -24, ratio = 3, att = .005, rel = .12, makeup = 0, ceil = -1 } = {}) {
+  let y = ratio > 1.01 ? compress(ch, sr, { thr, ratio, att, rel }) : clone(ch);
+  if (Math.abs(makeup) > .01) { const k = db2(makeup); for (const c of y) for (let i = 0; i < c.length; i++) c[i] *= k; }
+  return ceil != null ? limit(y, sr, ceil) : y;
+}
+/** The whole per-clip chain: enhance -> effect -> EQ -> compressor / limiter -> tempo (speed with pitch kept). */
+export function processAudio(ch, sr, { enhance: es = 0, fx = null, rate = 1, map = null, reverse = false, eq = null, comp = null } = {}) {
   let y = ch;
   if (reverse) y = y.map(c => c.slice().reverse());
   if (es > 0) y = enhance(y, sr, es);
   const F = fx && voiceFxById(fx); if (F) { y = F.run(y, sr); if (peak(y) > 0.98) y = limit(y, sr, -1); }
+  if (eq) y = eq10(y, sr, eq);
+  if (comp) y = dynamics(y, sr, comp);
   if (map) {   // speed curve: the result is laid out on the clip's own timeline (sample 0 = clip start)
     const cv = { pts: map.pts, u0: map.u0, u1: map.u1 }, outLen = Math.max(1, Math.round(map.D * sr)), at = i => (map.off + curveSrc(cv, map.len, map.D, i / sr)) * sr;
     const maxV = Math.max(...map.pts.map(q => q.v)) * (map.speed || 1);

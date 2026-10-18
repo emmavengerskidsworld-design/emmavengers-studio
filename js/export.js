@@ -4,7 +4,9 @@
    Fallback: real-time MediaRecorder capture of the preview (WebM or MP4, whatever the browser records). */
 import { media, decodeAudio, dropAudioCache, loadBitmap } from './media.js';
 import { renderFrame, visualTracks, activeAt } from './render.js';
-import { projectDuration, clipEnd, clipDur, srcTime, hasSource, ASPECTS, gainAt } from './project.js';
+import { projectDuration, clipEnd, clipDur, srcTime, hasSource, ASPECTS, gainAt, panAt } from './project.js';
+import { ensurePresence, loudOn, LOUD_TARGET } from './audiomix.js';
+import { lufs as measureLufs, limit as limitPeaks } from './audiofx.js';
 import { openSource, dropDemuxCache } from './framesource.js';
 import { Player } from './player.js';
 import { ensureProjectFonts } from './fonts.js';
@@ -86,7 +88,8 @@ export function recorderMime() {
 }
 
 /** Mix every audible clip into one stereo AudioBuffer (same gain/speed rules as the preview). */
-export async function mixAudio(p, D, onProgress) {
+export async function mixAudio(p, D, onProgress, { raw = false } = {}) {
+  await ensurePresence(p);   // voice envelopes for auto ducking (same gain curve as the preview)
   const oac = new OfflineAudioContext(2, Math.max(1, Math.ceil(D * SR)), SR);
   const all = p.tracks.flatMap(t => t.clips).filter(c => hasSource(c) && c.start < D && !c.muteAudio), todo = all.filter(needsBake); let done = 0;
   for (const c of all) {
@@ -99,12 +102,24 @@ export async function mixAudio(p, D, onProgress) {
     const g = oac.createGain(), len = Math.min(clipDur(c), D - c.start), n = Math.max(2, Math.ceil(len * 100)), curve = new Float32Array(n);
     for (let i = 0; i < n; i++) curve[i] = gainAt(p, c, c.start + len * i / (n - 1));
     g.gain.value = curve[0]; if (len > 0.001) g.gain.setValueCurveAtTime(curve, c.start, len);
-    src.connect(g).connect(oac.destination);
+    const pn = oac.createStereoPanner(), pc = new Float32Array(n); let panned = false; for (let i = 0; i < n; i++) { pc[i] = panAt(c, c.start + len * i / (n - 1)); if (pc[i]) panned = true; }
+    pn.pan.value = pc[0]; if (panned && len > 0.001) pn.pan.setValueCurveAtTime(pc, c.start, len);
+    src.connect(g).connect(pn).connect(oac.destination);
     if (bk) { const o = Math.max(0, bakedPos(bk, c, c.start)); src.start(c.start, Math.min(o, buf.duration), Math.max(0, Math.min(buf.duration - o, clipDur(c) * bakedRate(bk, c)))); }
     else src.start(c.start, Math.min(c.in, buf.duration), Math.max(0, Math.min(c.out, buf.duration) - c.in));
     src.stop(Math.min(D, clipEnd(c)));
   }
-  return oac.startRendering();
+  const mix = await oac.startRendering();
+  return raw || !loudOn(p) ? mix : loudnessNormalize(mix);
+}
+/** Loudness of a mix and the gain that brings it to -14 LUFS. */
+export function loudnessOf(buf) { const ch = [buf.getChannelData(0), buf.getChannelData(Math.min(1, buf.numberOfChannels - 1))], L = measureLufs(ch, buf.sampleRate);
+  const gainDb = isFinite(L) ? Math.max(-24, Math.min(24, LOUD_TARGET - L)) : 0; return { lufs: L, gainDb, gain: Math.pow(10, gainDb / 20) }; }
+/** Export loudness: the whole mix to -14 LUFS (integrated), sample peaks limited to -1 dBFS. */
+export function loudnessNormalize(buf) {
+  const { gain, lufs: L } = loudnessOf(buf); if (!isFinite(L)) return buf;
+  const ch = [0, 1].map(i => { const d = buf.getChannelData(Math.min(i, buf.numberOfChannels - 1)), o = new Float32Array(d.length); for (let k = 0; k < d.length; k++) o[k] = d[k] * gain; return o; });
+  const out = limitPeaks(ch, buf.sampleRate, -1), ab = new AudioBuffer({ length: buf.length, numberOfChannels: 2, sampleRate: buf.sampleRate }); out.forEach((o, i) => ab.copyToChannel(o, i)); return ab;
 }
 
 /** Time range to export: opt.range = [t0, t1] (seconds), clamped to the project. Default: everything. */
