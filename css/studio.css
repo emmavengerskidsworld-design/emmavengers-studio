@@ -215,3 +215,11 @@ body.has-sel #addMainBtn{display:none}
 .snd .sp{background:#2e2e38;border-radius:50%;width:34px;height:34px;flex:none}
 .snd .sf{color:#777;flex:none}.snd .sf.on{color:#ffcc33}.snd .sf.on svg{fill:#ffcc33}
 .snd .sa{flex:none;padding:6px 10px}
+/* Batch 5: pro tools */
+.chips.masks .chipbtn{flex-direction:column;min-width:64px;gap:2px;font-size:11.5px;padding:8px 6px}
+.curvebox{width:100%;border-radius:12px;overflow:hidden;touch-action:none;background:#17171f}
+.curvebox canvas{display:block;touch-action:none}
+.keycolor{display:flex;align-items:center;gap:8px;flex:none;font:600 12px ui-monospace,monospace;color:var(--mute)}
+.keycolor i{display:inline-block;width:26px;height:26px;border-radius:8px;border:2px solid #fff3}
+.chipbtn svg{vertical-align:-3px}
+.maskctl{display:flex;flex-direction:column;gap:10px}

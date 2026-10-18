@@ -104,6 +104,27 @@ void main(){
   o = vec4(clamp(c, 0., 1.) * A, A);
 }`;
 
+/* Chroma key ("Cutout"): pixels close to the picked colour become transparent. Distance is measured in chroma
+   (Cb/Cr); "shadow" also matches darker / lighter versions of the colour, "spill" removes the colour cast left on
+   edges, "feather" softens the edge. Works on the source picture before any resize. */
+const FS_KEY = HEAD + `uniform vec3 kc; uniform float strength, shadow, spill, feather;
+vec2 cbcr(vec3 c){ return vec2(-.1146 * c.r - .3854 * c.g + .5 * c.b, .5 * c.r - .4542 * c.g - .0458 * c.b); }
+float dist(vec3 c){ vec2 a = cbcr(c), b = cbcr(kc); float Y = luma(c), Yk = max(luma(kc), .05);
+  float d = length(a - b); float dn = length(a * (Yk / max(Y, .03)) - b);   // luma-normalised: shadows of the colour still match
+  float dy = abs(Y - Yk) * (1. - shadow) * .5; return mix(d, min(d, dn), shadow) + dy; }
+float alphaAt(vec2 p){ vec4 q = texture(T, p); vec3 c = q.a > 1e-5 ? q.rgb / q.a : vec3(0);
+  float th = .02 + .3 * strength, sw = .01 + .2 * feather; return smoothstep(th, th + sw, dist(c)) * q.a; }
+void main(){ vec4 C = texture(T, uv); vec3 c = C.a > 1e-5 ? C.rgb / C.a : vec3(0);
+  float a = alphaAt(uv);
+  if (feather > .01) { vec2 d = px * (1. + 3. * feather); a = (a * 4. + alphaAt(uv + vec2(d.x, 0)) + alphaAt(uv - vec2(d.x, 0)) + alphaAt(uv + vec2(0, d.y)) + alphaAt(uv - vec2(0, d.y))) / 8.; }
+  // spill: pull the key colour's chroma out of what is left
+  vec2 k2 = cbcr(kc); float kl = length(k2);
+  if (spill > 0. && kl > 1e-3) { vec2 dir = k2 / kl, cc = cbcr(c); float s = max(0., dot(cc, dir)); float Y = luma(c);
+    vec2 nc = cc - dir * s * spill * (1. - .3 * a);
+    c = clamp(vec3(Y + 1.5748 * nc.y, Y - .1873 * nc.x - .4681 * nc.y, Y + 1.8556 * nc.x), 0., 1.); }
+  o = vec4(c * a, a); }`;
+const hex3 = h => { const m = /^#?([0-9a-f]{6})$/i.exec(h || ''); const n = m ? parseInt(m[1], 16) : 0x00ff00; return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
+
 let G = null;   // lazily created GL state
 function init() {
   if (G) return G.ok ? G : null;
@@ -121,7 +142,7 @@ function init() {
     const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.disable(gl.BLEND); gl.disable(gl.DEPTH_TEST);
-    G = { ok: true, cv, gl, maxTex: gl.getParameter(gl.MAX_TEXTURE_SIZE), P: { den: prog(FS_DENOISE), lan: prog(FS_LANCZOS), down: prog(FS_DOWN4), fin: prog(FS_FINISH) }, tex: {}, fbo: gl.createFramebuffer() };
+    G = { ok: true, cv, gl, maxTex: gl.getParameter(gl.MAX_TEXTURE_SIZE), P: { den: prog(FS_DENOISE), lan: prog(FS_LANCZOS), down: prog(FS_DOWN4), fin: prog(FS_FINISH), key: prog(FS_KEY) }, tex: {}, fbo: gl.createFramebuffer() };
     return G;
   } catch (e) { console.warn('HD Enhance: WebGL2 unavailable, using plain drawing', e); G = { ok: false }; return null; }
 }
@@ -147,13 +168,14 @@ function upload(img, w, h) {
   }
   t.w = w; t.h = h; return t;
 }
-function pass(prog, inputs, out, uni) {
+function pass(prog, inputs, out, uni, v3 = null) {
   const { gl } = G; gl.useProgram(prog.p);
   if (out) { gl.bindFramebuffer(gl.FRAMEBUFFER, G.fbo); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, out.t, 0); gl.viewport(0, 0, out.w, out.h); }
   else { gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.viewport(0, 0, G.cv.width, G.cv.height); }
   inputs.forEach(([name, t], i) => { gl.activeTexture(gl.TEXTURE0 + i); gl.bindTexture(gl.TEXTURE_2D, t.t); if (prog.u[name]) gl.uniform1i(prog.u[name], i); });
   if (prog.u.flip) gl.uniform1f(prog.u.flip, out ? 0 : 1);
   for (const k in uni) { const v = uni[k], l = prog.u[k]; if (!l) continue; Array.isArray(v) ? gl.uniform2f(l, v[0], v[1]) : gl.uniform1f(l, v); }
+  for (const k in v3 || {}) { const l = prog.u[k]; if (l) gl.uniform3f(l, ...v3[k]); }
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 
@@ -167,6 +189,7 @@ export function processImage(img, sw, sh, ow, oh, o = {}) {
   const { gl } = G, a = o.adjust || {}, s = o.enhance || 0, f = Math.max(ow / sw, oh / sh);
   const E = s > 0 ? enhanceParams(s, f) : { denoise: 0, sigma: .05, sharp: 0, sharpness: 0, clarity: 0, vibrance: 0 };
   let cur = upload(img, sw, sh);
+  if (o.key) { const t = tex('key', sw, sh), K = o.key; pass(G.P.key, [['T', cur]], t, { px: [1 / sw, 1 / sh], strength: K.strength ?? .35, shadow: K.shadow ?? .3, spill: K.spill ?? .5, feather: K.feather ?? .2 }, { kc: hex3(K.color) }); cur = t; }
   if (E.denoise > 0 && !o.fast) { const t = tex('den', sw, sh); pass(G.P.den, [['T', cur]], t, { px: [1 / sw, 1 / sh], amt: E.denoise, sr: E.sigma }); cur = t; }
   if (ow !== sw || oh !== sh) { const t = tex('up', ow, oh); pass(G.P.lan, [['T', cur]], t, { px: [1 / sw, 1 / sh], srcSize: [sw, sh], antiring: 0.75 }); cur = t; }
   const sharpAmt = Math.min(1, E.sharp + Math.max(0, a.sharpen || 0) * 0.9), sharpness = Math.max(E.sharpness, Math.max(0, a.sharpen || 0));

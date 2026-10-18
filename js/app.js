@@ -18,6 +18,9 @@ import { extractAudio, MAX_FADE, fadeAt } from './project.js';
 import { onBaked, keepPitch, VOICE_FX, needsBake, bakedFor } from './audio.js';
 import * as audiofx from './audiofx.js';
 import { icon } from './icons.js';
+import * as pro from './protools.js';
+import * as speedcurve from './speedcurve.js';
+import * as projectApi from './project.js';
 
 const $ = s => document.querySelector(s);
 const fmt = t => { const m = Math.floor(t / 60), s = t - m * 60; return String(m).padStart(2, '0') + ':' + s.toFixed(1).padStart(4, '0'); };
@@ -37,10 +40,11 @@ async function boot() {
   on('history', updateUndo);
   onMediaUpdate(() => { timeline.render(); player.requestDraw(); });
   initAudioPanels({ player, timeline, toast });
+  pro.initProTools({ player, timeline, toast, speedSheet });
   onBaked(() => { timeline.render(); if (player.playing) player.sync(player.t); });
   wireUI(); layoutPreview(); timeline.fitZoom(); timeline.render(); refreshToolbar(); updateUndo(); updateEmpty(); showTime(); setPlayIcon(false);
   player.seek(0);
-  window.studio = { S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, ready: true };
+  window.studio = { S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async () => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project)) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, ready: true };
   document.body.classList.add('ready');
 }
 function afterEdit() { player.seek(Math.min(player.t, projectDuration(S.project))); showTime(); refreshToolbar(); }
@@ -68,7 +72,8 @@ function previewGestures() {
     cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (player.playing) player.pause();
     if (pts.size === 1) {
-      const pos = toCanvas(e), hit = hitTest(player.boxes, pos.x, pos.y);
+      const pos = toCanvas(e); if (pro.previewTap(pos)) { pts.delete(e.pointerId); return; }
+      const hit = hitTest(player.boxes, pos.x, pos.y);
       tap = { x: e.clientX, y: e.clientY, hit: hit && hit.id };
       const f = S.sel && find(S.project, S.sel);
       const id = f && player.boxes.some(b => b.id === S.sel) ? S.sel : hit && hit.id;
@@ -319,12 +324,22 @@ const ROOT_TOOLS = [
   { id: 'split', icon: 'split', label: 'Split', run: doSplit },
   { id: 'ratio', icon: 'ratio', label: 'Ratio', run: ratioSheet },
   { id: 'bg', icon: 'bg', label: 'Background', run: bgSheet },
+  { id: 'guides', icon: 'safe', label: 'Safe area', run: pro.guidesSheet },
 ];
 const CLIP_TOOLS = [
   { id: 'split', icon: 'split', label: 'Split', run: doSplit },
   { id: 'edit', icon: 'edit', label: 'Edit text', when: c => c.type === 'text', run: textSheet },
   { id: 'anim', icon: 'anim', label: 'Animation', when: isVisualClip, run: () => animSheet() },
-  { id: 'speed', icon: 'speed', label: 'Speed', when: hasSource, run: speedSheet },
+  { id: 'speed', icon: 'speed', label: 'Speed', when: hasSource, run: () => selected().clip.curve ? pro.curveSpeedSheet() : speedSheet() },
+  { id: 'crop', icon: 'crop', label: 'Crop', when: c => isPic(c), run: pro.cropSheet },
+  { id: 'mask', icon: 'mask', label: 'Mask', when: c => isPic(c), run: pro.maskSheet },
+  { id: 'cutout', icon: 'cutout', label: 'Cutout', when: c => isPic(c), run: pro.cutoutSheet },
+  { id: 'blend', icon: 'blend', label: 'Blend', when: c => isPic(c), run: pro.blendSheet },
+  { id: 'tooverlay', icon: 'overlay', label: 'Overlay', when: c => isPic(c) && find(S.project, c.id)?.track.kind === 'main', run: () => pro.toTrack('overlay') },
+  { id: 'tomain', icon: 'tomain', label: 'Main track', when: c => isPic(c) && find(S.project, c.id)?.track.kind === 'overlay', run: () => pro.toTrack('main') },
+  { id: 'freeze', icon: 'freeze', label: 'Freeze', when: c => c.type === 'video', run: () => pro.freezeFrame() },
+  { id: 'reverse', icon: 'reverse', label: 'Reverse', when: c => c.type === 'video', run: () => pro.reverseClip() },
+  { id: 'replace', icon: 'replace', label: 'Replace', when: c => isPic(c), run: pro.replaceClip },
   { id: 'volume', icon: 'volume', label: 'Volume', when: hasSource, run: volumeSheet },
   { id: 'enhvoice', icon: 'enhvoice', label: 'Enhance voice', when: hasSource, run: enhanceVoiceSheet },
   { id: 'voicefx', icon: 'voicefx', label: 'Voice effects', when: hasSource, run: voiceFxSheet },
@@ -375,6 +390,7 @@ const editSel = fn => live(p => { const f = find(p, S.sel); f && fn(f.clip, p); 
 function speedSheet() {
   const c = selected().clip, toU = s => Math.log(s / 0.25) / Math.log(16), toS = u => Math.round(0.25 * Math.pow(16, u) * 100) / 100;
   openSheet('Speed', body => {
+    body.append(chips([{ value: 'normal', label: 'Normal' }, { value: 'curve', label: 'Curve' }], 'normal', v => { if (v === 'curve') pro.curveSpeedSheet(); }, 'tabs speedtabs'));
     const info = document.createElement('p'); info.className = 'hint';
     const upd = () => { const cc = selected().clip; info.textContent = `Clip length: ${fmtS(clipDur(cc))} (original ${fmtS(cc.out - cc.in)})`; };
     const sl = slider('Speed', { min: 0, max: 1, step: 0.001, value: toU(c.speed), fmt: u => toS(u).toFixed(2).replace(/0$/, '') + 'x', id: 'speedRange', onInput: u => { editSel((cl, p) => setSpeed(p, cl.id, toS(u))); ch.setActive(toS(u)); upd(); } });
@@ -521,7 +537,7 @@ function ratioSheet() {
       { value: '1:1', html: '<b>1:1</b><small>Square post</small>' }], S.project.aspect, v => { live(p => { p.aspect = v; }); layoutPreview(); }, 'big'));
   });
 }
-function bgSheet() { openSheet('Background colour', body => body.append(swatches(BG_COLORS, S.project.bg, v => live(p => { p.bg = v; })))); }
+function bgSheet() { openSheet('Background', body => body.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: 'Colour' }), swatches(BG_COLORS, S.project.bg, v => live(p => { p.bg = v; })), pro.bgBlurControls())); }
 function menuSheet() {
   openSheet('Emmavengers Studio', async body => {
     body.innerHTML = `<div class="menu">

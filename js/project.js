@@ -2,8 +2,9 @@
    Everything the editor knows lives in one plain JSON object (the "project"), so undo/redo, autosave and export
    all work from the same data. New features (transitions, keyframes, stickers, filters...) are new fields on a clip
    plus an entry in js/registry.js — no rewrite of the timeline or the renderer. */
-import { TRACK_KINDS, DEFAULT_TRANSFORM, propAt, kfPropsFor, KEYFRAME_PROPS } from './registry.js';
+import { TRACK_KINDS, DEFAULT_TRANSFORM, propAt, kfPropsFor, KEYFRAME_PROPS, setBase } from './registry.js';
 import { MIN_TRANSITION, MAX_TRANSITION } from './transitions.js';
+import { cvMean, cvV, curveSrc, subCurve, validCurve } from './speedcurve.js';
 
 export const uid = () => Math.random().toString(36).slice(2, 9) + (Date.now() % 1e6).toString(36);
 export const SCHEMA = 1;
@@ -25,7 +26,9 @@ export function newClip(type, opts = {}) {
 
 /* ---------- time helpers ---------- */
 export const hasSource = c => c.type === 'video' || c.type === 'audio';
-export const clipDur = c => hasSource(c) ? (c.out - c.in) / c.speed : c.dur;
+/** Average speed: the constant speed, times the curve's mean when the clip has a speed curve. */
+export const avgSpeed = c => c.speed * (validCurve(c.curve) ? cvMean(c.curve) : 1);
+export const clipDur = c => hasSource(c) ? (c.out - c.in) / avgSpeed(c) : c.dur;
 export const clipEnd = c => c.start + clipDur(c);
 export const isVisualTrack = t => TRACK_KINDS[t.kind].visual;
 export function projectDuration(p) {
@@ -34,7 +37,9 @@ export function projectDuration(p) {
   return v || a;
 }
 /** source time (seconds inside the media file) shown at timeline time t */
-export const srcTime = (c, t) => c.in + (t - c.start) * c.speed;
+export const srcTime = (c, t) => validCurve(c.curve) ? c.in + curveSrc(c.curve, c.out - c.in, clipDur(c), t - c.start) : c.in + (t - c.start) * c.speed;
+/** Playback speed at timeline time t (constant, or from the speed curve). */
+export const speedAt = (c, t) => validCurve(c.curve) ? c.speed * cvV(c.curve, Math.max(0, Math.min(1, (t - c.start) / clipDur(c)))) : c.speed;
 
 export function find(p, clipId) {
   for (const track of p.tracks) { const i = track.clips.findIndex(c => c.id === clipId); if (i >= 0) return { track, clip: track.clips[i], index: i }; }
@@ -91,7 +96,7 @@ export function split(p, clipId, t) {
   const c = f.clip, local = t - c.start, d = clipDur(c);
   if (local < MIN_CLIP || local > d - MIN_CLIP) return null;
   const b = JSON.parse(JSON.stringify(c)); b.id = 'c_' + uid(); b.start = round(t); b.transitionIn = null;
-  if (hasSource(c)) { const s = round(c.in + local * c.speed); c.out = s; b.in = s; }
+  if (hasSource(c)) { const s = round(srcTime(c, t)); if (validCurve(c.curve)) { const u = local / d; b.curve = subCurve(c.curve, u, 1); c.curve = subCurve(c.curve, 0, u); } c.out = s; b.in = s; }
   else { c.dur = round(local); b.dur = round(d - local); }
   // keyframes are clip-local: keep the ones before the cut on A, shift the rest onto B
   for (const k of Object.keys(c.keyframes || {})) {
@@ -132,27 +137,56 @@ export function moveTo(p, clipId, start, targetTrackId) {
 /** Trim an edge. `dt` = timeline seconds the edge moved (+ = right). mediaDur = length of the source file. */
 export function trim(p, clipId, edge, dt, mediaDur) {
   const f = find(p, clipId); if (!f) return; const c = f.clip, mag = TRACK_KINDS[f.track.kind].magnetic;
-  const off0 = hasSource(c) ? c.in / c.speed : 0;
+  const sp = avgSpeed(c), off0 = hasSource(c) ? c.in / sp : 0;
   if (hasSource(c)) {
-    if (edge === 'left') { const nIn = clamp(c.in + dt * c.speed, 0, c.out - MIN_CLIP * c.speed); if (!mag) c.start = round(c.start + (nIn - c.in) / c.speed); c.in = round(nIn); }
-    else c.out = round(clamp(c.out + dt * c.speed, c.in + MIN_CLIP * c.speed, mediaDur ?? Infinity));
+    if (edge === 'left') { const nIn = clamp(c.in + dt * sp, 0, c.out - MIN_CLIP * sp); if (!mag) c.start = round(c.start + (nIn - c.in) / sp); c.in = round(nIn); }
+    else c.out = round(clamp(c.out + dt * sp, c.in + MIN_CLIP * sp, mediaDur ?? Infinity));
   } else {
     if (edge === 'left') { let d = clamp(dt, -(mag ? Infinity : c.start), c.dur - MIN_CLIP); if (mag) d = Math.max(d, -(600 - c.dur)); c.dur = round(c.dur - d); if (!mag) c.start = round(c.start + d); }
     else c.dur = round(Math.max(MIN_CLIP, c.dur + dt));
   }
   if (c.start < 0) c.start = 0;
   if (edge === 'left') { // keyframes stay attached to the picture, not to the clip edge
-    const shift = hasSource(c) ? c.in / c.speed - off0 : 0;
+    const shift = hasSource(c) ? c.in / sp - off0 : 0;
     if (shift) shiftKeyframes(c, -shift);
   }
   normalize(p);
 }
 export function shiftKeyframes(c, dt) { for (const k in c.keyframes || {}) c.keyframes[k] = c.keyframes[k].map(x => ({ ...x, t: round(x.t + dt) })); }
 export function setSpeed(p, clipId, speed) {
-  const f = find(p, clipId); if (!f) return; const c = f.clip, old = c.speed; c.speed = clamp(speed, 0.25, 4);
-  for (const k in c.keyframes || {}) c.keyframes[k] = c.keyframes[k].map(x => ({ ...x, t: round(x.t * old / c.speed) }));
-  normalize(p);
+  const f = find(p, clipId); if (!f) return; const c = f.clip, d0 = clipDur(c); c.speed = clamp(speed, 0.25, 4); delete c.curve;   // normal speed replaces a speed curve
+  rescaleKeyframes(c, d0); normalize(p);
 }
+/** Keyframes follow the picture when the clip's length changes (speed / speed curve). */
+export function rescaleKeyframes(c, d0) { const k = clipDur(c) / Math.max(1e-9, d0); if (Math.abs(k - 1) < 1e-9) return; for (const q in c.keyframes || {}) c.keyframes[q] = c.keyframes[q].map(x => ({ ...x, t: round(x.t * k) })); }
+/** Set (or remove with null) a speed curve: { id, pts:[{x,v}] }. The clip's constant speed goes back to 1x. */
+export function setCurve(p, clipId, curve) {
+  const f = find(p, clipId); if (!f || !hasSource(f.clip)) return; const c = f.clip, d0 = clipDur(c);
+  if (curve && validCurve(curve)) { c.curve = { id: curve.id || 'custom', pts: curve.pts.map(q => ({ x: clamp(q.x, 0, 1), v: clamp(q.v, 0.1, 10) })).sort((a, b) => a.x - b.x) }; c.speed = 1; }
+  else delete c.curve;
+  rescaleKeyframes(c, d0); normalize(p);
+}
+/** Move a video/photo between the main track and an overlay track (same time on screen). */
+export function moveToTrack(p, clipId, kind, atTime) {
+  const f = find(p, clipId); if (!f || f.track.kind === kind || !TRACK_KINDS[kind].accepts.includes(f.clip.type)) return null;
+  const c = f.clip, start = c.start; f.track.clips.splice(f.index, 1); c.transitionIn = null;
+  if (kind === 'main') { c.start = 0; addToMain(p, [c], atTime ?? start); }
+  else { c.start = start; placeFree(p, kind, c); normalize(p); }
+  return c;
+}
+/** Overlay layers: move a clip one layer up (+1, drawn above) or down (-1). Creates a layer when needed. */
+export function moveLayer(p, clipId, dir) {
+  const f = find(p, clipId); if (!f || f.track.kind !== 'overlay') return false;
+  const c = f.clip, ov = p.tracks.filter(t => t.kind === 'overlay'), i = ov.indexOf(f.track), j = i + dir, e = clipEnd(c);
+  const busy = t => overlaps(t, c.start, e, c.id), alone = f.track.clips.length === 1;
+  if (j < 0 || j >= ov.length) { if (alone) return false; f.track.clips.splice(f.index, 1); const t = newTrack('overlay'); t.clips.push(c); p.tracks.splice(p.tracks.indexOf(f.track) + (dir > 0 ? 1 : 0), 0, t); normalize(p); return true; }
+  f.track.clips.splice(f.index, 1);
+  if (!busy(ov[j])) ov[j].clips.push(c);
+  else { const t = newTrack('overlay'); t.clips.push(c); p.tracks.splice(p.tracks.indexOf(ov[j]) + (dir > 0 ? 1 : 0), 0, t); }
+  normalize(p); return true;
+}
+/** Layer number (1 = lowest overlay) and count, for the UI. */
+export function layerOf(p, clipId) { const f = find(p, clipId); const ov = p.tracks.filter(t => t.kind === 'overlay'); return f && f.track.kind === 'overlay' ? { n: ov.indexOf(f.track) + 1, of: ov.length } : null; }
 
 /* ---------- keyframes ---------- */
 export const KF_EPS = 1 / 60;
@@ -170,7 +204,7 @@ export function setEase(c, t, ease) { for (const k in c.keyframes || {}) for (co
 /** Change a property at clip-local time t: updates/creates a keyframe when the clip is animated, else the static value. */
 export function setProp(c, prop, v, t) {
   if (hasKeyframes(c)) { c.keyframes ||= {}; upsert(c, prop, Math.max(0, Math.min(clipDur(c), t)), v); return; }
-  if (KEYFRAME_PROPS[prop]?.base === 'clip') c[prop] = v; else c.transform[prop] = v;
+  setBase(c, prop, v);
 }
 export const KEN_BURNS = {
   zoomIn:  { name: 'Zoom in',  a: { scale: 1 },    b: { scale: 1.25 } },
@@ -209,7 +243,8 @@ export function gainAt(p, c, t) { if (c.muteAudio) return 0; const f = find(p, c
 export function extractAudio(p, clipId) {
   const f = find(p, clipId); if (!f || f.clip.type !== 'video') return null; const v = f.clip;
   const a = newClip('audio', { mediaId: v.mediaId, in: v.in, out: v.out, speed: v.speed, start: v.start, volume: v.volume ?? 1 });
-  for (const k of ['keepPitch', 'fadeIn', 'fadeOut']) if (v[k] != null) a[k] = v[k];
+  for (const k of ['keepPitch', 'fadeIn', 'fadeOut', 'reversed']) if (v[k] != null) a[k] = v[k];
+  if (v.curve) a.curve = JSON.parse(JSON.stringify(v.curve));
   if (v.voice) a.voice = { ...v.voice };
   if (v.keyframes && v.keyframes.volume) a.keyframes = { volume: v.keyframes.volume.map(x => ({ ...x })) };
   v.muteAudio = true; placeFree(p, 'audio', a); normalize(p); return a;

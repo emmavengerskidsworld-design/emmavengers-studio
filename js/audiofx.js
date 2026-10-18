@@ -1,3 +1,4 @@
+import { curveSrc } from './speedcurve.js';
 /* Audio DSP for Emmavengers Studio — plain maths, no machine learning, no AI.
    Pure functions on Float32Array channels so the very same code runs in the Web Worker (bakes the sound that the
    preview plays) and in tests. Preview and export play the SAME baked buffer, so they always sound identical.
@@ -189,13 +190,18 @@ export function enhance(ch, sr, strength = 0.8) {
 /** Change tempo by `rate` (2 = twice as fast) keeping the pitch. */
 export function stretch(ch, rate, sr) {
   const n = ch[0].length; if (Math.abs(rate - 1) < 1e-4 || n < 16) return clone(ch);
-  const N = Math.round(sr * 0.03 / 2) * 2, Hs = N / 2, Ha = Hs * rate, S = Math.round(sr * 0.012), D = 4, w = hann(N);
+  return stretchMap(ch, Math.max(1, Math.round(n / rate)), op => op * rate, sr);
+}
+/** WSOLA with a variable read position: output sample op plays source sample posAt(op) (speed curves, pitch kept). */
+export function stretchMap(ch, outLen, posAt, sr) {
+  const n = ch[0].length; if (n < 16) return ch.map(() => new Float32Array(outLen));
+  const N = Math.round(sr * 0.03 / 2) * 2, Hs = N / 2, S = Math.round(sr * 0.012), D = 4, w = hann(N);
   const m = mono(ch), dn = Math.floor(n / D), dec = new Float32Array(dn); for (let i = 0; i < dn; i++) { let a = 0; for (let j = 0; j < D; j++) a += m[i * D + j]; dec[i] = a / D; }
-  const outLen = Math.max(1, Math.round(n / rate)), out = ch.map(() => new Float32Array(outLen + N)), Nd = N / D, Sd = S / D;
+  const out = ch.map(() => new Float32Array(outLen + N)), Nd = N / D, Sd = S / D;
   let prev = 0;
   for (let k = 0; ; k++) {
     const op = k * Hs; if (op >= outLen) break;
-    const ideal = Math.round(k * Ha); let pos = Math.min(Math.max(0, ideal), Math.max(0, n - N));
+    const ideal = Math.round(posAt(op)); let pos = Math.min(Math.max(0, ideal), Math.max(0, n - N));
     if (k > 0) {
       const tgt = prev + Hs;
       if (tgt + N <= n) {
@@ -219,6 +225,15 @@ export function resample(ch, factor, sr) {
   return ch.map(c0 => {
     const c = factor > 1.01 ? chain(c0, steep('lp', 0.45 * sr / factor, sr, BUTTER8)) : c0, o = new Float32Array(m);
     for (let i = 0; i < m; i++) { const t = i * factor, j = Math.floor(t), f = t - j, y0 = c[j - 1] ?? c[j], y1 = c[j], y2 = c[j + 1] ?? y1, y3 = c[j + 2] ?? y2;
+      o[i] = y1 + 0.5 * f * (y2 - y0 + f * (2 * y0 - 5 * y1 + 4 * y2 - y3 + f * (3 * (y1 - y2) + y3 - y0))); }
+    return o;
+  });
+}
+/** Variable-speed read without pitch keeping (speed curve, "chipmunk" style): output i reads source posAt(i). */
+export function resampleMap(ch, outLen, posAt, sr, maxRate = 1) {
+  return ch.map(c0 => {
+    const c = maxRate > 1.01 ? chain(c0, steep('lp', Math.max(500, 0.45 * sr / maxRate), sr, BUTTER8)) : c0, o = new Float32Array(outLen), n = c.length;
+    for (let i = 0; i < outLen; i++) { const t = posAt(i), j = Math.floor(t); if (j < 0 || j >= n) continue; const f = t - j, y0 = c[j - 1] ?? c[j], y1 = c[j], y2 = c[j + 1] ?? y1, y3 = c[j + 2] ?? y2;
       o[i] = y1 + 0.5 * f * (y2 - y0 + f * (2 * y0 - 5 * y1 + 4 * y2 - y3 + f * (3 * (y1 - y2) + y3 - y0))); }
     return o;
   });
@@ -283,11 +298,16 @@ export const VOICE_FX = [
 export const voiceFxById = id => VOICE_FX.find(f => f.id === id) || null;
 
 /** The whole per-clip chain: enhance -> effect -> tempo (speed with pitch kept). */
-export function processAudio(ch, sr, { enhance: es = 0, fx = null, rate = 1 } = {}) {
+export function processAudio(ch, sr, { enhance: es = 0, fx = null, rate = 1, map = null, reverse = false } = {}) {
   let y = ch;
+  if (reverse) y = y.map(c => c.slice().reverse());
   if (es > 0) y = enhance(y, sr, es);
   const F = fx && voiceFxById(fx); if (F) { y = F.run(y, sr); if (peak(y) > 0.98) y = limit(y, sr, -1); }
-  if (Math.abs(rate - 1) > 1e-4) y = stretch(y, rate, sr);
+  if (map) {   // speed curve: the result is laid out on the clip's own timeline (sample 0 = clip start)
+    const cv = { pts: map.pts, u0: map.u0, u1: map.u1 }, outLen = Math.max(1, Math.round(map.D * sr)), at = i => (map.off + curveSrc(cv, map.len, map.D, i / sr)) * sr;
+    const maxV = Math.max(...map.pts.map(q => q.v)) * (map.speed || 1);
+    y = map.keep ? stretchMap(y, outLen, at, sr) : resampleMap(y, outLen, at, sr, maxV);
+  } else if (Math.abs(rate - 1) > 1e-4) y = stretch(y, rate, sr);
   return y === ch ? clone(ch) : y;
 }
 /** Trim leading/trailing silence below thrDb (keeps `keep` seconds around the sound). */

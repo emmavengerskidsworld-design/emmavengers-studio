@@ -22,13 +22,28 @@ export const KEYFRAME_PROPS = {
   opacity:  { label: 'Opacity',    min: 0,    max: 1,   step: 0.01,  fmt: v => Math.round(v * 100) + '%' },
   volume:   { label: 'Volume',     min: 0,    max: 2,   step: 0.01,  fmt: v => Math.round(v * 100) + '%', base: 'clip' },
 };
+/* Crop and mask values live on clip.crop / clip.mask; they animate like the transform when the clip has keyframes. */
+const pct = v => Math.round(v * 100) + '%', deg = v => Math.round(v) + '°';
+const sub = (obj, key, label, min, max, step, fmt, def) => ({ label, min, max, step, fmt, get: c => c[obj]?.[key] ?? def, set: (c, v) => { (c[obj] ||= {})[key] = v; } });
+Object.assign(KEYFRAME_PROPS, {
+  cropX: sub('crop', 'x', 'Crop left', 0, 0.95, 0.001, pct, 0), cropY: sub('crop', 'y', 'Crop top', 0, 0.95, 0.001, pct, 0),
+  cropW: sub('crop', 'w', 'Crop width', 0.05, 1, 0.001, pct, 1), cropH: sub('crop', 'h', 'Crop height', 0.05, 1, 0.001, pct, 1),
+  straighten: sub('crop', 'angle', 'Straighten', -45, 45, 0.5, deg, 0),
+  maskX: sub('mask', 'x', 'Mask X', -0.5, 1.5, 0.001, pct, 0.5), maskY: sub('mask', 'y', 'Mask Y', -0.5, 1.5, 0.001, pct, 0.5),
+  maskW: sub('mask', 'w', 'Mask width', 0.02, 2, 0.001, pct, 0.6), maskH: sub('mask', 'h', 'Mask height', 0.02, 2, 0.001, pct, 0.6),
+  maskRot: sub('mask', 'rot', 'Mask rotate', -180, 180, 1, deg, 0), maskFeather: sub('mask', 'feather', 'Feather', 0, 1, 0.01, pct, 0),
+});
+export const CROP_PROPS = ['cropX', 'cropY', 'cropW', 'cropH', 'straighten'];
+export const MASK_PROPS = ['maskX', 'maskY', 'maskW', 'maskH', 'maskRot', 'maskFeather'];
 export const TRANSFORM_PROPS = ['x', 'y', 'scale', 'rotation', 'opacity'];
 /** Which properties a clip type can animate. */
-export const kfPropsFor = c => c.type === 'audio' ? ['volume'] : c.type === 'video' ? [...TRANSFORM_PROPS, 'volume'] : TRANSFORM_PROPS;
+export const kfPropsFor = c => c.type === 'audio' ? ['volume'] : [...TRANSFORM_PROPS, ...(c.type === 'video' ? ['volume'] : []), ...(c.crop ? CROP_PROPS : []), ...(c.mask && c.mask.shape !== 'none' ? MASK_PROPS : [])];
 export { E as EASINGS } from './transitions.js';
 import { E } from './transitions.js';
 export const EASING_LIST = [{ id: 'linear', name: 'Linear' }, { id: 'in', name: 'Ease in' }, { id: 'out', name: 'Ease out' }, { id: 'inOut', name: 'Ease in-out' }, { id: 'bounce', name: 'Bounce' }];
-const baseOf = (clip, prop) => KEYFRAME_PROPS[prop]?.base === 'clip' ? (clip[prop] ?? 1) : clip.transform[prop];
+const baseOf = (clip, prop) => { const d = KEYFRAME_PROPS[prop]; return d?.get ? d.get(clip) : d?.base === 'clip' ? (clip[prop] ?? 1) : clip.transform[prop]; };
+/** Set the static (non-keyframed) value of an animatable property. */
+export function setBase(clip, prop, v) { const d = KEYFRAME_PROPS[prop]; if (d?.set) d.set(clip, v); else if (d?.base === 'clip') clip[prop] = v; else clip.transform[prop] = v; }
 /** Value of an animatable property at clip-local time t. Keyframes win over the static value.
     The easing stored on a keyframe shapes the movement that LEAVES it (towards the next keyframe). */
 export function propAt(clip, prop, t) {

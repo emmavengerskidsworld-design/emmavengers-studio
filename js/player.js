@@ -3,7 +3,8 @@
    clock waits while a video is still buffering so picture and sound never drift apart. */
 import { media, bitmapOf } from './media.js';
 import { renderFrame } from './render.js';
-import { clipEnd, projectDuration, srcTime, hasSource, gainAt } from './project.js';
+import { drawGuides } from './protools.js';
+import { clipEnd, projectDuration, srcTime, speedAt, hasSource, gainAt } from './project.js';
 import { needsBake, bakedFor, bakedPos, bakedRate, keepPitch } from './audio.js';
 
 const PRELOAD = 1.5, RESYNC = 0.3, MAX_EL = 10;
@@ -72,9 +73,10 @@ export class Player {
       this.voice(c, useBk ? bk : null, t, vol, active);
       const pp = keepPitch(c) && !useBk; if (el.preservesPitch !== pp) el.preservesPitch = pp;
       if (active && this.playing) {
-        if (el.playbackRate !== c.speed) el.playbackRate = c.speed;
+        const rate = Math.max(0.0625, Math.min(16, speedAt(c, t)));
+        if (Math.abs(el.playbackRate - rate) > 1e-3) el.playbackRate = rate;
         if (el.paused) { if (Math.abs(el.currentTime - target) > 0.05) el.currentTime = target; el.play().catch(() => {}); }
-        else if (Math.abs(el.currentTime - target) > RESYNC * Math.max(1, c.speed)) el.currentTime = target;
+        else if (Math.abs(el.currentTime - target) > RESYNC * Math.max(1, rate)) el.currentTime = target;
       } else {
         if (!el.paused) el.pause();
         if (Math.abs(el.currentTime - target) > 0.01) el.currentTime = target;
@@ -140,7 +142,7 @@ export class Player {
     if (fast && !this.playing) { clearTimeout(this._settle); this._settle = setTimeout(() => this.requestDraw(), 240); }
     const sel = this.o.showSelection === false ? null : this.o.selected && this.o.selected(), cmp = this.compare;
     const src = c => this.source(c);
-    if (cmp && cmp.mode === 'before') { this.boxes = renderFrame(ctx, canvas.width, canvas.height, p, this.t, src, { plain: true, selectedId: sel }); return; }
+    if (cmp && cmp.mode === 'before') { this.boxes = renderFrame(ctx, canvas.width, canvas.height, p, this.t, src, { plain: true, selectedId: sel }); if (this.guides) drawGuides(ctx, canvas.width, canvas.height, this.guides); return; }
     this.boxes = renderFrame(ctx, canvas.width, canvas.height, p, this.t, src, { selectedId: cmp ? null : sel, fast });
     if (cmp && cmp.mode === 'split') {   // left of the line: original (plain), right: with HD / adjust
       const w = canvas.width, h = canvas.height, x = Math.max(0, Math.min(w, Math.round(cmp.x * w)));
@@ -148,6 +150,7 @@ export class Player {
       renderFrame(this._before.getContext('2d'), w, h, p, this.t, src, { plain: true });
       if (x > 0) ctx.drawImage(this._before, 0, 0, x, h, 0, 0, x, h);
     }
+    if (this.guides) drawGuides(ctx, canvas.width, canvas.height, this.guides);   // preview only, never exported
   }
   source(c) {
     const rec = media.get(c.mediaId); if (!rec) return null;

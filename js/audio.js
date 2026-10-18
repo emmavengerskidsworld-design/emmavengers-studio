@@ -4,6 +4,8 @@
    Only the used part of the file (+1 s margin) is processed; results are cached by their settings. */
 import { media, decodeAudio } from './media.js';
 import { processAudio } from './audiofx.js';
+import { validCurve } from './speedcurve.js';
+import { clipDur } from './project.js';
 export { VOICE_FX } from './audiofx.js';
 
 export const SR = 48000, MARGIN = 1, DEFAULT_VOICE_STRENGTH = 0.8;
@@ -12,12 +14,16 @@ export const enhanceLevel = c => c.voice && c.voice.enhance ? (c.voice.strength 
 export function needsBake(c) {
   if (c.type !== 'audio' && c.type !== 'video') return false;
   const r = media.get(c.mediaId); if (!r || r.hasAudio === false) return false;
-  return enhanceLevel(c) > 0 || !!(c.voice && c.voice.fx) || (Math.abs(c.speed - 1) > 1e-4 && keepPitch(c));
+  return enhanceLevel(c) > 0 || !!(c.voice && c.voice.fx) || (Math.abs(c.speed - 1) > 1e-4 && keepPitch(c)) || validCurve(c.curve);
 }
 function plan(c) {
   const r = media.get(c.mediaId), dur = r && r.duration > 0 ? r.duration : Infinity;
   const a = Math.max(0, Math.floor(c.in - MARGIN)), b = Math.min(dur, Math.ceil(c.out + MARGIN)), rate = keepPitch(c) && Math.abs(c.speed - 1) > 1e-4 ? c.speed : 1;
   const opt = { enhance: enhanceLevel(c), fx: (c.voice && c.voice.fx) || null, rate };
+  if (validCurve(c.curve)) {   // speed curve: bake the whole clip on its own timeline (variable speed, pitch kept or not)
+    const cv = c.curve; opt.rate = 1; opt.map = { pts: cv.pts, u0: cv.u0 ?? 0, u1: cv.u1 ?? 1, off: c.in - a, len: c.out - c.in, D: clipDur(c), speed: c.speed, keep: keepPitch(c) };
+    return { a, b, rate: 1, curve: true, opt, key: [c.mediaId, a, isFinite(b) ? b : 'end', 'curve', c.in, c.out, c.speed, opt.map.keep, JSON.stringify(cv), opt.enhance, opt.fx || ''].join('|') };
+  }
   return { a, b, rate, opt, key: [c.mediaId, a, isFinite(b) ? b : 'end', rate, opt.enhance, opt.fx || ''].join('|') };
 }
 export const bakeKey = c => plan(c).key;
@@ -59,7 +65,7 @@ function evict(keepKeys) {
 function entry(c) {
   const P = plan(c); let e = cache.get(P.key);
   if (!e) {
-    e = { key: P.key, a: P.a, rate: P.rate, buf: null, failed: false, used: performance.now() };
+    e = { key: P.key, a: P.a, rate: P.rate, curve: !!P.curve, buf: null, failed: false, used: performance.now() };
     e.promise = bake(c, P).then(b => { e.buf = b; evict(new Set([P.key])); listeners.forEach(f => f(e)); return e; }, err => { console.warn('audio bake failed', err); e.failed = true; listeners.forEach(f => f(e)); return e; });
     cache.set(P.key, e);
   }
@@ -73,6 +79,6 @@ export function bakedFor(c, onReady) {
 /** Wait for the baked buffer (export). Returns null when the clip has no processing or processing failed. */
 export async function ensureBaked(c) { if (!needsBake(c)) return null; const e = await entry(c).promise; return e.buf ? e : null; }
 /** Position (seconds inside the baked buffer) heard at timeline time t, and the playback rate to use. */
-export const bakedPos = (e, c, t) => (c.in + (t - c.start) * c.speed - e.a) / e.rate;
-export const bakedRate = (e, c) => c.speed / e.rate;
+export const bakedPos = (e, c, t) => e.curve ? t - c.start : (c.in + (t - c.start) * c.speed - e.a) / e.rate;
+export const bakedRate = (e, c) => e.curve ? 1 : c.speed / e.rate;
 export const dropBakes = () => cache.clear();

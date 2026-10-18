@@ -3,7 +3,7 @@
 import { animSpans, loopKind } from './animations.js';
 import { S, live, begin, end, select } from './store.js';
 import { TRACK_KINDS } from './registry.js';
-import { clipDur, clipEnd, projectDuration, hasSource, reorder, moveTo, trim, find, kfTimes, fadeAt, MAX_FADE } from './project.js';
+import { clipDur, clipEnd, projectDuration, hasSource, reorder, moveTo, trim, find, kfTimes, fadeAt, MAX_FADE, srcTime } from './project.js';
 import { propAt } from './registry.js';
 import { voiceFxById } from './audiofx.js';
 import { transitionById } from './transitions.js';
@@ -92,7 +92,7 @@ export class Timeline {
     if (c.type === 'text') badges.push(`<span class="ctext">${esc(c.text.content.split('\n')[0] || 'Text')}</span>`);
     else if (c.type === 'audio') badges.push(`<span class="cname">${esc(rec ? rec.name : 'Audio')}</span>`);
     if (S.sel === c.id || c.type === 'video') badges.push(`<span class="dur">${fmtS(d)}</span>`);
-    if (c.speed !== 1) badges.push(`<span class="spd">${c.speed}x</span>`);
+    if (c.curve) badges.push(`<span class="spd">curve</span>`); else if (c.speed !== 1) badges.push(`<span class="spd">${c.speed}x</span>`);
     if (hasSource(c) && (c.volume === 0 || c.muteAudio)) badges.push(`<span class="spd">${icon('volume', 11)}✕</span>`);
     if (c.voice && c.voice.enhance) badges.push('<span class="spd" title="Enhance voice">✨</span>');
     if (c.voice && c.voice.fx && voiceFxById(c.voice.fx)) badges.push(`<span class="spd" title="${voiceFxById(c.voice.fx).name}">${voiceFxById(c.voice.fx).emoji}</span>`);
@@ -111,7 +111,7 @@ export class Timeline {
   /** Waveform (peaks, shaped by the volume envelope: keyframes x fades), envelope line and fade ramps. */
   paintWave(ctx, c, rec, cw, y0, h, pps, color, line) {
     const pk = rec.peaks, gAt = x => { const L = x / pps; return Math.max(0, propAt(c, 'volume', L)) * fadeAt(c, c.start + L) * (c.muteAudio ? 0 : 1); };
-    if (pk) { ctx.fillStyle = color; for (let x = 0; x < cw; x += 2) { const st = c.in + (x / pps) * c.speed, v = pk[Math.min(pk.length - 1, Math.floor(st * PEAK_RATE))] || 0, bh = Math.max(1, Math.min(1, v * Math.min(2, gAt(x))) * (h - 4)); ctx.fillRect(x, y0 + (h - bh) / 2, 1.4, bh); } }
+    if (pk) { ctx.fillStyle = color; for (let x = 0; x < cw; x += 2) { const st = srcTime(c, c.start + x / pps), v = pk[Math.min(pk.length - 1, Math.floor(st * PEAK_RATE))] || 0, bh = Math.max(1, Math.min(1, v * Math.min(2, gAt(x))) * (h - 4)); ctx.fillRect(x, y0 + (h - bh) / 2, 1.4, bh); } }
     const d = clipDur(c), fi = Math.min(c.fadeIn || 0, d) * pps, fo = Math.min(c.fadeOut || 0, d) * pps;
     ctx.fillStyle = 'rgba(0,0,0,.38)';
     if (fi > 0) { ctx.beginPath(); ctx.moveTo(0, y0); ctx.lineTo(fi, y0); ctx.lineTo(0, y0 + h); ctx.fill(); }
@@ -129,7 +129,7 @@ export class Timeline {
     const n = rec.thumbN || 1;
     for (let x = 0; x < cw; x += h) {
       let idx = 0;
-      if (c.type === 'video') { const st = c.in + ((x + h / 2) / pps) * c.speed; idx = Math.max(0, Math.min(n - 1, Math.floor(st / rec.duration * n))); }
+      if (c.type === 'video') { const st = srcTime(c, c.start + (x + h / 2) / pps); idx = Math.max(0, Math.min(n - 1, Math.floor(st / rec.duration * n))); }
       ctx.drawImage(bm, idx * TILE, 0, TILE, TILE, x, 0, h, h);
     }
     // the video's own sound: a waveform strip along the bottom
