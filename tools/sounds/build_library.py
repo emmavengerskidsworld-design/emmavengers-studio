@@ -9,7 +9,7 @@ import numpy as np, requests
 from scipy.signal import lfilter
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))); LIB = os.path.join(ROOT, 'lib/sounds')
 SRC = sys.argv[1] if len(sys.argv) > 1 else '/workspace/sfx-src'; SR = 48000
-UA = {'User-Agent': 'EmmavengersStudio/1.0 (CC0 sound library builder)'}
+UA = {'User-Agent': 'EmmavengersStudioBot/1.0 (https://github.com/emmavengerskidsworld-design/emmavengers-studio; CC0 sound library builder)'}
 AMBIENT = {'nature', 'weather', 'bible'}
 
 # ---------------- loudness (ITU-R BS.1770-4) ----------------

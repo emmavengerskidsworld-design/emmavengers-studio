@@ -2,7 +2,11 @@
 import { pitchShift, trimSilence, normalize } from './audiofx.js';
 const MODEL = 'onnx-community/Kokoro-82M-v1.0-ONNX';
 let ttsP = null;
-async function engine(base, model, progress) {
+async function engine(base, model, progress, host) {
+  if (host && !self.__hfHost) {   // optional self-hosted copy of the model + voices (same folder layout as Hugging Face)
+    const f = self.fetch.bind(self), HF = 'https://huggingface.co/'; self.__hfHost = host;
+    self.fetch = (u, o) => f(typeof u === 'string' && u.startsWith(HF) ? host + u.slice(HF.length) : u, o);
+  }
   if (!ttsP) ttsP = (async () => {
     const { KokoroTTS, env } = await import(base + 'kokoro.web.js');
     env.wasmPaths = base;
@@ -20,10 +24,10 @@ function chunks(text) {
   return out.filter(Boolean);
 }
 self.onmessage = async e => {
-  const { id, text, voice, base, model } = e.data, progress = p => self.postMessage({ id, progress: p });
+  const { id, text, voice, base, model, host } = e.data, progress = p => self.postMessage({ id, progress: p });
   try {
     progress({ msg: 'Starting the speech engine…', p: 0 });
-    const tts = await engine(base, model, progress);
+    const tts = await engine(base, model, progress, host);
     const cs = chunks(text), pieces = []; let sr = 24000;
     for (let i = 0; i < cs.length; i++) {
       progress({ msg: cs.length > 1 ? `Making speech… sentence ${i + 1} of ${cs.length}` : 'Making speech…', p: i / cs.length });

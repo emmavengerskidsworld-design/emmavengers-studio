@@ -229,13 +229,18 @@ async def test_record(pw):
 async def test_speech(b):
     log('== Add speech (Kokoro kid voices in the browser)')
     ctx, pg = await new_page(b); hits = {'local': 0, 'net': 0}
-    if (HF / 'onnx/model_quantized.onnx').exists():
-        async def route(r):
-            m = re.search(r'/resolve/main/(.+)$', r.request.url.split('?')[0]); f = HF / m.group(1) if m else None
-            if f and f.exists(): hits['local'] += 1; await r.fulfill(path=str(f), headers={'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/octet-stream' if not f.suffix == '.json' else 'application/json'})
+    if (HF / 'onnx/model_quantized.onnx').exists():   # serve the model from a local copy (same layout as Hugging Face) instead of downloading 92 MB every run
+        mir = OUT / 'hf/onnx-community/Kokoro-82M-v1.0-ONNX/resolve'; mir.mkdir(parents=True, exist_ok=True); (mir / 'main').symlink_to(HF)
+        class C(Q):
+            def end_headers(self): self.send_header('Access-Control-Allow-Origin', '*'); hits.__setitem__('local', hits['local'] + 1); super().end_headers()
+        s2 = http.server.ThreadingHTTPServer(('127.0.0.1', PORT + 1), functools.partial(C, directory=str(OUT / 'hf'))); threading.Thread(target=s2.serve_forever, daemon=True).start()
+        await P(pg, f'window.__studioTtsHost = "http://127.0.0.1:{PORT + 1}/"')
+        async def route(r):   # kokoro-js loads the voice files (0.5 MB each) from a fixed Hugging Face URL
+            f = HF / 'voices' / r.request.url.split('?')[0].split('/')[-1]
+            if f.exists(): hits['local'] += 1; await r.fulfill(path=str(f), headers={'Access-Control-Allow-Origin': '*'})
             else: hits['net'] += 1; await r.continue_()
-        await ctx.route(re.compile(r'https://huggingface\.co/onnx-community/Kokoro-82M-v1\.0-ONNX/.*'), route)
-    await P(pg, '(()=>{studio.select(null);studio.player.seek(0.5);studio.timeline.setTime(0.5)})()'); await tool(pg, 'speech')
+        await ctx.route(re.compile(r'https://huggingface\.co/.*/voices/.*'), route)
+    await add_video(pg, FX / 'video.mp4'); await P(pg, '(()=>{studio.select(null);studio.player.seek(0.5);studio.timeline.setTime(0.5)})()'); await tool(pg, 'speech')
     await pg.wait_for_selector('#ttsText'); voices = await P(pg, '[...document.querySelectorAll(".fxgrid.voices .chipbtn")].map(b=>b.dataset.v)')
     ok(voices == ['mia', 'lily', 'zara', 'sam', 'leo', 'max'], f'six kid voices {voices}')
     await pg.fill('#ttsText', 'Hello friends! God made the stars and the sea.'); await pg.click('.fxgrid.voices .chipbtn[data-v="sam"]')

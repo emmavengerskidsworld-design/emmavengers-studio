@@ -30,6 +30,6 @@ export function speak(text, voiceId, onProgress) {
   const v = KID_VOICES.find(x => x.id === voiceId) || KID_VOICES[0], id = ++seq;
   return new Promise((res, rej) => {
     jobs.set(id, { res: d => res({ wav: encodeWav([d.audio], d.sr), duration: d.audio.length / d.sr, sr: d.sr, text }), rej, onProgress });
-    getWorker().postMessage({ id, text, voice: v, base: new URL('../lib/kokoro-1.2.1/', import.meta.url).href, model: window.__studioTtsModel || null });
+    getWorker().postMessage({ id, text, voice: v, base: new URL('../lib/kokoro-1.2.1/', import.meta.url).href, model: window.__studioTtsModel || null, host: window.__studioTtsHost || null });
   });
 }
