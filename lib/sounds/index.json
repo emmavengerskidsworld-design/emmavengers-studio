@@ -10,6 +10,13 @@
    "count": 17
   },
   {
+   "dir": "emmavengers-originals-music-2",
+   "name": "Emmavengers Originals vol. 2 (music)",
+   "kind": "music",
+   "license": "CC0-1.0",
+   "count": 128
+  },
+  {
    "dir": "kenney-music-jingles",
    "name": "Kenney — Music Jingles",
    "kind": "music",
@@ -22,6 +29,13 @@
    "kind": "sfx",
    "license": "CC0-1.0",
    "count": 159
+  },
+  {
+   "dir": "emmavengers-originals-2",
+   "name": "Emmavengers Originals vol. 2 (sound effects)",
+   "kind": "sfx",
+   "license": "CC0-1.0",
+   "count": 485
   },
   {
    "dir": "bible-ambience",
@@ -99,6 +113,34 @@
    "kind": "sfx",
    "license": "CC0-1.0",
    "count": 63
+  },
+  {
+   "dir": "oga-junkala-512",
+   "name": "Juhani Junkala — 512 retro sound effects",
+   "kind": "sfx",
+   "license": "CC0-1.0",
+   "count": 399
+  },
+  {
+   "dir": "oga-rubberduck",
+   "name": "rubberduck — CC0 sound packs (OpenGameArt)",
+   "kind": "sfx",
+   "license": "CC0-1.0",
+   "count": 893
+  },
+  {
+   "dir": "oga-owlishmedia",
+   "name": "OwlishMedia — home recordings (OpenGameArt)",
+   "kind": "sfx",
+   "license": "CC0-1.0",
+   "count": 356
+  },
+  {
+   "dir": "oga-assorted",
+   "name": "OpenGameArt — assorted CC0 sounds",
+   "kind": "sfx",
+   "license": "CC0-1.0",
+   "count": 53
   }
  ]
 }

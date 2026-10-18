@@ -268,15 +268,35 @@ async def test_library(b):
         m = json.load(open(ROOT / 'lib/sounds' / p['dir'] / 'pack.json')); ok(m['items'] and len(m['items']) == p['count'], f"pack {p['dir']}: {len(m['items'])} sounds, licence {m['license']}")
         for it in m['items']:
             f = ROOT / 'lib/sounds' / p['dir'] / it['f']; missing += [] if f.exists() else [str(f)]
-            items.append(dict(kind=m['kind'], cat=it['c'], lic=it.get('l', m['license']), f=f, n=it['n']))
+            items.append(dict(kind=m['kind'], cat=it['c'], lic=it.get('l', m['license']), f=f, n=it['n'], b=it.get('b'), m=it.get('m'), o=it.get('o'), dr=it.get('dr'), sec=it.get('sec'), d=it['d'], pack=p['dir']))
     ok(not missing, f'every catalogued file exists ({len(missing)} missing)')
     ok(all(re.search(r'CC0|Public domain', x['lic']) for x in items), 'every sound is CC0 or public domain')
     sfx = [x for x in items if x['kind'] == 'sfx']; mus = [x for x in items if x['kind'] == 'music']
     cats = {}; [cats.__setitem__(x['cat'], cats.get(x['cat'], 0) + 1) for x in sfx]; mc = {}; [mc.__setitem__(x['cat'], mc.get(x['cat'], 0) + 1) for x in mus]
     log(f'       {len(sfx)} sound effects: ' + ', '.join(f'{k} {v}' for k, v in sorted(cats.items(), key=lambda z: -z[1]))); log(f'       {len(mus)} music tracks: ' + ', '.join(f'{k} {v}' for k, v in mc.items()))
     METRICS['library'] = dict(sfx=len(sfx), music=len(mus), cats=cats, music_cats=mc, packs=len(idx['packs']), mb=round(sum(x['f'].stat().st_size for x in items if x['f'].exists()) / 1e6, 1))
-    want = ['cartoon', 'animals', 'nature', 'funny', 'magic', 'whoosh', 'game', 'cheers', 'household', 'weather', 'bible', 'instruments', 'voices']
-    ok(all(cats.get(c, 0) >= 5 for c in want), f'all 13 categories have sounds {[c for c in want if cats.get(c, 0) < 5]}'); ok(len(sfx) >= 300, f'{len(sfx)} sound effects (>= 300)')
+    want = ['cartoon', 'animals', 'nature', 'funny', 'magic', 'whoosh', 'game', 'cheers', 'household', 'weather', 'bible', 'instruments', 'voices',
+            'impacts', 'retro', 'school', 'vehicles', 'sports', 'machines', 'water', 'creatures', 'scifi', 'weird']
+    ok(all(cats.get(c, 0) >= 5 for c in want), f'all {len(want)} categories have sounds {[c for c in want if cats.get(c, 0) < 5]}'); ok(len(sfx) >= 2000, f'{len(sfx)} sound effects (>= 2000)')
+    mwant = ['happy', 'calm', 'lullaby', 'worship', 'adventure', 'funny', 'suspense', 'african', 'holiday', 'jingles']
+    ok(all(mc.get(c, 0) >= 10 for c in mwant), f'all {len(mwant)} music categories have >= 10 tracks {[c for c in mwant if mc.get(c, 0) < 10]}'); ok(len(mus) >= 200, f'{len(mus)} music tracks (>= 200)')
+    own = [x for x in mus if x['pack'].startswith('emmavengers-originals-music')]
+    ok(len(own) >= 140 and all(x['b'] and 40 <= x['b'] <= 200 and x['m'] in (2, 3, 4, 6) and x['o'] is not None for x in own), f'all {len(own)} of our own tracks carry BPM / meter / first beat')
+    ok(all(isinstance(x['sec'], list) and isinstance(x['dr'], list) for x in own if x['pack'] == 'emmavengers-originals-music-2'), 'new tracks carry sections + drops')
+    lic = (ROOT / 'LICENSES.md').read_text(); ok(all(json.load(open(ROOT / 'lib/sounds' / p['dir'] / 'pack.json'))['name'] in lic for p in idx['packs']), 'every pack is listed in LICENSES.md')
+    names = [x['pack'] + '/' + x['n'] for x in items]; ok(len(set(x['f'] for x in items)) == len(items), 'no file is catalogued twice')
+    # beat grid accuracy on the encoded MP3s (spectral-flux onset phase vs. the stored grid)
+    import random as _r; _r.seed(8); errs = []
+    for x in _r.sample([y for y in own if y['pack'] == 'emmavengers-originals-music-2' and y['cat'] != 'jingles'], 8):
+        r = subprocess.run(['ffmpeg', '-v', 'error', '-i', str(x['f']), '-ac', '1', '-ar', '22050', '-f', 'f32le', '-'], capture_output=True); a = np.frombuffer(r.stdout, np.float32)
+        sr_, hop, n_ = 22050, 256, 1024; fr = np.lib.stride_tricks.sliding_window_view(a[:60 * sr_], n_)[::hop] * np.hanning(n_); Sg = np.log1p(np.abs(np.fft.rfft(fr, axis=1)) * 10)
+        flux = np.maximum(0, np.diff(Sg, axis=0)).sum(1); t = (np.arange(len(flux)) + 1) * hop / sr_ + n_ / 2 / sr_; w = flux ** 2; best = None
+        for sub in (1, 2, 4):
+            per = 60 / x['b'] / sub; z = (w * np.exp(2j * np.pi * (t - x['o']) / per)).sum() / (w.sum() + 1e-9); lag = np.angle(z) / (2 * np.pi) * per
+            if best is None or abs(z) > best[0]: best = (abs(z), lag)
+        errs.append((x['n'], round(best[1] * 1000, 1), round(best[0], 2)))
+    log('       beat grid check (name, lag ms, sync):', errs)
+    ok(all(abs(e) <= 30 for _, e, _ in errs), f'stored beat grid matches the audio within 30 ms on 8 decoded MP3s (max {max(abs(e) for _, e, _ in errs)} ms)')
     # loudness + silence of a sample of the files
     import random; random.seed(4); smp = random.sample(sfx, 40) + mus[:6]; lv = []
     for x in smp:
@@ -305,6 +325,20 @@ async def test_library(b):
     a = (await clips_of(pg, 'audio'))[0]; ok(abs(a['start'] - 0.3) < 0.01, f'Add puts the sound on the audio line at the playhead ({a["start"]:.2f}s)')
     await pg.click('.sndtabs .chipbtn[data-v="music"]'); await pg.wait_for_timeout(400); nm = await pg.locator('#sndList .snd').count(); ok(nm >= 15, f'Music tab: {nm} tracks')
     await pg.screenshot(path=str(SHOTS / 'audio-sounds-music-390.png')); log('  shot audio-sounds-music-390.png')
+    bpmtxt = await P(pg, '[...document.querySelectorAll("#sndList .snd small")].map(e=>e.textContent).filter(t=>/BPM/.test(t)).length'); ok(bpmtxt >= 10, f'music list shows BPM ({bpmtxt} rows)')
+    await pg.click('.sndcats .chipbtn[data-v="worship"]'); await pg.wait_for_timeout(300); nw = await pg.locator('#sndList .snd').count(); ok(nw >= 15, f'Worship & hymns: {nw} tracks')
+    await pg.screenshot(path=str(SHOTS / 'b8-library-music-worship-390.png')); log('  shot b8-library-music-worship-390.png')
+    await pg.click('.sndcats .chipbtn[data-v=""]'); await pg.fill('#sndSearch', '120bpm'); await pg.wait_for_timeout(400); n120 = await pg.locator('#sndList .snd').count(); ok(n120 >= 3, f'search "120bpm" -> {n120}')
+    await pg.fill('#sndSearch', 'doxology'); await pg.wait_for_timeout(400); ok(await pg.locator('#sndList .snd').count() >= 1, 'search "doxology" finds the hymn')
+    t0 = await P(pg, 'studio.player.t'); await pg.click('#sndList .snd:first-child [data-add]')
+    await pg.wait_for_function('studio.S.project.tracks.some(t=>t.kind==="audio"&&t.clips.some(c=>c.beat))', timeout=20000)
+    bc = await P(pg, '(()=>{const c=studio.S.project.tracks.flatMap(t=>t.clips).find(c=>c.beat);const bt=studio.project.beatTimes(c);return {beat:c.beat,start:c.start,n:bt.length,first:bt.slice(0,5),downs:bt.filter(b=>b.down).length,drops:studio.project.dropTimes(c)}})()')
+    spb = 60 / bc['beat']['bpm']; ok(bc['n'] > 8 and abs(bc['first'][1]['t'] - bc['first'][0]['t'] - spb) < 1e-6 and bc['downs'] >= bc['n'] // bc['beat']['m'] - 1, f"added track keeps its beat grid ({bc['beat']['bpm']} BPM, {bc['n']} beats, {bc['downs']} bars, {len(bc['drops'])} drops)")
+    await done(pg); await P(pg, '(()=>{studio.timeline.setZoom(70);studio.player.seek(2.6);studio.timeline.setTime(2.6)})()'); await pg.wait_for_timeout(3000)
+    await pg.screenshot(path=str(SHOTS / 'b8-timeline-beats-390.png')); log('  shot b8-timeline-beats-390.png')
+    await tool(pg, 'sounds'); await pg.wait_for_selector('#sndList .snd', timeout=15000); await pg.click('.sndtabs .chipbtn[data-v="sfx"]'); await pg.wait_for_timeout(300)
+    for cv, nm_ in (('retro', 'b8-library-sfx-retro-390.png'), ('school', 'b8-library-sfx-school-390.png')):
+        await pg.evaluate(f'document.querySelector(\'.sndcats .chipbtn[data-v="{cv}"]\').scrollIntoView({{inline:"center",block:"nearest"}})'); await pg.click(f'.sndcats .chipbtn[data-v="{cv}"]'); await pg.wait_for_timeout(300); await pg.screenshot(path=str(SHOTS / nm_)); log('  shot ' + nm_)
     await done(pg); await pg.wait_for_timeout(300); await pg.screenshot(path=str(SHOTS / 'audio-timeline-390.png')); log('  shot audio-timeline-390.png')
     ok(not pg.errs, f'no console errors {pg.errs[:3]}'); await ctx.close()
 

@@ -4,14 +4,18 @@ Emmavengers Studio code: © Emmavengers. Bundled third-party code and content ar
 
 ## Sound library (lib/sounds/)
 
-Every sound in the library is **CC0 1.0** (public-domain dedication) or **public domain**. No attribution is required and all may be used in monetised YouTube / TikTok videos. We still credit every source here.
-Excluded on purpose: Creative-Commons-BY / BY-SA / NC sounds, “royalty-free” licences that forbid redistributing the raw sounds (e.g. the Sonniss GDC bundle licence, Pixabay licence, BBC RemArc), Freesound files that are not CC0, commercial music recordings (Content ID risk, even when old), anything AI-generated, and Kenney’s military voice lines (not suitable for kids).
+230 music tracks and 3056 sound effects. Every sound in the library is **CC0 1.0** (public-domain dedication) or **public domain**. No attribution is required and all may be used in monetised YouTube / TikTok videos. We still credit every source here.
+Excluded on purpose: Creative-Commons-BY / BY-SA / NC / ND sounds, OGA-BY, GPL, “royalty-free” licences that forbid redistributing the raw sounds (e.g. the Sonniss GDC bundle licence, Pixabay licence, BBC RemArc), Freesound files that are not CC0, commercial music recordings and anything registered with YouTube Content ID (even when old), anything AI-generated, weapon / gunshot / death-scream sounds and Kenney’s military voice lines (not suitable for kids).
+Music: all of our music is our own work (CC0): original compositions and our own arrangements of public-domain melodies (traditional tunes and hymns / carols / nursery songs published before 1900), synthesised from scratch — no samples and no recordings by anyone else, so there is nothing for Content ID to match. No credit text is needed (we include none of the CC-BY tracks that would need one).
+Beat markers: music tracks carry their tempo and beat grid in pack.json (b = BPM, m = beats per bar, o = first beat, sec = sections, dr = drops). Our own tracks were written to that grid, so the markers are exact.
 
 | Pack | Sounds | Licence | Source |
 |---|---|---|---|
 | Emmavengers Originals (music) | 17 | CC0-1.0 | Our own arrangements of public-domain melodies (Twinkle Twinkle, Brahms’ Lullaby, Ode to Joy, Amazing Grace, Joy to the World, Jesus Loves Me, Row Your Boat) and our own compositions, synthesised with tools/sounds/synth.py (no samples, no AI) |
+| Emmavengers Originals vol. 2 (music) | 128 | CC0-1.0 | Composed by our own rule-based composer tools/sounds/compose.py (no samples, no AI) and played by our own synthesised instruments; public-domain melodies (traditional / pre-1900) in our own arrangements |
 | Kenney — Music Jingles | 85 | CC0-1.0 | https://kenney.nl/assets/music-jingles |
 | Emmavengers Originals (sound effects) | 159 | CC0-1.0 | Made from scratch with plain synthesis maths: tools/sounds/synth.py (no samples, no AI) |
+| Emmavengers Originals vol. 2 (sound effects) | 485 | CC0-1.0 | Made from scratch with plain synthesis maths: tools/sounds/synth2.py (no samples, no AI) |
 | Bible-story ambiences | 15 | CC0-1.0 | tools/sounds/build_library.py (bible_mixes) |
 | Wikimedia Commons (CC0 / public domain) | 97 | CC0-1.0 or Public domain (per file, see LICENSES.md) | https://commons.wikimedia.org |
 | Yellowstone Sound Library (U.S. National Park Service) | 38 | Public domain | https://www.nps.gov/yell/learn/photosmultimedia/soundlibrary.htm |
@@ -23,10 +27,48 @@ Excluded on purpose: Creative-Commons-BY / BY-SA / NC sounds, “royalty-free”
 | Kenney — Sci-fi Sounds | 73 | CC0-1.0 | https://kenney.nl/assets/sci-fi-sounds |
 | Kenney — UI Audio | 47 | CC0-1.0 | https://kenney.nl/assets/ui-audio |
 | Kenney — Voiceover Pack | 63 | CC0-1.0 | https://kenney.nl/assets/voiceover-pack |
+| Juhani Junkala — 512 retro sound effects | 399 | CC0-1.0 | https://opengameart.org/content/512-sound-effects-8-bit-style |
+| rubberduck — CC0 sound packs (OpenGameArt) | 893 | CC0-1.0 | https://opengameart.org/users/rubberduck (13 CC0 packs, see LICENSES.md) |
+| OwlishMedia — home recordings (OpenGameArt) | 356 | CC0-1.0 | https://opengameart.org/content/202-more-sound-effects and https://opengameart.org/content/sound-effects-pack |
+| OpenGameArt — assorted CC0 sounds | 53 | CC0-1.0 | https://opengameart.org (per file, see LICENSES.md) |
 
 Kenney packs: each zip’s License.txt states “License: (Creative Commons Zero, CC0) http://creativecommons.org/publicdomain/zero/1.0/ — free to use in personal, educational and commercial projects”.
 Yellowstone Sound Library: “These sounds are in the public domain. They may be downloaded and used without limitation; however, please credit the National Park Service where appropriate.” Credits: NPS & MSU Acoustic Atlas.
 Wikimedia Commons: each file’s licence was read from Commons’ own file metadata (License = cc0 / pd, AttributionRequired = false) by tools/sounds/crawl_commons.py and is listed per file below.
+OpenGameArt.org: a page was used only when its licence field lists exactly one licence, CC0 (checked by tools/sounds/crawl_oga.py). Pages used:
+
+- 512 Sound Effects (8-bit style) — SubspaceAudio — CC0 — https://opengameart.org/content/512-sound-effects-8-bit-style
+- 100 CC0 SFX — rubberduck — CC0 — https://opengameart.org/content/100-cc0-sfx
+- 100 CC0 SFX #2 — rubberduck — CC0 — https://opengameart.org/content/100-cc0-sfx-2
+- 100 CC0 metal and wood SFX — rubberduck — CC0 — https://opengameart.org/content/100-cc0-metal-and-wood-sfx
+- 25 CC0 bang / firework SFX — rubberduck — CC0 — https://opengameart.org/content/25-cc0-bang-firework-sfx
+- 25 CC0 mud sfx — rubberduck — CC0 — https://opengameart.org/content/25-cc0-mud-sfx
+- 30 CC0 SFX loops — rubberduck — CC0 — https://opengameart.org/content/30-cc0-sfx-loops
+- 30 weird CC0 SFX — rubberduck — CC0 — https://opengameart.org/content/30-weird-cc0-sfx
+- 40 CC0 water / splash / slime SFX — rubberduck — CC0 — https://opengameart.org/content/40-cc0-water-splash-slime-sfx
+- 50 CC0 retro / synth SFX — rubberduck — CC0 — https://opengameart.org/content/50-cc0-retro-synth-sfx
+- 50 CC0 Sci-Fi SFX — rubberduck — CC0 — https://opengameart.org/content/50-cc0-sci-fi-sfx
+- 60 CC0 Sci-Fi SFX — rubberduck — CC0 — https://opengameart.org/content/60-cc0-sci-fi-sfx
+- 75 CC0 breaking / falling / hit sfx — rubberduck — CC0 — https://opengameart.org/content/75-cc0-breaking-falling-hit-sfx
+- 80 CC0 creature SFX — rubberduck — CC0 — https://opengameart.org/content/80-cc0-creature-sfx
+- 80 CC0 creture SFX #2 — rubberduck — CC0 — https://opengameart.org/content/80-cc0-creture-sfx-2
+- 80 CC0 RPG SFX — rubberduck — CC0 — https://opengameart.org/content/80-cc0-rpg-sfx
+- 202 More Sound Effects — OwlishMedia — CC0 — https://opengameart.org/content/202-more-sound-effects
+- Sound Effects Pack — OwlishMedia — CC0 — https://opengameart.org/content/sound-effects-pack
+- Boings — EZduzziteh — CC0 — https://opengameart.org/content/boings
+- Pond Pals SFX Pack — withthelove — CC0 — https://opengameart.org/content/pond-pals-sfx-pack
+- Camera — themightyglider — CC0 — https://opengameart.org/content/camera
+- Scissors — themightyglider — CC0 — https://opengameart.org/content/scissors
+- Elevator ding — fvcalderan — CC0 — https://opengameart.org/content/elevator-ding
+- Light Switch Turn On And Off SFX — FunnyDude — CC0 — https://opengameart.org/content/light-switch-turn-on-and-off-sfx-0
+- Car Blinker SFX — looneybits — CC0 — https://opengameart.org/content/car-blinker-sfx
+- Car_door_SFX — looneybits — CC0 — https://opengameart.org/content/cardoorsfx
+- Helicopter SFX — WuxiaScrub — CC0 — https://opengameart.org/content/helicopter-sfx
+- Rain (loopable) — Ylmir — CC0 — https://opengameart.org/content/rain-loopable
+- Spinning Wheel — themightyglider — CC0 — https://opengameart.org/content/spinning-wheel-0
+- Magic Spell SFX — JaggedStone — CC0 — https://opengameart.org/content/magic-spell-sfx
+- Gem collect SFX — Bobjt — CC0 — https://opengameart.org/content/gem-collect-sfx
+- open chest SFX — Oiboo — CC0 — https://opengameart.org/content/open-chest-sfx
 
 ### Per-file credits (Wikimedia Commons and NPS)
 

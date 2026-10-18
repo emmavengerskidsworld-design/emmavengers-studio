@@ -9,11 +9,13 @@ import { icon } from './icons.js';
 
 const BASE = new URL('../lib/sounds/', import.meta.url).href, LIB_CACHE = 'evs-lib-v1';
 export const SFX_CATS = [
-  ['cartoon', 'Cartoon'], ['animals', 'Animals'], ['nature', 'Nature'], ['funny', 'Funny'], ['magic', 'Magic & sparkle'], ['whoosh', 'Whoosh & transition'],
-  ['game', 'Game & UI'], ['cheers', 'Kids, cheers & applause'], ['household', 'Household'], ['weather', 'Weather'], ['bible', 'Bible-story ambience'],
-  ['instruments', 'Instruments'], ['voices', 'Voices & reactions'],
+  ['cartoon', 'Cartoon'], ['animals', 'Animals'], ['nature', 'Nature'], ['funny', 'Funny'], ['magic', 'Magic & sparkle'], ['whoosh', 'Whoosh & transition'], ['impacts', 'Risers, hits & impacts'],
+  ['game', 'Game & UI'], ['retro', 'Retro 8-bit'], ['cheers', 'Kids, cheers & applause'], ['household', 'Home & kitchen'], ['school', 'School'], ['vehicles', 'Vehicles'], ['sports', 'Sports'],
+  ['machines', 'Machines & city'], ['water', 'Water & slime'], ['weather', 'Weather'], ['bible', 'Bible stories'], ['creatures', 'Monsters & creatures'], ['scifi', 'Sci-fi & space'],
+  ['instruments', 'Instruments'], ['voices', 'Voices & reactions'], ['weird', 'Weird & wacky'],
 ];
-export const MUSIC_CATS = [['happy', 'Happy'], ['calm', 'Calm'], ['worship', 'Worship & hymns'], ['adventure', 'Adventure'], ['lullaby', 'Lullaby'], ['funny', 'Funny'], ['jingles', 'Jingles & stingers']];
+export const MUSIC_CATS = [['happy', 'Happy kids'], ['calm', 'Calm'], ['lullaby', 'Bedtime'], ['worship', 'Worship & hymns'], ['adventure', 'Adventure'], ['funny', 'Funny'], ['suspense', 'Suspense & mystery'],
+  ['african', 'African'], ['holiday', 'Holiday'], ['jingles', 'Intros, outros & stingers']];
 let catalog = null;
 /** Load the catalogue (index + every pack manifest; small JSON files). */
 export function loadCatalog() {
@@ -22,7 +24,7 @@ export function loadCatalog() {
     const idx = await (await fetch(BASE + 'index.json')).json(), items = [], packs = [];
     await Promise.all(idx.packs.map(async p => { try {
       const m = await (await fetch(BASE + p.dir + '/pack.json')).json(); packs.push({ ...p, ...m, items: undefined });
-      for (const it of m.items) items.push({ id: p.dir + '/' + it.f, url: BASE + p.dir + '/' + it.f, name: it.n, cat: it.c, tags: it.t || [], dur: it.d, kind: m.kind || p.kind, pack: p.dir, author: it.a || m.author, license: it.l || m.license, src: it.s || m.source });
+      for (const it of m.items) items.push({ id: p.dir + '/' + it.f, url: BASE + p.dir + '/' + it.f, name: it.n, cat: it.c, tags: it.t || [], dur: it.d, kind: m.kind || p.kind, pack: p.dir, bpm: it.b || 0, meter: it.m || 4, beat0: it.o || 0, drops: it.dr || [], secs: it.sec || [], author: it.a || m.author, license: it.l || m.license, src: it.s || m.source });
     } catch (e) { console.warn('sound pack failed', p.dir, e); } }));
     items.sort((a, b) => a.name.localeCompare(b.name));
     return { packs, items };
@@ -34,7 +36,7 @@ const saveFavs = s => localStorage.setItem('studio.favSounds', JSON.stringify([.
 async function keepOffline(url) { try { const c = await caches.open(LIB_CACHE); if (!(await c.match(url))) { const r = await fetch(url); if (r.ok) await c.put(url, r); } } catch (e) {} }
 export function searchItems(items, { kind, cat, q, fav }) {
   const words = (q || '').toLowerCase().split(/\s+/).filter(Boolean), F = fav ? favs() : null;
-  return items.filter(it => it.kind === kind && (!cat || it.cat === cat) && (!F || F.has(it.id)) && words.every(w => it.name.toLowerCase().includes(w) || it.tags.some(t => t.includes(w)) || it.cat.includes(w)));
+  return items.filter(it => it.kind === kind && (!cat || it.cat === cat) && (!F || F.has(it.id)) && words.every(w => it.name.toLowerCase().includes(w) || it.tags.some(t => t.includes(w)) || it.cat.includes(w) || (it.bpm && w === it.bpm + 'bpm')));
 }
 const fmtD = d => d < 60 ? d.toFixed(1) + 's' : Math.floor(d / 60) + ':' + String(Math.round(d % 60)).padStart(2, '0');
 
@@ -56,7 +58,7 @@ export function soundsSheet(X, startKind = 'sfx') {
       ul.innerHTML = res.length ? '' : `<p class="hint">${fav ? 'No favourites yet — tap ☆ on a sound to keep it (also offline).' : 'No sounds found.'}</p>`;
       for (const it of res.slice(0, shown)) {
         const r = document.createElement('div'); r.className = 'snd'; r.dataset.id = it.id;
-        r.innerHTML = `<button class="ib sp" data-play="${it.id}" aria-label="Play">${icon(playing === it.id ? 'pause' : 'play', 16)}</button><span class="sn"><b>${it.name}</b><small>${fmtD(it.dur)} · ${(kind === 'music' ? MUSIC_CATS : SFX_CATS).find(c => c[0] === it.cat)?.[1] || it.cat}</small></span>` +
+        r.innerHTML = `<button class="ib sp" data-play="${it.id}" aria-label="Play">${icon(playing === it.id ? 'pause' : 'play', 16)}</button><span class="sn"><b>${it.name}</b><small>${fmtD(it.dur)} · ${(kind === 'music' ? MUSIC_CATS : SFX_CATS).find(c => c[0] === it.cat)?.[1] || it.cat}${it.bpm ? ` · ${it.bpm} BPM` : ''}</small></span>` +
           `<button class="ib sf${F.has(it.id) ? ' on' : ''}" data-fav="${it.id}" aria-label="Favourite">${icon('star', 16)}</button><button class="chipbtn sa" data-add="${it.id}">${icon('plus', 14)} Add</button>`;
         ul.append(r);
       }
@@ -70,7 +72,7 @@ export function soundsSheet(X, startKind = 'sfx') {
       if (fb) { const s = favs(), id = fb.dataset.fav; if (s.has(id)) s.delete(id); else { s.add(id); keepOffline(C.items.find(i => i.id === id).url); } saveFavs(s); fb.classList.toggle('on', s.has(id)); if (fav) list(); }
       if (ab) { const it = C.items.find(i => i.id === ab.dataset.add); ab.disabled = true; stop();
         try { const r = await fetch(it.url); if (!r.ok) throw new Error(r.status); const blob = await r.blob(); keepOffline(it.url);
-          await addSoundBlob(blob, it.name + '.' + it.url.split('.').pop(), P.t); X.timeline.render(); X.toast('Added ' + it.name); }
+          await addSoundBlob(blob, it.name + '.' + it.url.split('.').pop(), P.t, it.bpm ? { beat: { bpm: it.bpm, m: it.meter, o: it.beat0, ...(it.drops.length ? { dr: it.drops } : {}), ...(it.secs.length ? { sec: it.secs } : {}) } } : {}); X.timeline.render(); X.toast('Added ' + it.name); }
         catch (err) { console.warn(err); X.toast('Could not download this sound — check the internet connection'); }
         ab.disabled = false; }
     };

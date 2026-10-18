@@ -38,6 +38,30 @@ export function projectDuration(p) {
 }
 /** source time (seconds inside the media file) shown at timeline time t */
 export const srcTime = (c, t) => validCurve(c.curve) ? c.in + curveSrc(c.curve, c.out - c.in, clipDur(c), t - c.start) : c.in + (t - c.start) * c.speed;
+/** Beat grid of a library music clip (c.beat = {bpm, m: beats per bar, o: first beat in the file (s), dr: drops in the file (s), sec: [[section, start s]]}): the timeline time of
+    every beat inside the clip, [{t, down}] (down = first beat of a bar). Follows trims, speed and speed curves. */
+export function beatTimes(c, maxN = 3000) {
+  const b = c.beat; if (!b || !(b.bpm > 0) || !hasSource(c)) return [];
+  const spb = 60 / b.bpm, o = b.o || 0, m = b.m || 4, d = clipDur(c), out = [], isDown = k => ((k % m) + m) % m === 0;
+  if (!validCurve(c.curve)) {
+    const sp = c.speed || 1;
+    for (let k = Math.ceil((c.in - o) / spb - 1e-9); out.length < maxN; k++) { const t = c.start + (o + k * spb - c.in) / sp; if (t > c.start + d + 1e-6) break; if (t >= c.start - 1e-6) out.push({ t, down: isDown(k) }); }
+  } else {
+    const N = Math.min(6000, Math.ceil(d * 240)); let prev = Math.floor((srcTime(c, c.start) - o) / spb + 1e-9);
+    if (Math.abs((srcTime(c, c.start) - o) / spb - Math.round((srcTime(c, c.start) - o) / spb)) < 1e-6) out.push({ t: c.start, down: isDown(Math.round((srcTime(c, c.start) - o) / spb)) });
+    for (let i = 1; i <= N && out.length < maxN; i++) { const t = c.start + d * i / N, k = Math.floor((srcTime(c, t) - o) / spb + 1e-9); if (k !== prev) { out.push({ t, down: isDown(Math.max(k, prev)) }); prev = k; } }
+  }
+  return out;
+}
+/** Timeline times of a music clip's drops / big hits (c.beat.dr, file seconds), for cutting on the drop. */
+export function dropTimes(c) {
+  const dr = (c.beat && c.beat.dr) || []; if (!dr.length || !hasSource(c)) return [];
+  const d = clipDur(c), out = [];
+  if (!validCurve(c.curve)) { const sp = c.speed || 1; for (const x of dr) { const t = c.start + (x - c.in) / sp; if (t >= c.start - 1e-6 && t <= c.start + d + 1e-6) out.push(t); } return out; }
+  const N = Math.min(6000, Math.ceil(d * 240)); let prev = srcTime(c, c.start);
+  for (let i = 1; i <= N; i++) { const t = c.start + d * i / N, s = srcTime(c, t); for (const x of dr) if (x > prev - 1e-9 && x <= s + 1e-9 && !(i > 1 && x === prev)) out.push(t); prev = s; }
+  return out;
+}
 /** Playback speed at timeline time t (constant, or from the speed curve). */
 export const speedAt = (c, t) => validCurve(c.curve) ? c.speed * cvV(c.curve, Math.max(0, Math.min(1, (t - c.start) / clipDur(c)))) : c.speed;
 

@@ -3,7 +3,7 @@
 import { animSpans, loopKind } from './animations.js';
 import { S, live, begin, end, select } from './store.js';
 import { TRACK_KINDS } from './registry.js';
-import { clipDur, clipEnd, projectDuration, hasSource, reorder, moveTo, trim, find, kfTimes, fadeAt, MAX_FADE, srcTime } from './project.js';
+import { clipDur, clipEnd, projectDuration, hasSource, reorder, moveTo, trim, find, kfTimes, fadeAt, MAX_FADE, srcTime, beatTimes } from './project.js';
 import { propAt } from './registry.js';
 import { voiceFxById } from './audiofx.js';
 import { transitionById } from './transitions.js';
@@ -92,7 +92,7 @@ export class Timeline {
     const badges = [];
     if (c.type === 'text') badges.push(`<span class="ctext">${esc(c.text.content.split('\n')[0] || 'Text')}</span>`);
     else if (c.type === 'effect') { const e = c.effect && (c.effect.kind === 'filter' ? filterGL(c.effect.id) : effectById(c.effect.id)); badges.push(`<span class="ctext">${icon('effects', 12)} ${esc(e ? e.name : 'Effect')}</span>`); }
-    else if (c.type === 'audio') badges.push(`<span class="cname">${esc(rec ? rec.name : 'Audio')}</span>`);
+    else if (c.type === 'audio') badges.push(`<span class="cname">${esc(rec ? rec.name : 'Audio')}</span>`) && c.beat && badges.push(`<span class="spd bpm" title="Beat markers">♩${Math.round(c.beat.bpm)}</span>`);
     if (S.sel === c.id || c.type === 'video') badges.push(`<span class="dur">${fmtS(d)}</span>`);
     if (c.curve) badges.push(`<span class="spd">curve</span>`); else if (c.speed !== 1) badges.push(`<span class="spd">${c.speed}x</span>`);
     if (hasSource(c) && (c.volume === 0 || c.muteAudio)) badges.push(`<span class="spd">${icon('volume', 11)}✕</span>`);
@@ -121,11 +121,18 @@ export class Timeline {
     if (fo > 0) { ctx.beginPath(); ctx.moveTo(cw, y0); ctx.lineTo(cw - fo, y0); ctx.lineTo(cw, y0 + h); ctx.fill(); }
     if (line) { ctx.strokeStyle = '#ffd34d'; ctx.lineWidth = 1.5; ctx.beginPath(); for (let x = 0; x <= cw; x += 3) { const yy = y0 + h - 2 - Math.min(2, gAt(Math.min(x, cw - 0.01))) / 2 * (h - 4); x ? ctx.lineTo(x, yy) : ctx.moveTo(x, yy); } ctx.stroke(); }
   }
+  /** Beat markers of library music: a full-height line on each bar, a short tick on each beat. */
+  paintBeats(ctx, c, h, pps) {
+    const bt = beatTimes(c), sparse = bt.length > 1 && (bt[1].t - bt[0].t) * pps < 5;
+    for (const b of bt) { if (sparse && !b.down) continue; const x = Math.round((b.t - c.start) * pps);
+      ctx.fillStyle = b.down ? 'rgba(255,240,170,.9)' : 'rgba(255,255,255,.8)'; if (b.down) ctx.fillRect(x, 0, 1.5, h); else { ctx.fillRect(x, 0, 1.5, h * .3); ctx.fillRect(x, h * .7, 1.5, h * .3); } }
+  }
   paintClip(ctx, c, rec, cw, h, k) {
     const pps = this.pps * k;
     if (c.type === 'audio' || (c.type === 'video' && !rec.thumbBitmap && rec.peaks)) {
       ctx.fillStyle = '#1d6b57'; ctx.fillRect(0, 0, cw, h);
       this.paintWave(ctx, c, rec, cw, 0, h, pps, '#7ef0c8', c.type === 'audio');
+      if (c.beat) this.paintBeats(ctx, c, h, pps);
       return;
     }
     const bm = rec.thumbBitmap; if (!bm) { ctx.fillStyle = '#333'; ctx.fillRect(0, 0, cw, h); return; }
@@ -220,6 +227,7 @@ export class Timeline {
     } else {
       let s = Math.max(0, d.start0 + dt); const len = clipDur(f.clip), t = this.o.getTime();
       const snaps = [t, 0]; for (const tr of p.tracks) for (const c of tr.clips) if (c.id !== d.id) snaps.push(c.start, clipEnd(c));
+      for (const tr of p.tracks) for (const c of tr.clips) if (c.id !== d.id && c.beat) for (const b of beatTimes(c)) snaps.push(b.t);   // snap to the music's beats
       for (const x of snaps) { if (Math.abs(s - x) * pps < SNAP_PX) { s = x; break; } if (Math.abs(s + len - x) * pps < SNAP_PX) { s = x - len; break; } }
       d.target = s; const row = document.elementsFromPoint(d.x, d.y).map(n => n.closest && n.closest('.row')).find(r => r && r.dataset.track);
       d.targetTrack = row && find(p, d.id) && p.tracks.find(t => t.id === row.dataset.track && t.kind === d.kind) ? row.dataset.track : d.track;
