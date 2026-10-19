@@ -6,7 +6,8 @@
    - buildAd(): turns the plan into clips — Ken Burns on photos, transitions that END on the beat (the new shot is
      fully on screen exactly on the beat), accents on drops / downbeats, title + call to action, Emmavengers logo outro.
    Everything lands on the shared renderer, so preview == export. Shuffle = same choices with another seed. */
-import { newProject, newClip, addToKind, normalize, kenBurns, KEN_BURNS } from './project.js';
+import { kitActive, kitLogo, brandText, watermarkClip } from './brandkit.js';
+import { newProject, newClip, addToKind, normalize, kenBurns, KEN_BURNS, projectDuration } from './project.js';
 import { DEFAULT_TRANSFORM } from './registry.js';
 import { applyTitle } from './textstyles.js';
 import { MIN_TRANSITION } from './transitions.js';
@@ -152,6 +153,7 @@ export function bestSegment(stats, D, len, used = [], R = Math.random) {
  */
 export async function buildAd(X, o, onProgress = () => {}) {
   const st = adStyle(o.style), seed = o.seed || 1, R = rng(seed);
+  const kit = X.brandKit ? await X.brandKit() : null, useKit = kitActive(kit), kitLogoRec = useKit && kitLogo(kit) ? X.media.get(kitLogo(kit)) : null;   // Brand Kit: own logo, CTA, fonts, watermark
   const recs = o.items.map(id => X.media.get(id)).filter(Boolean); if (!recs.length) throw new Error('Pick some photos or videos first');
   const mus = o.music; if (!mus || !mus.beat || !(mus.beat.bpm > 0)) throw new Error('Pick a song with a beat');
   const mrec = mus.mediaId ? X.media.get(mus.mediaId) : await X.mediaFor(X, mus.url, mus.name ? mus.name + '.mp3' : undefined);
@@ -181,7 +183,7 @@ export async function buildAd(X, o, onProgress = () => {}) {
   }
   // outro: the Emmavengers logo
   if (plan.outro) {
-    const bg = await X.mediaFor(X, OUTRO_BG_URL, 'bg-outro.webp'), logo = await X.mediaFor(X, LOGO_URL, 'emma-logo.webp');
+    const bg = await X.mediaFor(X, OUTRO_BG_URL, 'bg-outro.webp'), logo = kitLogoRec || await X.mediaFor(X, LOGO_URL, 'emma-logo.webp');
     const seg = plan.outro[1] - plan.outro[0], tr = { id: st.outroTr || pick(R, ['zoomIn', 'starBurst', 'circle', 'flash']), dur: r6(Math.min(spb, .4 * seg, .4 * prevSeg)) };
     const oc = newClip('image', { mediaId: bg.id, dur: r6(seg + tr.dur), fit: 'cover' }); oc.transitionIn = tr.dur >= MIN_TRANSITION ? tr : null; oc.adCut = plan.outro[0]; oc.adOutro = true; main.clips.push(oc);
     normalize(p);
@@ -193,7 +195,7 @@ export async function buildAd(X, o, onProgress = () => {}) {
   }
   normalize(p);
   // words: title on the first shot, call to action before the outro
-  const title = (o.title ?? DEFAULT_TITLE).trim(), cta = (o.cta ?? DEFAULT_CTA).trim();
+  const title = (o.title ?? DEFAULT_TITLE).trim(), cta = (o.cta ?? (useKit && kit.cta && kit.cta[0]) ?? DEFAULT_CTA).trim();
   if (st.countdown) {
     const nums = plan.m >= 4 ? ['3', '2', '1', 'GO!'] : ['3', '2', '1'];
     nums.forEach((w, k) => { const t = newClip('text', { dur: r6(spb), transform: { ...DEFAULT_TRANSFORM }, text: { content: w } }); applyTitle(t, 'countdown', true); t.transform.y = .45; t.text.size = 260; addToKind(p, 'text', t, r6(k * spb));
@@ -219,6 +221,7 @@ export async function buildAd(X, o, onProgress = () => {}) {
   const b = mus.beat, a = newClip('audio', { mediaId: mrec.id, in: plan.S0, out: r6(Math.min((mrec.duration || 1e9), plan.S0 + plan.L)), volume: 1, fadeIn: 0, fadeOut: Math.min(1.5, plan.bar),
     beat: { bpm: b.bpm, m: b.m || 4, o: b.o || 0, ...(b.dr && b.dr.length ? { dr: b.dr } : {}), ...(b.sec && b.sec.length ? { sec: b.sec } : {}) } });
   addToKind(p, 'audio', a, 0);
+  if (useKit) { brandText(p, kit, { colors: false }); if (kit.watermark.on) { const wm = watermarkClip(p, kit, 0, plan.outro ? plan.outro[0] : projectDuration(p)); if (wm) addToKind(p, 'overlay', wm, 0); } p.brand = { applied: Date.now(), name: kit.name, ad: true }; }
   normalize(p); onProgress(1); return { project: p, plan };
 }
 /** Shot boundaries on the timeline: the time each main-track shot is fully on screen (end of its transition). */

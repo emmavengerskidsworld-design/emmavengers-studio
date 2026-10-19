@@ -64,7 +64,7 @@ const F = {
     for (let i = 0; i < v.n; i++) { let cx, cy; const s = u * (.012 + .012 * hash(i, 4)), rot = t * (3 + 5 * hash(i, 5)) + i, fl = Math.cos(t * (4 + 4 * hash(i, 6)) + i);
       if (v.burst) { const a = -Math.PI / 2 + (hash(i, 1) - .5) * 1.6, sp = H * (1.1 + .7 * hash(i, 2)), tt = t * .9; cx = W * .5 + Math.cos(a) * sp * tt * .45 + Math.sin(t * 2 + i) * u * .02; cy = H * 1.02 + Math.sin(a) * sp * tt + H * 1.2 * tt * tt; }
       else { cx = W * hash(i, v.seed) + Math.sin(t * 1.5 + i) * u * .04; cy = H * fract(hash(i, 3 + v.seed) + t * (.12 + .1 * hash(i, 7))) * 1.1 - H * .05; }
-      if (cy > H + s * 2 || cy < -H) continue; x.save(); x.translate(cx, cy); x.rotate(rot); x.scale(1, Math.max(.15, Math.abs(fl))); x.fillStyle = P[i % P.length];
+      if (cy > H + s * 2 || cy < -H) continue; x.save(); x.translate(cx, cy); x.rotate(rot); x.scale(1, Math.max(.15, Math.abs(fl))); x.fillStyle = (v.colorsOverride || P)[i % (v.colorsOverride || P).length];
       if (v.shape === 'circle' || (v.shape === 'mix' && i % 3 === 0)) { x.beginPath(); x.arc(0, 0, s * .6, 0, TAU); x.fill(); } else if (v.shape === 'star') star4(x, 0, 0, s); else x.fillRect(-s * .5, -s * .25, s, s * .5); x.restore(); } },
   frame(x, W, H, t, D, v) { const u = Math.min(W, H), m = u * v.m, P = PAL[v.pal];
     x.lineJoin = 'round';
@@ -127,6 +127,15 @@ const F = {
     x.globalCompositeOperation = 'source-over'; },
 };
 
+/* brand backgrounds (Brand Kit intros / outros): drawn in the kit's own colours (v.colors) */
+F.brand = (x, W, H, t, D, v) => { const P = v.colors && v.colors.length ? v.colors : PAL.warm, u = Math.min(W, H), m = Math.max(W, H);
+  const g = x.createLinearGradient(0, 0, W * Math.cos(t * .3), H); P.slice(0, 3).forEach((c, i, A) => g.addColorStop(A.length > 1 ? i / (A.length - 1) : 0, c)); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  if (v.kind === 'rays') { x.save(); x.translate(W / 2, H * .45); x.rotate(t * .25); x.fillStyle = 'rgba(255,255,255,.12)'; for (let i = 0; i < 12; i++) { x.rotate(TAU / 12); x.beginPath(); x.moveTo(0, 0); x.lineTo(m, -m * .13); x.lineTo(m, m * .13); x.fill(); } x.restore(); }
+  else if (v.kind === 'bubbles') { for (let i = 0; i < 18; i++) { const r = u * (.04 + .1 * hash(i, 3)), cy = H * (1.15 - fract(hash(i, 1) + t * (.05 + .06 * hash(i, 2))) * 1.3); x.fillStyle = rgba(P[(i + 1) % P.length], .35); x.beginPath(); x.arc(W * hash(i, 4), cy, r, 0, TAU); x.fill(); } }
+  else if (v.kind === 'confetti') F.confetti(x, W, H, t, D, { pal: 'rainbow', n: 70, shape: 'mix', seed: 3, colorsOverride: P });
+  else { for (let i = 0; i < 3; i++) glow(x, W * (.5 + .4 * Math.sin(t * .6 + i * 2.1)), H * (.5 + .35 * Math.cos(t * .5 + i)), m * .5, '#ffffff', .12); } };
+export const BRAND_ELEMENTS = ['sweep', 'rays', 'bubbles', 'confetti'].map((kind, i) => ({ id: 'brand-' + (i + 1), cat: 'brand', name: 'Brand ' + kind, blend: 'normal', dur: 3, v: { kind, seed: 900 + i } }));
+
 /* ---------- the library (176 elements) ---------- */
 export const ELEMENT_CATS = [
   ['leak', 'Light leaks'], ['bokeh', 'Bokeh'], ['smoke', 'Smoke & fog'], ['dust', 'Dust & film'], ['burn', 'Film burns'], ['sparkle', 'Sparkles'], ['rain', 'Rain'], ['snow', 'Snow'],
@@ -168,11 +177,11 @@ g('WOW burst', { kind: 'burst', label: 'WOW!', col: '#ff3b8b' }); g('NEW burst',
 [[24, 14, 0], [40, 24, 1], [12, 10, 0], [60, 30, 1], [18, 18, 1], [30, 40, 0]].forEach(([rate, n, scan], i) => add('glitch', `Glitch bars ${i + 1}`, 'screen', 3, { rate, n, scan: !!scan }));
 
 export const ELEMENTS = L;
-export const elementById = id => L.find(e => e.id === id) || null;
+export const elementById = id => L.find(e => e.id === id) || BRAND_ELEMENTS.find(e => e.id === id) || null;
 /** Draw element `id` at local time t (seconds) for a clip that lasts D seconds into a W x H context. */
-export function drawElement(x, W, H, id, t, D) {
+export function drawElement(x, W, H, id, t, D, over = null) {
   const e = elementById(id); if (!e) return false;
   x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.filter = 'none'; x.clearRect(0, 0, W, H);
-  try { F[e.cat](x, W, H, Math.max(0, t), Math.max(.1, D || e.dur), e.v); } finally { x.restore(); }
+  try { F[e.cat](x, W, H, Math.max(0, t), Math.max(.1, D || e.dur), over ? { ...e.v, ...over } : e.v); } finally { x.restore(); }
   return true;
 }

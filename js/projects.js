@@ -5,6 +5,7 @@ import * as db from './db.js';
 import { S, save, openProject } from './store.js';
 import { newProject, normalize, projectDuration, mediaIds, uid } from './project.js';
 import { useMedia, gcMedia, backfillHashes, media } from './media.js';
+import { kitMediaIds } from './brandkit.js';
 
 const THUMB = id => 'thumb:' + id, MIGRATED = 'projectsV';
 export const projectMeta = p => ({ id: p.id, name: p.name || 'My video', aspect: p.aspect || '9:16', created: p.created || 0, updated: p.updated || p.created || 0,
@@ -63,7 +64,8 @@ export async function deleteProject(id) {
 export async function usedMedia() {
   const used = new Set(); for (const p of await db.all('projects')) for (const id of mediaIds(normalize(p))) used.add(id);
   if (S.project) for (const id of mediaIds(S.project)) used.add(id);
-  for (const id of media.keys()) used.add(id);   // loaded this session: undo can still bring a deleted clip back
+  for (const id of media.keys()) used.add(id);
+  for (const id of kitMediaIds()) used.add(id);   // Brand Kit logos are kept even when no project uses them   // loaded this session: undo can still bring a deleted clip back
   return used;
 }
 /** Remove files no project uses; merge files stored twice (same content) into one. */

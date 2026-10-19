@@ -92,6 +92,8 @@ export const once = (el, ev, ms = 8000) => new Promise((res, rej) => {
 
 /** Make exactly these media ids available (the open project): loads the missing ones from storage and lets go of
     the others (they stay stored for the other projects). */
+/** Load some stored media without unloading anything (Brand Kit logos). */
+export async function loadMedia(ids) { for (const id of ids) { if (media.has(id)) continue; const rec = await db.get('media', id); if (!rec) continue; try { await hydrateStored(rec); } catch (e) { console.warn('media load failed', rec.name, e); } } }
 export async function useMedia(keep) {
   for (const [id, r] of [...media]) if (!keep.has(id)) unload(r);
   for (const id of keep) {

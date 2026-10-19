@@ -2,6 +2,7 @@
    detected, with tap tempo as a fallback), shape, length and words -> a normal project. */
 import { openSheet, closeSheet, chips } from './panels.js';
 import { icon } from './icons.js';
+import { getKit, kitActive } from './brandkit.js';
 import { AD_STYLES, AD_LENGTHS, adStyle, buildAd, DEFAULT_TITLE, DEFAULT_CTA } from './admaker.js';
 import { detectBeats, TapTempo } from './beats.js';
 import { loadCatalog } from './library.js';
@@ -13,7 +14,7 @@ export const libBeat = it => ({ bpm: it.bpm, m: it.meter || 4, o: it.beat0 || 0,
 
 export function adSheet(X, preset) {
   const last = JSON.parse(localStorage.getItem(KEY) || '{}');
-  const s = window.__adState = preset ? JSON.parse(JSON.stringify(preset)) : { items: [], music: null, style: last.style || 'promo', aspect: last.aspect || '9:16', length: last.length || 30, title: DEFAULT_TITLE, cta: DEFAULT_CTA, logo: true, seed: 1 };
+  const s = window.__adState = preset ? JSON.parse(JSON.stringify(preset)) : { items: [], music: null, style: last.style || 'promo', aspect: last.aspect || '9:16', length: last.length || 30, title: kitActive(getKit()) && getKit().name ? getKit().name : DEFAULT_TITLE, cta: kitActive(getKit()) && getKit().cta[0] ? getKit().cta[0] : DEFAULT_CTA, logo: true, seed: 1 };   // Brand Kit fills in the words
   let audio = null, playing = null, cat = null, q = '', detected = null; const tt = new TapTempo();
   const stop = () => { if (audio) { audio.pause(); audio = null; } playing = null; };
   openSheet('Beat Ad Maker', async body => {

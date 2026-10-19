@@ -38,7 +38,7 @@ function drawCompound(cx, W, H, clip, tr, local, t, getSource, opts) {
 const elL = [];
 function drawElementClip(cx, W, H, clip, tr, local, opts) {
   let L = elL[nestDepth]; if (!L || L.width !== W || L.height !== H) L = elL[nestDepth] = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(W, H) : Object.assign(document.createElement('canvas'), { width: W, height: H });
-  if (!drawElement(L.getContext('2d'), W, H, clip.element && clip.element.id, local * (clip.speed || 1), clipDur(clip) * (clip.speed || 1))) return null;
+  if (!drawElement(L.getContext('2d'), W, H, clip.element && clip.element.id, local * (clip.speed || 1), clipDur(clip) * (clip.speed || 1), clip.element && clip.element.colors ? { colors: clip.element.colors } : null)) return null;
   return drawVisual(cx, W, H, { img: L, w: W, h: H, rot: 0 }, clip, tr, local, opts);
 }
 export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
