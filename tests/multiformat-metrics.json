@@ -5,13 +5,13 @@
   126.9521875,
   73.6214453125
  ],
- "queue_secs": 82.7,
+ "queue_secs": 74.9,
  "parity": {
   "youtube@1.0": 1.86,
   "youtube@2.0": 1.85,
   "shorts@1.0": 1.45,
   "shorts@2.0": 1.42,
-  "igpost@1.0": 2.08,
+  "igpost@1.0": 2.09,
   "igpost@2.0": 1.54
  },
  "mbps": {
