@@ -225,13 +225,17 @@ OpenGameArt.org: a page was used only when its licence field lists exactly one l
 
 ## Stickers (lib/stickers/)
 
-527 stickers, listed with a licence key per sticker in lib/stickers/index.json (built by tools/stickers/build_library.py).
+1201 stickers, listed with a licence key per sticker in lib/stickers/index.json (built by tools/stickers/build_library.py).
 
 | Set | Stickers | Licence | Source |
 |---|---|---|---|
 | Emmavengers art (characters, animals, house items, letters, food, places, flags) | 164 | Emmavengers original art, © Cletus Emmanuel. All rights reserved; used in this app with the owner’s permission. Not open-licensed. | Cut out of the Emmavengers House game pictures (img/pNN scenes and letter / character art) by tools/stickers/build_emma.py (background removal with rembg, then cleanup). The game repository is only read, never changed. |
 | Google Noto Emoji, 3D set | 273 | Apache License 2.0 (see note) | https://github.com/googlefonts/noto-emoji/tree/main/3D/png, resized to 256 px WebP by tools/stickers/fetch_emoji.py |
 | Emmavengers Studio designs (arrows, stars, hearts, sparkles, frames, speech bubbles, shapes, 3D numbers and signs) | 90 | CC0-1.0 | Our own SVG drawings in tools/stickers/make_art.py. The 3D numbers are drawn with the bundled Luckiest Guy font (Apache-2.0), which allows this. |
+| Google Noto Emoji, 3D set — round 2 (Batch 12): kids categories School, Bible & faith, Animal friends, Food, Space, Sports, Weather, Holidays, Feelings | 375 | Apache License 2.0 (same source and note as above) | Same repository, fetched by tools/stickers/fetch_emoji2.py (256 px WebP); skips everything already in the first set |
+| Emmavengers Studio designs — round 2 (Batch 12): word badges (school, Bible & faith, feelings, holidays, sports, space, weather, animal sounds), 3D letters A–Z / a–z, numbers 10–20, colour variants of our shapes, crosses and badges | 299 | CC0-1.0 | tools/stickers/make_art2.py. Words and letters are drawn by Studio's own text engine and text styles in bundled fonts (Luckiest Guy Apache-2.0; Fredoka, Titan One, Bangers, Lilita One OFL-1.1 — both licences allow using the fonts to make pictures). Shapes are our own SVG maths. |
+
+Sticker licence totals: Apache-2.0 Noto 3D 648 · CC0 own designs 389 · Emmavengers art 164. No CC-BY (attribution-required) art is used anywhere.
 
 Noto Emoji note: the noto-emoji README says the tools and most image resources are under Apache License 2.0, the emoji fonts are under SIL OFL 1.1, and the flag images come from region-flags (public domain). Since July 2024 the repository’s top-level LICENSE file contains the OFL text. Both licences allow bundling and commercial use, including monetised videos. All three texts ship in lib/stickers/emoji/: LICENSE-Apache-2.0.txt, LICENSE-OFL-1.1.txt and LICENSE-region-flags.txt.
 
@@ -242,6 +246,16 @@ Built by tools/templates/build_assets.py. The 9 backgrounds (sky, sunbursts, nig
 ## Effects, filters, text styles, titles and templates
 
 The effects (WebGL shaders in js/effects.js), filters (colour grades in js/filterdefs.js), text styles, bubbles, title presets and caption styles are all our own designs and code, under CC0-1.0. Nothing in them is copied from another editor.
+
+Batch 12 round 2: 160 effects (js/effects.js + js/effects2.js: kids particles, frames & windows, light & colour, distort, art, retro), 122 filters (js/filterdefs.js + js/filterdefs2.js: kids, holidays, places, film, faith, B&W, basic) and 125 text styles (js/textstyles.js + js/textstyles2.js: themed school / Bible / animals / food / space / sports / weather / holidays / feelings) — all our own code and designs, CC0-1.0.
+
+## Bible verse text (js/kids.js)
+
+The 50 verse cards use the King James Version (Authorized Version, 1769 Oxford text). It is in the public domain everywhere except the United Kingdom, where the Crown's letters patent cover printing; reproducing short verses in videos is generally accepted there too, but UK publishers who want to be strict can paste World English Bible (WEB, public domain worldwide) text into the card's verse box instead. Cards marked "part" show part of a verse.
+
+## Kids maker sounds
+
+Quiz, counting and ABC builders use sounds from the Emmavengers Originals sound pack (CC0-1.0, listed above): pop, select-blip, xylophone notes, ta-da, chimes.
 
 ## Fonts (lib/fonts/)
 

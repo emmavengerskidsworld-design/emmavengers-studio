@@ -18,7 +18,8 @@ export function ensureFont(id) {
   state.set(id, p); return p;
 }
 /** Every bundled font a project uses (text + captions). */
-export const projectFonts = p => [...new Set(p.tracks.flatMap(t => t.clips.filter(c => c.type === 'text').map(c => c.text.font)))].filter(id => BUNDLED.has(id));
+const textFonts = tracks => (tracks || []).flatMap(t => t.clips.flatMap(c => c.type === 'text' ? [c.text.font] : c.type === 'compound' && c.inner ? textFonts(c.inner.tracks) : []));   // compounds too (brand intro, kids cards)
+export const projectFonts = p => [...new Set(textFonts(p.tracks))].filter(id => BUNDLED.has(id));
 import { ensureLuts } from './colorpro.js';
 /** Fonts + colour LUTs a project needs (called before preview, stills and export). */
 export const ensureProjectFonts = p => Promise.all([...projectFonts(p).map(ensureFont), ensureLuts(p)]);

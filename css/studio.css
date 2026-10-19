@@ -472,3 +472,11 @@ body.in-nest #timeline{box-shadow:inset 0 0 0 2px #4fe3ff66}
 .mfrow .bar { display: block; height: 6px; border-radius: 3px; background: rgba(255,255,255,.12); overflow: hidden; }
 .mfrow .bar u { display: block; height: 100%; background: linear-gradient(90deg,#7c4dff,#ff4081); transition: width .2s; }
 .mfrow.done .st { color: #7fff9a; } .mfrow.failed .st { color: #ff6b6b; }
+/* ---- Batch 12: kids maker ---- */
+.kmprev { display: block; margin: 6px auto 10px; border-radius: 10px; background: #000; box-shadow: 0 2px 12px rgba(0,0,0,.4); }
+.kmin { width: 100%; box-sizing: border-box; margin: 4px 0; padding: 9px 11px; border-radius: 10px; border: 1px solid rgba(255,255,255,.15); background: rgba(255,255,255,.06); color: inherit; font: inherit; }
+.kvlist { display: grid; gap: 4px; max-height: 210px; overflow: auto; margin: 4px 0; }
+.kv { text-align: left; padding: 7px 10px; border-radius: 10px; border: 0; background: rgba(255,255,255,.06); color: inherit; font: inherit; }
+.kv.on { background: rgba(255,210,63,.22); outline: 1.5px solid #ffd23f; } .kv small { opacity: .7; }
+.kqa { display: grid; gap: 2px; } .kqa label { display: grid; grid-template-columns: 22px 1fr; align-items: center; gap: 6px; }
+.kmchk { display: flex; gap: 8px; align-items: center; margin: 8px 0; } .kmerr { color: #ff6b6b; display: block; min-height: 1em; }

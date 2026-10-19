@@ -5,6 +5,7 @@
    Use: applyChain(src, w, h, [{ kind: 'filter'|'effect', id, amount, t, dur, seed }]) -> canvas (premultiplied RGBA) or null.
    Effects can sit on an Effects track (applied to everything under them) or on one clip. */
 import { FILTER_DEFS } from './filterdefs.js';
+import { EFFECTS2, EFFECT_CATS2 } from './effects2.js';
 export { FILTER_DEFS };
 
 const VS = `#version 300 es
@@ -271,6 +272,7 @@ export const EFFECTS = [
   fx('emboss', 'Emboss', 'art', `vec4 fx(vec2 u){ vec4 c = src(u); vec2 px = 1.5 / R; float e = lum(src(u - px).rgb) - lum(src(u + px).rgb); vec3 r = vec3(.5 + e * 2.) * vec3(1., .97, .92); return vec4(mix(unpm(c), clamp(r, 0., 1.), A) * c.a, c.a); }`),
   fx('thermal', 'Heat vision', 'art', `vec4 fx(vec2 u){ vec4 c = src(u); float l = lum(unpm(c)); vec3 r = l < .33 ? mix(vec3(0., 0., .4), vec3(.6, 0., .8), l * 3.) : l < .66 ? mix(vec3(.6, 0., .8), vec3(1., .5, 0.), (l - .33) * 3.) : mix(vec3(1., .5, 0.), vec3(1., 1., .6), (l - .66) * 3.); return vec4(mix(unpm(c), r, A) * c.a, c.a); }`),
 ];
+EFFECTS.push(...EFFECTS2); EFFECT_CATS.push(...EFFECT_CATS2);   // Batch 12: round-2 library (js/effects2.js)
 export const effectById = id => EFFECTS.find(e => e.id === id);
 export const filterGL = id => FILTER_DEFS.find(f => f.id === id);
 export const DEFAULT_EFFECT_AMOUNT = 0.8;

@@ -3,6 +3,7 @@
      color, outline + outlineColor + outlineW (em), fill {colors, dir: 'v'|'h'|'d'|'letters'}, stroke2 {color, w} (outer outline),
      shadow {color, dx, dy, blur}, glow {color, blur}, extrude {color, depth, angle} (3D), gloss (shine on the top half),
      bubble (background shape) + boxColor + bubbleBorder {color, w}. Sizes are in em (fraction of the font size). */
+import { TEXT_STYLES2 } from './textstyles2.js';
 export const STYLE_KEYS = ['color', 'outline', 'outlineColor', 'outlineW', 'fill', 'stroke2', 'shadow', 'glow', 'extrude', 'gloss', 'box', 'bubble', 'boxColor', 'bubbleBorder'];
 export const STYLE_DEFAULTS = { color: '#ffffff', outline: false, outlineColor: '#000000', outlineW: 0.14, fill: null, stroke2: null, shadow: null, glow: null, extrude: null, gloss: false, box: false, bubble: null, boxColor: '#000000', bubbleBorder: null };
 const RAINBOW = ['#ff4d4d', '#ff9f1c', '#ffe600', '#3ddc84', '#1fb6ff', '#a259ff'];
@@ -71,6 +72,7 @@ export const TEXT_STYLES = [
   { id: 'stickerLabel', name: 'Sticker label', s: bub('sticker', '#ffffff', '#1b1b2f') },
   { id: 'slant', name: 'Slant label', s: bub('label', '#1fb6ff', '#ffffff') },
 ];
+TEXT_STYLES.push(...TEXT_STYLES2);   // Batch 12: round-2 styles (js/textstyles2.js)
 export const styleById = id => TEXT_STYLES.find(s => s.id === id);
 /** Put a style preset on a text object (resets every style field first, so presets never mix by accident). */
 export function applyStyle(text, id) {

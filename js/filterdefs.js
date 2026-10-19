@@ -2,6 +2,7 @@
    ex exposure (stops), con contrast, sat saturation, vib vibrance, temp warm(+)/cool(-), tnt tint, hue (deg), fade (lifted blacks),
    lift / gam / gain (per channel), split toning (shc shadows colour, hic highlights colour), bw black & white (+ bwt tint), vig vignette, cross (cross-process).
    The first seven ids are the old filter ids, so older projects keep their look names. */
+import { FILTER_DEFS2, FILTER_CATS2 } from './filterdefs2.js';
 const F = (id, name, cat, p) => ({ id, name, cat, p });
 export const FILTER_CATS = [['basic', 'Basic'], ['kids', 'Kids'], ['warm', 'Warm'], ['cool', 'Cool'], ['film', 'Film'], ['bw', 'B&W'], ['mood', 'Mood']];
 export const FILTER_DEFS = [
@@ -58,3 +59,4 @@ export const FILTER_DEFS = [
   F('hdr', 'HDR look', 'basic', { con: 1.2, vib: .6, lift: [.04, .04, .04], gain: [.97, .97, .97] }),
   F('lowsat', 'Muted', 'basic', { sat: .55, con: 1.02 }),
 ];
+FILTER_DEFS.push(...FILTER_DEFS2); FILTER_CATS.push(...FILTER_CATS2);   // Batch 12: round-2 grades (js/filterdefs2.js)

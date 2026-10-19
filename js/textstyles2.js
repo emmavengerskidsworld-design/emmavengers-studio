@@ -1,0 +1,82 @@
+/* Text styles round 2 (Batch 12): 66 more of our own looks (same keys as textstyles.js), with kid themes:
+   school, Bible, animals, food, space, sports, weather, holidays, feelings. */
+const d3 = (top, bot, line, side, extra = {}) => ({ color: top, fill: { colors: [top, bot], dir: 'v' }, outline: true, outlineColor: line, outlineW: 0.1, extrude: { color: side, depth: 0.12, angle: 90 }, gloss: true, ...extra });
+const neon = (c, core = '#ffffff') => ({ color: core, outline: true, outlineColor: c, outlineW: 0.05, glow: { color: c, blur: 0.55 } });
+const sticker = (fill, line, edge = '#ffffff') => ({ color: fill, outline: true, outlineColor: line, outlineW: 0.12, stroke2: { color: edge, w: 0.12 }, shadow: { color: 'rgba(0,0,0,.45)', dx: 0, dy: 0.06, blur: 0.12 } });
+const bub = (shape, bg, color, extra = {}) => ({ color, bubble: shape, box: true, boxColor: bg, ...extra });
+const grad = (colors, dir, line, extra = {}) => ({ color: colors[0], fill: { colors, dir }, outline: true, outlineColor: line, outlineW: 0.09, ...extra });
+const S = (id, name, s) => ({ id, name, s });
+export const TEXT_STYLES2 = [
+  // more 3D
+  S('orange3d', 'Orange 3D', d3('#ffd08a', '#ff7a00', '#4a2000', '#9a4300')),
+  S('teal3d', 'Teal 3D', d3('#9ff5e8', '#00b3a4', '#003d38', '#00665d')),
+  S('lemon3d', 'Lemon 3D', d3('#fff9a8', '#f5d300', '#4a3d00', '#8c7400')),
+  S('navy3d', 'Navy 3D', d3('#c7d6ff', '#3354d1', '#060f3a', '#0f1f66')),
+  S('coral3d', 'Coral 3D', d3('#ffd0c2', '#ff6f59', '#4d140b', '#992a1a')),
+  S('lime3d', 'Lime 3D', d3('#eaffb0', '#8bdc1a', '#203d00', '#3f7300')),
+  S('rose3d', 'Rose 3D', d3('#ffe0ea', '#ff7aa8', '#4d0b22', '#a3305a')),
+  S('choc3d', 'Cocoa 3D', d3('#e8c39e', '#9c6233', '#2b1405', '#5a3010')),
+  S('black3d', 'Shadow 3D', d3('#6b6b80', '#1b1b2f', '#ffffff', '#000000')),
+  S('rainbow3d', 'Rainbow 3D', { ...d3('#ff4d4d', '#a259ff', '#1b1b2f', '#1b1b2f'), fill: { colors: ['#ff4d4d', '#ffe600', '#3ddc84', '#1fb6ff', '#a259ff'], dir: 'h' } }),
+  // more neon
+  S('neonOrange', 'Neon orange', neon('#ff8a00')),
+  S('neonRed', 'Neon red', neon('#ff2d55')),
+  S('neonCyan', 'Neon cyan', neon('#00f0ff')),
+  S('neonLime', 'Neon lime', neon('#b6ff00')),
+  S('neonWhite', 'Neon white', neon('#ffffff', '#e6f7ff')),
+  S('neonDuo', 'Neon duo', { ...neon('#ff3fb4'), color: '#7df9ff' }),
+  // more stickers
+  S('stickerPink', 'Pink sticker', sticker('#ff7ac8', '#7a0b45')),
+  S('stickerPurple', 'Purple sticker', sticker('#b14dff', '#2a0b52')),
+  S('stickerOrange', 'Orange sticker', sticker('#ff9f1c', '#5a2d0c')),
+  S('stickerWhite', 'White sticker', sticker('#ffffff', '#1b1b2f', '#1fb6ff')),
+  S('stickerBlack', 'Black sticker', sticker('#1b1b2f', '#1b1b2f', '#ffe600')),
+  S('stickerMint', 'Mint sticker', sticker('#9ff5d0', '#0d5c46')),
+  S('stickerSky', 'Sky sticker', sticker('#8fe3ff', '#0b2a66', '#ffe14d')),
+  S('stickerRed', 'Red & gold sticker', sticker('#e01e37', '#4a0710', '#ffd23f')),
+  // labels / bubbles
+  S('labelPink', 'Pink label', bub('box', '#ff4fa3', '#ffffff')),
+  S('labelBlue', 'Blue label', bub('box', '#1f7bff', '#ffffff')),
+  S('labelWhite', 'White label', bub('box', '#ffffff', '#1b1b2f')),
+  S('pillPurple', 'Purple pill', bub('pill', '#8a3ffc', '#ffffff')),
+  S('pillGreen', 'Green pill', bub('pill', '#2fb54a', '#ffffff')),
+  S('pillRed', 'Red pill', bub('pill', '#e01e37', '#ffe600')),
+  S('speechYellow', 'Yellow speech', bub('speech', '#ffe600', '#1b1b2f', { bubbleBorder: { color: '#1b1b2f', w: 0.08 } })),
+  S('speechBlue', 'Blue speech', bub('speech', '#8fe3ff', '#0b2a66', { bubbleBorder: { color: '#0b2a66', w: 0.08 } })),
+  S('thoughtPink', 'Pink thought', bub('thought', '#ffc2e2', '#5c0b33', { bubbleBorder: { color: '#a2186e', w: 0.06 } })),
+  S('burstRed', 'Red burst', bub('burst', '#e01e37', '#ffe600', { bubbleBorder: { color: '#ffe600', w: 0.06 }, outline: true, outlineColor: '#4a0710', outlineW: 0.08 })),
+  S('ribbonBlue', 'Blue ribbon', bub('banner', '#1f7bff', '#ffffff', { bubbleBorder: { color: '#0b2a66', w: 0.05 } })),
+  S('tagPink', 'Pink tag', bub('tag', '#ff4fa3', '#ffffff', { bubbleBorder: { color: '#7a0b45', w: 0.05 } })),
+  // themes: school / Bible / animals / food / space / sports / weather / holidays / feelings
+  S('chalkboard', 'School chalk', bub('box', '#1f4d36', '#f6f3e4', { shadow: { color: 'rgba(255,255,255,.4)', dx: 0.02, dy: 0.02, blur: 0.2 } })),
+  S('pencil', 'Pencil', grad(['#ffcc33', '#ff9f1c'], 'v', '#3a2a10', { stroke2: { color: '#ff7aa8', w: 0.06 } })),
+  S('crayon', 'Crayon', { color: '#e01e37', outline: true, outlineColor: '#ffe600', outlineW: 0.06, shadow: { color: '#1f7bff', dx: 0.04, dy: 0.04, blur: 0 } }),
+  S('scripture', 'Scripture gold', grad(['#fff6c2', '#e3b341', '#9a6a00'], 'v', '#3d2600', { glow: { color: '#ffdd88', blur: 0.35 } })),
+  S('heavenly', 'Heavenly', { color: '#ffffff', glow: { color: '#ffe9a8', blur: 0.7 }, outline: true, outlineColor: '#f2c14e', outlineW: 0.04 }),
+  S('parchment', 'Parchment', bub('box', '#f3e2b8', '#5a3a12', { bubbleBorder: { color: '#a07a3a', w: 0.05 } })),
+  S('royal', 'Royal purple', grad(['#d9b3ff', '#6a1fb8'], 'v', '#ffd23f', { outlineW: 0.08, extrude: { color: '#2a0b52', depth: 0.08, angle: 90 } })),
+  S('jungle', 'Jungle', grad(['#d4ff6b', '#2fb54a', '#0b5c1a'], 'v', '#2b1405', { extrude: { color: '#123d14', depth: 0.08, angle: 90 } })),
+  S('tiger', 'Tiger', grad(['#ffb347', '#1b1b2f', '#ffb347', '#1b1b2f', '#ffb347'], 'h', '#ffffff')),
+  S('zebra', 'Zebra', grad(['#ffffff', '#111111', '#ffffff', '#111111', '#ffffff'], 'h', '#ff4fa3')),
+  S('strawberry', 'Strawberry', grad(['#ff8a9a', '#e01e37'], 'v', '#2fb54a', { stroke2: { color: '#ffffff', w: 0.06 } })),
+  S('watermelon', 'Watermelon', grad(['#ff5c7a', '#ff5c7a', '#ffffff', '#2fb54a'], 'v', '#145c33')),
+  S('lemonade', 'Lemonade', grad(['#fffbd0', '#ffe14d'], 'v', '#e6a800', { glow: { color: '#fff36b', blur: 0.3 } })),
+  S('icecream', 'Ice cream', grad(['#ffe4f1', '#d6f5ff', '#fff6c2'], 'v', '#8b5a2b', { outlineW: 0.12 })),
+  S('space', 'Outer space', grad(['#1b1b5a', '#7b2ff7', '#00f0ff'], 'v', '#ffffff', { glow: { color: '#7b2ff7', blur: 0.45 } })),
+  S('planet', 'Planet', grad(['#ffb347', '#ff6f59', '#b14dff'], 'd', '#1b1b2f', { extrude: { color: '#1b1b2f', depth: 0.08, angle: 60 } })),
+  S('rocket', 'Rocket', grad(['#ffffff', '#c7d6ff'], 'v', '#e01e37', { outlineW: 0.12, shadow: { color: '#ff8a00', dx: 0, dy: 0.1, blur: 0.25 } })),
+  S('sporty', 'Sporty', { color: '#ffffff', outline: true, outlineColor: '#1f7bff', outlineW: 0.12, extrude: { color: '#e01e37', depth: 0.1, angle: 30 } }),
+  S('trophy', 'Trophy', grad(['#fff6c2', '#ffd23f', '#b07800'], 'h', '#3d2600', { extrude: { color: '#5a3a00', depth: 0.1, angle: 90 }, gloss: true })),
+  S('team', 'Team green', { color: '#ffffff', outline: true, outlineColor: '#145c33', outlineW: 0.14, stroke2: { color: '#ffe600', w: 0.06 } }),
+  S('sunny', 'Sunny', grad(['#fff36b', '#ff9f1c'], 'v', '#ffffff', { glow: { color: '#ffb300', blur: 0.4 } })),
+  S('rainy', 'Rainy day', grad(['#d6f5ff', '#5aa9e6'], 'v', '#0b2a66', { shadow: { color: 'rgba(11,42,102,.5)', dx: 0, dy: 0.08, blur: 0.15 } })),
+  S('snowy', 'Snowy', { color: '#ffffff', outline: true, outlineColor: '#9bd4ff', outlineW: 0.12, glow: { color: '#d6f5ff', blur: 0.4 } }),
+  S('christmas', 'Christmas', grad(['#e01e37', '#ffffff', '#e01e37', '#ffffff'], 'letters', '#145c33', { outlineW: 0.12 })),
+  S('halloween', 'Halloween', grad(['#ff9f1c', '#ff5c00'], 'v', '#1b1b2f', { glow: { color: '#b14dff', blur: 0.4 } })),
+  S('easter', 'Easter', grad(['#ffc2e2', '#fff6c2', '#d6f5ff', '#d4ffd6'], 'letters', '#8a3ffc')),
+  S('birthday', 'Birthday', grad(['#ff4fa3', '#ffe600', '#1fb6ff', '#3ddc84'], 'letters', '#ffffff', { outlineW: 0.12, shadow: { color: 'rgba(0,0,0,.45)', dx: 0, dy: 0.06, blur: 0.1 } })),
+  S('happy', 'Happy', grad(['#ffe600', '#ffb300'], 'v', '#ff4d4d', { outlineW: 0.12, stroke2: { color: '#ffffff', w: 0.06 } })),
+  S('calm', 'Calm', { color: '#d6f0ff', shadow: { color: 'rgba(31,123,255,.6)', dx: 0, dy: 0.03, blur: 0.35 } }),
+  S('love', 'Love', grad(['#ffc2e2', '#ff2d55'], 'v', '#ffffff', { glow: { color: '#ff7aa8', blur: 0.35 } })),
+  S('wow', 'Wow!', { color: '#ffffff', outline: true, outlineColor: '#e01e37', outlineW: 0.14, extrude: { color: '#ffe600', depth: 0.14, angle: 120 } }),
+];

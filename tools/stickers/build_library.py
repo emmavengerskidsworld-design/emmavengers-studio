@@ -7,6 +7,8 @@ CATS = [  # id, name, group
     ('emma-characters', 'Emma kids', 'emma'), ('emma-animals', 'Animals', 'emma'), ('emma-house', 'Things', 'emma'), ('emma-letters', 'Letters', 'emma'),
     ('numbers', 'Numbers', 'emma'), ('flags', 'Flags', 'emma'), ('emma-food', 'African food', 'emma'), ('emma-places', 'Places', 'emma'),
     ('emoji-faces', 'Faces', 'emoji'), ('emoji-animals', 'Emoji animals', 'emoji'), ('emoji-food', 'Yummy', 'emoji'), ('emoji-nature', 'Nature', 'emoji'), ('emoji-fun', 'Fun & toys', 'emoji'), ('emoji-symbols', 'Hearts & symbols', 'emoji'),
+    ('kids-school', 'School', 'kids'), ('kids-bible', 'Bible & faith', 'kids'), ('kids-animals', 'Animal friends', 'kids'), ('kids-food', 'Food', 'kids'), ('kids-space', 'Space', 'kids'),
+    ('kids-sports', 'Sports', 'kids'), ('kids-weather', 'Weather', 'kids'), ('kids-holidays', 'Holidays', 'kids'), ('kids-feelings', 'Feelings', 'kids'), ('abc', 'ABC', 'kids'),
     ('stars', 'Stars & hearts', 'shapes'), ('arrows', 'Arrows', 'shapes'), ('bubbles', 'Speech bubbles', 'shapes'), ('frames', 'Frames', 'shapes'), ('shapes', 'Shapes', 'shapes'),
 ]
 MAP = {'characters': 'emma-characters', 'animals': 'emma-animals', 'house': 'emma-house', 'letters': 'emma-letters', 'counting': 'numbers', 'flags': 'flags', 'food': 'emma-food', 'places': 'emma-places'}
@@ -23,6 +25,9 @@ for e in json.loads((H / 'emma.json').read_text()):
     items.append({**e, 'cat': cat, 'name': name, 'tags': tags, 'lic': 'emma'})
 for e in json.loads((H / 'emoji.json').read_text()): items.append({**e, 'name': short(e['name'])})
 for e in json.loads((H / 'art.json').read_text()): items.append(e)
+# Batch 12 round 2: more Noto 3D emoji (kids categories) + our own word badges / letters / numbers / colour variants
+for e in json.loads((H / 'emoji2.json').read_text()): items.append({**e, 'name': short(e['name'])})
+for e in json.loads((H / 'art2.json').read_text()): items.append(e)
 # animated stickers: a simple Combo loop (our own animations in js/animations.js) comes with the sticker
 def auto_anim(it, i):
     n, c = it['name'].lower(), it['cat']
@@ -33,6 +38,7 @@ def auto_anim(it, i):
     if c == 'emma-letters' and n[-1:] in 'aeiou': return 'jelly'
     if c == 'emoji-faces' and i % 4 == 0: return 'jelly'
     if c == 'emoji-animals' and i % 4 == 1: return 'hop'
+    if c in ('kids-animals', 'kids-feelings') and i % 6 == 1: return ['hop', 'jelly'][i % 2]
     if c in ('emoji-fun', 'emoji-nature') and i % 5 == 2: return ['float', 'pulse', 'swingLoop'][i % 3]
     return None
 seen, uniq = set(), []
@@ -47,7 +53,7 @@ for i, it in enumerate(items):
     it.pop('room', None)
 cats = [{'id': c, 'name': n, 'group': g, 'count': sum(1 for it in items if it['cat'] == c)} for c, n, g in CATS]
 assert all(c['count'] for c in cats), [c for c in cats if not c['count']]
-out = {'version': 1, 'groups': [{'id': 'emma', 'name': 'Emmavengers'}, {'id': 'emoji', 'name': 'Emoji'}, {'id': 'shapes', 'name': 'Shapes & more'}], 'cats': cats, 'licences': LIC,
+out = {'version': 1, 'groups': [{'id': 'emma', 'name': 'Emmavengers'}, {'id': 'emoji', 'name': 'Emoji'}, {'id': 'kids', 'name': 'Kids corner'}, {'id': 'shapes', 'name': 'Shapes & more'}], 'cats': cats, 'licences': LIC,
        'items': [{k: it[k] for k in ('id', 'cat', 'name', 'file', 'w', 'h', 'tags', 'lic', 'anim') if k in it} for it in items]}
 (ROOT / 'lib/stickers/index.json').write_text(json.dumps(out, separators=(',', ':')))
 print('DONE', len(items), {c['id']: c['count'] for c in cats}, 'animated', sum(1 for it in items if it.get('anim')))
