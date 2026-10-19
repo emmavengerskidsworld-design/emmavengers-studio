@@ -4,6 +4,7 @@
 import { TRACK_KINDS, propAt, filterCss, FONTS } from './registry.js';
 import { innerTracks } from './compound.js';
 import { drawElement } from './elements.js';
+import { camAt, cropWindow, sourceSize } from './multiformat.js';
 import { drawKaraoke } from './karaoke.js';
 import { transitionById, helpers } from './transitions.js';
 import { clipEnd, clipDur, srcTime } from './project.js';
@@ -34,6 +35,24 @@ function drawCompound(cx, W, H, clip, tr, local, t, getSource, opts) {
   nestDepth++; try { renderFrame(x, W, H, { tracks: innerTracks(clip), aspect: '', _nested: true }, t, getSource, { ...opts, selectedId: null }); } finally { nestDepth--; }
   return drawVisual(cx, W, H, { img: L, w: W, h: H, rot: 0 }, clip, tr, local, opts);
 }
+/** Multi-format: draw the project in its own shape, then the format's camera (crop window, or fit over a blurred copy). */
+const rfL = [];
+function renderReframed(ctx, W, H, p, t, getSource, opts) {
+  const R = p.reframe, c = camAt(R, t), { SW, SH } = sourceSize(R.src, W, H, c, R.mode), d = rfDepth++;
+  let L = rfL[d]; if (!L || L.width !== SW || L.height !== SH) L = rfL[d] = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(SW, SH) : Object.assign(document.createElement('canvas'), { width: SW, height: SH });
+  let boxes; try { boxes = renderFrame(L.getContext('2d'), SW, SH, { ...p, aspect: R.src, reframe: null }, t, getSource, { ...opts, selectedId: null }); } finally { rfDepth--; }
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.globalCompositeOperation = 'source-over'; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  let map;
+  if (R.mode === 'fit') {
+    const k0 = Math.max(W / SW, H / SH), bw = SW * k0, bh = SH * k0; ctx.filter = `blur(${Math.round(Math.min(W, H) / 40)}px) brightness(0.7)`; ctx.drawImage(L, (W - bw) / 2, (H - bh) / 2, bw, bh); ctx.filter = 'none';
+    const k = Math.min(W / SW, H / SH), dx = (W - SW * k) / 2, dy = (H - SH * k) / 2; ctx.drawImage(L, dx, dy, SW * k, SH * k); map = { k, dx, dy, sx: 0, sy: 0 };
+  } else { const w = cropWindow(SW, SH, W, H, c), k = W / w.sw; ctx.drawImage(L, w.sx, w.sy, w.sw, w.sh, 0, 0, W, H); map = { k, dx: 0, dy: 0, sx: w.sx, sy: w.sy }; }
+  ctx.restore();
+  const out = (boxes || []).map(b => ({ ...b, cx: (b.cx - map.sx) * map.k + map.dx, cy: (b.cy - map.sy) * map.k + map.dy, w: b.w * map.k, h: b.h * map.k }));
+  if (opts.selectedId) { const b = out.find(b => b.id === opts.selectedId); if (b) { ctx.save(); drawSelection(ctx, b, Math.min(W, H) / 400); ctx.restore(); } }
+  return out;
+}
+let rfDepth = 0;
 /** Overlay-library element: drawn procedurally into its own full-frame layer, then handled like a picture (blend, key, keyframes...). */
 const elL = [];
 function drawElementClip(cx, W, H, clip, tr, local, opts) {
@@ -42,6 +61,7 @@ function drawElementClip(cx, W, H, clip, tr, local, opts) {
   return drawVisual(cx, W, H, { img: L, w: W, h: H, rot: 0 }, clip, tr, local, opts);
 }
 export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
+  if (p.reframe) return renderReframed(ctx, W, H, p, t, getSource, opts);
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   // canvas: colour, then gradient / pattern / image, or a blurred copy of the main clip in the letterbox bars

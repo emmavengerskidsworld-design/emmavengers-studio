@@ -14,6 +14,8 @@ import * as elempanel from './elempanel.js';
 import * as photomode from './photomode.js';
 import * as brandkit from './brandkit.js';
 import * as brandpanel from './brandpanel.js';
+import * as multiformat from './multiformat.js';
+import { mfSheet } from './mfpanel.js';
 import * as karaoke from './karaoke.js';
 import { karaokeSheet } from './karaokepanel.js';
 import { ELEMENTS, ELEMENT_CATS } from './elements.js';
@@ -97,7 +99,7 @@ async function boot() {
   setTimeout(async () => { try { await projects.askPersist(); await projects.cleanUp(); if (!(await projects.getThumb(S.project.id))) makeThumb(); } catch (e) { console.warn('clean-up', e); } }, 2500);
   const qs = new URLSearchParams(location.search);
   if (qs.has('home') || (matchMedia('(display-mode: standalone)').matches && !qs.has('editor'))) showHome();
-  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async (o = {}) => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project), null, o) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, ctx: () => adCtx(), adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, layout: { apply: (id, o) => applyLayout(id, o), fill: (f, id, o) => fillCells(f, id, o), clear: () => clearLayout(), sheet: () => layoutSheet(), canvas: t => canvasSheet(t) }, motion: { stab: (id, lv) => stabilizeClip(id, lv), track: (id, x, y, o) => trackClip(id, x, y, o), copy: id => copyKeyframes(find(S.project, id).clip), paste: (id, L) => pasteKeyframes(id, L), slowmo: (id, s, bl) => slowmoClip(id, s, bl) }, mix: { sheet: t => mixSheet(t), project: () => projectMixSheet(), addMark: (id, t) => addMark(id, t), fillMarks: (id, b, f) => fillMarks(id, b, f), loudness: () => measureLoudness() }, work: { ...work, ...workflow, store: storeApi }, perf: { ...perfMod, bench: perfBench, sheet: () => perfSheet() }, brand: { ...brandkit, sheet: () => brandpanel.brandSheet(bCtx()), apply: o => brandpanel.applyKit(bCtx(), o), ensure: () => brandpanel.ensureKitLogo(bCtx()) }, photo: { ...photomode, sheet: () => photomode.photoSheet(phCtx()), save: () => photomode.savePhoto(phCtx()), blob: () => photomode.photoBlob(phCtx()) }, karaoke: { ...karaoke, sheet: () => karaokeSheet(kCtx()) }, elements: { list: ELEMENTS, cats: ELEMENT_CATS, sheet: () => elempanel.elementsSheet(elCtx()), add: (id, at) => elempanel.addElement(elCtx(), id, at) }, ready: true };
+  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async (o = {}) => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project), null, o) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, ctx: () => adCtx(), adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, layout: { apply: (id, o) => applyLayout(id, o), fill: (f, id, o) => fillCells(f, id, o), clear: () => clearLayout(), sheet: () => layoutSheet(), canvas: t => canvasSheet(t) }, motion: { stab: (id, lv) => stabilizeClip(id, lv), track: (id, x, y, o) => trackClip(id, x, y, o), copy: id => copyKeyframes(find(S.project, id).clip), paste: (id, L) => pasteKeyframes(id, L), slowmo: (id, s, bl) => slowmoClip(id, s, bl) }, mix: { sheet: t => mixSheet(t), project: () => projectMixSheet(), addMark: (id, t) => addMark(id, t), fillMarks: (id, b, f) => fillMarks(id, b, f), loudness: () => measureLoudness() }, work: { ...work, ...workflow, store: storeApi }, perf: { ...perfMod, bench: perfBench, sheet: () => perfSheet() }, mf: { ...multiformat, sheet: () => mfSheet(mfCtx()), ui: null }, brand: { ...brandkit, sheet: () => brandpanel.brandSheet(bCtx()), apply: o => brandpanel.applyKit(bCtx(), o), ensure: () => brandpanel.ensureKitLogo(bCtx()) }, photo: { ...photomode, sheet: () => photomode.photoSheet(phCtx()), save: () => photomode.savePhoto(phCtx()), blob: () => photomode.photoBlob(phCtx()) }, karaoke: { ...karaoke, sheet: () => karaokeSheet(kCtx()) }, elements: { list: ELEMENTS, cats: ELEMENT_CATS, sheet: () => elempanel.elementsSheet(elCtx()), add: (id, at) => elempanel.addElement(elCtx(), id, at) }, ready: true };
   document.body.classList.add('ready');
 }
 /* ---------------- projects ---------------- */
@@ -407,6 +409,7 @@ async function onFiles(files, kind) {
 const isVisualClip = c => c.type !== 'audio' && c.type !== 'effect';
 const kCtx = () => ({ S, act, player, toast, timeline: { render: () => { timeline.render(); updateEmpty(); } } });
 const bCtx = () => ({ S, act, toast, busy, media, importFile, loadMedia, mediaFor: templates.mediaFor, player, timeline: { render: () => { timeline.render(); updateEmpty(); } } });
+const mfCtx = () => ({ S, act, player, toast, exportVideo, downloadBlob, expose: a => { window.studio.mf.ui = a; } });
 const phCtx = () => ({ S, act, toast, busy, importFile, renderStill, downloadBlob, player, afterSwitch,
   projects: { addProject: async p => { player.pause(); if (S.project) await leaveProject(); await ensureProjectFonts(p); await projects.addProject(p); hideHome(); } } });
 const elCtx = () => ({ player, timeline, toast, act, find, newClip, addToKind, DEFAULT_TRANSFORM, select });
@@ -434,6 +437,7 @@ const ROOT_TOOLS = [
   { id: 'split', icon: 'split', label: 'Split', run: doSplit },
   ...work.ROOT_EXTRA.filter(t => t.id !== 'nestback'),
   { id: 'brand', icon: 'brand', label: 'Brand Kit', run: () => { select(null); brandpanel.brandSheet(bCtx()); } },
+  { id: 'formats', icon: 'formats', label: 'Multi-format', run: () => { select(null); mfSheet(mfCtx()); } },
   { id: 'photo', icon: 'photo', label: 'Photo', run: () => { select(null); photomode.photoSheet(phCtx()); } },
   { id: 'ratio', icon: 'ratio', label: 'Ratio', when: () => !(S.project && S.project.photo), run: ratioSheet },
   { id: 'bg', icon: 'bg', label: 'Canvas', run: () => canvasSheet() },
@@ -621,15 +625,16 @@ function compareUI() {
     line.addEventListener('pointermove', mv); line.addEventListener('pointerup', fin); line.addEventListener('pointercancel', fin); });
 }
 /** Test/metrics hook: render the project at time t into a W x H canvas exactly like the exporter does. */
-async function renderStill({ t = 0, W, H, plain = false, fast = false, type = 'image/png', quality = 0.92, blob: asBlob = false } = {}) {
+async function renderStill({ t = 0, W, H, plain = false, fast = false, type = 'image/png', quality = 0.92, blob: asBlob = false, format = null } = {}) {
+  const PJ = format && format !== S.project.aspect ? multiformat.reframed(S.project, format) : S.project;   // multi-format: same renderFrame as export
   await ensureProjectFonts(S.project);
-  if (!W) ({ W, H } = outputSize(S.project.aspect, 1080));
+  if (!W) ({ W, H } = outputSize(PJ.aspect, 1080));
   const { loadBitmap } = await import('./media.js');
   const cv = new OffscreenCanvas(W, H), ctx = cv.getContext('2d', { alpha: false }), frames = new Map();
   { const cc = canvasClip(S.project); if (cc && media.get(cc.mediaId)) { const bm = await loadBitmap(media.get(cc.mediaId)); frames.set(cc.id, { img: bm, w: bm.width, h: bm.height }); } }
   for (const c of activeVisual(S.project, t)) if (c.type === 'image') { const bm = await loadBitmap(media.get(c.mediaId)); frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); }
   player.seek(t); await new Promise(r => setTimeout(r, 300));
-  renderFrame(ctx, W, H, S.project, t, c => frames.get(c.id) || player.source(c), { plain, fast });
+  renderFrame(ctx, W, H, PJ, t, c => frames.get(c.id) || player.source(c), { plain, fast });
   const blob = await cv.convertToBlob({ type, quality }); if (asBlob) return blob; const buf = new Uint8Array(await blob.arrayBuffer());
   let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
   return btoa(s);
