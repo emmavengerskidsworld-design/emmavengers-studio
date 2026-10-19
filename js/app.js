@@ -11,6 +11,8 @@ import { FONT_GROUPS } from './registry.js';
 import * as caps from './captions.js';
 import * as stickers from './stickers.js';
 import * as elempanel from './elempanel.js';
+import * as karaoke from './karaoke.js';
+import { karaokeSheet } from './karaokepanel.js';
 import { ELEMENTS, ELEMENT_CATS } from './elements.js';
 import * as templates from './templates.js';
 import * as projects from './projects.js';
@@ -92,7 +94,7 @@ async function boot() {
   setTimeout(async () => { try { await projects.askPersist(); await projects.cleanUp(); if (!(await projects.getThumb(S.project.id))) makeThumb(); } catch (e) { console.warn('clean-up', e); } }, 2500);
   const qs = new URLSearchParams(location.search);
   if (qs.has('home') || (matchMedia('(display-mode: standalone)').matches && !qs.has('editor'))) showHome();
-  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async (o = {}) => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project), null, o) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, layout: { apply: (id, o) => applyLayout(id, o), fill: (f, id, o) => fillCells(f, id, o), clear: () => clearLayout(), sheet: () => layoutSheet(), canvas: t => canvasSheet(t) }, motion: { stab: (id, lv) => stabilizeClip(id, lv), track: (id, x, y, o) => trackClip(id, x, y, o), copy: id => copyKeyframes(find(S.project, id).clip), paste: (id, L) => pasteKeyframes(id, L), slowmo: (id, s, bl) => slowmoClip(id, s, bl) }, mix: { sheet: t => mixSheet(t), project: () => projectMixSheet(), addMark: (id, t) => addMark(id, t), fillMarks: (id, b, f) => fillMarks(id, b, f), loudness: () => measureLoudness() }, work: { ...work, ...workflow, store: storeApi }, perf: { ...perfMod, bench: perfBench, sheet: () => perfSheet() }, elements: { list: ELEMENTS, cats: ELEMENT_CATS, sheet: () => elempanel.elementsSheet(elCtx()), add: (id, at) => elempanel.addElement(elCtx(), id, at) }, ready: true };
+  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async (o = {}) => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project), null, o) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, layout: { apply: (id, o) => applyLayout(id, o), fill: (f, id, o) => fillCells(f, id, o), clear: () => clearLayout(), sheet: () => layoutSheet(), canvas: t => canvasSheet(t) }, motion: { stab: (id, lv) => stabilizeClip(id, lv), track: (id, x, y, o) => trackClip(id, x, y, o), copy: id => copyKeyframes(find(S.project, id).clip), paste: (id, L) => pasteKeyframes(id, L), slowmo: (id, s, bl) => slowmoClip(id, s, bl) }, mix: { sheet: t => mixSheet(t), project: () => projectMixSheet(), addMark: (id, t) => addMark(id, t), fillMarks: (id, b, f) => fillMarks(id, b, f), loudness: () => measureLoudness() }, work: { ...work, ...workflow, store: storeApi }, perf: { ...perfMod, bench: perfBench, sheet: () => perfSheet() }, karaoke: { ...karaoke, sheet: () => karaokeSheet(kCtx()) }, elements: { list: ELEMENTS, cats: ELEMENT_CATS, sheet: () => elempanel.elementsSheet(elCtx()), add: (id, at) => elempanel.addElement(elCtx(), id, at) }, ready: true };
   document.body.classList.add('ready');
 }
 /* ---------------- projects ---------------- */
@@ -400,6 +402,7 @@ async function onFiles(files, kind) {
 
 /* ---------------- toolbar ---------------- */
 const isVisualClip = c => c.type !== 'audio' && c.type !== 'effect';
+const kCtx = () => ({ S, act, player, toast, timeline: { render: () => { timeline.render(); updateEmpty(); } } });
 const elCtx = () => ({ player, timeline, toast, act, find, newClip, addToKind, DEFAULT_TRANSFORM, select });
 const ROOT_TOOLS = [
   work.ROOT_EXTRA.find(t => t.id === 'nestback'),
@@ -416,6 +419,7 @@ const ROOT_TOOLS = [
   { id: 'text', icon: 'text', label: 'Text', run: addText },
   { id: 'titles', icon: 'titles', label: 'Titles', run: addTitle },
   { id: 'captions', icon: 'captions', label: 'Captions', run: captionsSheet },
+  { id: 'karaoke', icon: 'karaoke', label: 'Karaoke', run: () => { select(null); karaokeSheet(kCtx()); } },
   { id: 'stickers', icon: 'sticker', label: 'Stickers', run: () => stickers.stickerSheet({ player, toast, media, importFile, act, newClip, addToKind, DEFAULT_TRANSFORM, select }) },
   { id: 'elements', icon: 'elements', label: 'Elements', run: () => { select(null); elempanel.elementsSheet(elCtx()); } },
   { id: 'effects', icon: 'effects', label: 'Effects', run: () => { select(null); effectsSheet('track'); } },
@@ -769,6 +773,7 @@ function captionsSheet() {
     btn('capAdd', 'plus', 'Line at playhead', () => { const c = act(p => caps.addCaptionAt(p, player.t)); closeSheet(); select(c.id); textSheet('edit'); });
     const fileIn = Object.assign(document.createElement('input'), { type: 'file', accept: '.srt,.vtt,text/plain,application/x-subrip', id: 'capFile', hidden: true });
     fileIn.onchange = async () => { const fl = fileIn.files[0]; if (!fl) return; const txt = await fl.text(); let k = 0; live(p => { k = caps.importSRT(p, txt); }); toast(k ? `Imported ${k} caption lines` : 'No captions found in that file'); upd(); timeline.render(); };
+    btn('capKaraoke', 'karaoke', 'Karaoke', () => karaokeSheet(kCtx()));
     btn('capImport', 'import', 'Import SRT', () => { fileIn.value = ''; fileIn.click(); });
     btn('capExport', 'download', 'Export SRT', () => { if (!n()) { toast('No captions to export yet'); return; } downloadBlob(new Blob([caps.projectSRT(S.project)], { type: 'application/x-subrip' }), (S.project.name || 'captions').replace(/[^\w\- ]+/g, '') + '.srt'); });
     body.append(info, btns, fileIn);

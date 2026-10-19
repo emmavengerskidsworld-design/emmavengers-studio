@@ -72,8 +72,9 @@ function layout(ctx, words, maxW, sp) {
 }
 /** Draw a karaoke caption. fontCss is the text renderer's font helper (same fonts as normal text). */
 export function drawKaraoke(ctx, W, H, clip, tr, local, fontCss) {
-  const K = clip.karaoke, S = karaokeStyleById(K.style), unit = Math.min(W, H) / 1080, D = clipDur(clip), words = K.words || [];
+  const K = clip.karaoke, S = karaokeStyleById(K.style), unit = Math.min(W, H) / 1080, D = clipDur(clip); let words = K.words || [];
   const px = (clip.text.size || S.size) * unit; ensureFont(S.font);
+  if (words.map(w => w.w).join(' ') !== splitWords(clip.text.content).join(' ')) words = evenWords(clip.text.content, D);   // text edited after timing: even split until re-timed
   const fade = K.lyric ? cl(Math.min(local / 0.18, (D - local) / 0.18)) : 1, alpha = cl(tr.opacity) * fade;
   const cx = tr.x * W, cy = tr.y * H, box = { cx, cy, w: W * 0.9 * tr.scale, h: px * 2.4 * tr.scale };
   if (alpha <= 0.0005 || !words.length) return box;
@@ -106,3 +107,11 @@ export function drawKaraoke(ctx, W, H, clip, tr, local, fontCss) {
   if (K.lyric) { ctx.globalAlpha = alpha * .9; ctx.font = `${Math.round(px * .7)}px system-ui, sans-serif`; ctx.textAlign = 'center'; ctx.fillStyle = S.hi === 'rainbow' ? RAINBOW[0] : S.hi; ctx.fillText('♪', -Math.max(...lines.map(l => l.w)) / 2 - px * .6, y0); }
   ctx.restore(); return box;
 }
+/** Tap-to-time over all karaoke captions: taps[k] = project time when word k (counting through every line) starts. */
+export function applyTaps(p, taps) {
+  const list = captions(p).filter(c => c.karaoke); let used = 0;
+  for (const c of list) { const n = c.karaoke.words.length, e = clipEnd(c), mine = taps.filter(t => t >= c.start - 0.05 && t < e - 0.02).slice(0, n).map(t => Math.max(0, t - c.start));   // taps land in the line playing at that moment
+    if (mine.length) { c.karaoke.words = tapWords(c.text.content, clipDur(c), mine); used += mine.length; } }
+  linkLyrics(p); return used;
+}
+export const karaokeWordCount = p => captions(p).filter(c => c.karaoke).reduce((s, c) => s + c.karaoke.words.length, 0);
