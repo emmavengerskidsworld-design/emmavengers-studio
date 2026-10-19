@@ -1,6 +1,7 @@
 /* CapCut-style timeline: fixed centre playhead, horizontally scrolling tracks, pinch / buttons to zoom.
    Tap = select, drag edges = trim, long-press (touch) or drag (mouse) = move / reorder. */
 import { animSpans, loopKind } from './animations.js';
+import { usingProxy } from './perf.js';
 import { S, live, begin, end, select, toggleMulti, setMulti } from './store.js';
 import { partners, shiftClips } from './workflow.js';
 import { compoundCount } from './compound.js';
@@ -100,6 +101,7 @@ export class Timeline {
     }
     const badges = [];
     if (c.type === 'compound') badges.push(`<span class="ctext">▣ ${esc(c.name || 'Compound')} · ${compoundCount(c)}</span>`);
+    if (rec && rec.proxy && usingProxy(rec, S.project)) badges.push('<span class="spd px" title="Playing a light proxy copy (export uses the original)">P</span>');
     if (c.group) badges.push('<span class="spd" title="Grouped">⧉</span>');
     if (c.link) badges.push('<span class="spd" title="Linked">🔗</span>');
     if (c.type === 'text') badges.push(`<span class="ctext">${esc(c.text.content.split('\n')[0] || 'Text')}</span>`);

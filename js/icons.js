@@ -11,6 +11,7 @@ const P = {
   magnet: '<path d="M6 3v8a6 6 0 0 0 12 0V3h-4v8a2 2 0 0 1-4 0V3z"/><path d="M6 7h4M14 7h4"/>',
   attrs: '<path d="M4 7h10M4 12h7M4 17h5"/><circle cx="17" cy="15" r="4"/><path d="M17 13v4M15 15h4"/>',
   keyboard: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
+  speedo: '<path d="M4 18a8 8 0 1 1 16 0"/><path d="m12 18 4-6"/><path d="M7 14h.01M9 10.5h.01M12 9h.01M15 10.5h.01"/>',
   beat: '<path d="M3 12h2l2-6 3 12 3-9 2 5 2-2h4"/>',
   shuffle: '<path d="M3 7h3.5a4 4 0 0 1 3.2 1.6l4.6 6.8a4 4 0 0 0 3.2 1.6H21"/><path d="M3 17h3.5a4 4 0 0 0 3.2-1.6l.6-.9M14.3 8.6l.6-.9A4 4 0 0 1 18.1 6H21"/><path d="m18 3 3 3-3 3M18 15l3 3-3 3"/>',
   home: '<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/>',

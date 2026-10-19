@@ -43,7 +43,7 @@ export async function importFile(file, opts = {}) {
   return rec;
 }
 async function hydrateStored(rec) { await hydrate(rec); media.set(rec.id, rec); background(rec); return rec; }
-const strip = r => { const { url, bitmap, thumbBitmap, audioBuffer, _bmp, ...keep } = r; return keep; };
+const strip = r => { const { url, bitmap, thumbBitmap, audioBuffer, _bmp, proxy, ...keep } = r; return keep; };
 export const save = rec => db.put('media', strip(rec));
 
 /** Create runtime objects (object URL, decoded image) and read metadata if missing. */
@@ -171,3 +171,10 @@ export async function decodeAudio(rec, keep = true) {
   return buf;
 }
 export const dropAudioCache = () => audioCache.clear();
+
+/* ---------- memory guard hooks ---------- */
+export const bitmapBytes = () => lru.reduce((n, r) => n + (r.bitmap ? r.bitmap.width * r.bitmap.height * 4 : 0), 0);
+/** Close decoded photos (oldest first) until at most `to` bytes stay, keeping the ids in `keep`. */
+export function trimBitmaps(to, keep = new Set()) { let b = bitmapBytes(); for (const r of [...lru]) { if (b <= to) break; if (!r.bitmap || keep.has(r.id)) continue; b -= r.bitmap.width * r.bitmap.height * 4; r.bitmap.close(); r.bitmap = null; lru.splice(lru.indexOf(r), 1); } }
+export const audioCacheBytes = () => [...audioCache.values()].reduce((n, b) => n + (b ? b.length * b.numberOfChannels * 4 : 0), 0);
+export function trimAudioCache(to) { let b = audioCacheBytes(); for (const [k, v] of [...audioCache]) { if (b <= to) break; b -= v ? v.length * v.numberOfChannels * 4 : 0; audioCache.delete(k); } }

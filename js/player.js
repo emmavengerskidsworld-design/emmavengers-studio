@@ -2,6 +2,8 @@
    every frame through the shared compositor. A master clock drives playback; elements are re-synced to it, and the
    clock waits while a video is still buffering so picture and sound never drift apart. */
 import { media, bitmapOf } from './media.js';
+import { FrameCache, playUrl } from './perf.js';
+import { fontsVersion } from './fonts.js';
 import { allClips } from './compound.js';
 import { renderFrame } from './render.js';
 import { drawGuides } from './protools.js';
@@ -15,6 +17,7 @@ export class Player {
     this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.o = o;
     this.t = 0; this.playing = false; this.slots = new Map(); this.pool = []; this.boxes = []; this.count = 0;
     this._raf = 0; this._drawQueued = false; this.voices = new Map(); this.muted = false;
+    this.fcache = new FrameCache(128e6); this._bx = new Map(); this.ver = 0; this.adaptive = true; this.lowScale = 1; this.stats = { frames: 0, ms: 0, hits: 0, cached: 0, slow: 0, t0: performance.now(), list: [] };
   }
   /** Mute everything (used while recording a voice-over so the mic doesn't pick up the video). */
   setMuted(m) { this.muted = !!m; if (this.master) this.master.gain.value = m ? 0 : this.loud; }
@@ -43,8 +46,8 @@ export class Player {
   /* ---------- element slots ---------- */
   makeSlot(rec) {
     const el = document.createElement(rec.type === 'audio' ? 'audio' : 'video');
-    el.preload = 'auto'; el.playsInline = true; el.setAttribute('playsinline', ''); el.preservesPitch = false; el.src = rec.url;
-    const s = { el, mediaId: rec.id };
+    el.preload = 'auto'; el.playsInline = true; el.setAttribute('playsinline', ''); el.preservesPitch = false; const url = playUrl(rec, this.project); el.src = url;
+    const s = { el, mediaId: rec.id, url };
     const redraw = () => { if (!this.playing) this.requestDraw(); };
     el.addEventListener('seeked', redraw); el.addEventListener('loadeddata', redraw);
     this.count++; this.route(s); return s;
@@ -67,9 +70,10 @@ export class Player {
         const i = this.pool.findIndex(x => x.mediaId === w.c.mediaId);
         if (i >= 0) s = this.pool.splice(i, 1)[0];
         else if (this.count < MAX_EL) s = this.makeSlot(media.get(w.c.mediaId));
-        else { const j = this.pool.findIndex(() => true); if (j < 0) continue; const old = this.pool.splice(j, 1)[0]; old.el.src = media.get(w.c.mediaId).url; old.mediaId = w.c.mediaId; s = old; }
+        else { const j = this.pool.findIndex(() => true); if (j < 0) continue; const old = this.pool.splice(j, 1)[0]; old.url = playUrl(media.get(w.c.mediaId), p); old.el.src = old.url; old.mediaId = w.c.mediaId; s = old; }
         s.clipId = id; this.slots.set(id, s);
       }
+      { const u = playUrl(media.get(w.c.mediaId), p); if (s.url !== u) { s.url = u; s.el.src = u; } }   // proxy became ready / switched off
       const { c, active } = w, el = s.el, target = active ? srcTime(c, t) : c.in;
       const vol = active ? gainAt(p, c, t) : 0;
       // processed sound (enhance / voice effect / pitch-kept speed) plays from the baked buffer; the element only gives the picture
@@ -141,15 +145,41 @@ export class Player {
     this._raf = requestAnimationFrame(() => this.loop());
   }
   requestDraw() { if (this._drawQueued) return; this._drawQueued = true; requestAnimationFrame(() => { this._drawQueued = false; this.draw(); }); }
+  /** Forget cached preview frames (the project, a media file or a font changed). */
+  invalidate() { this.ver++; this.fcache.clear(); this._bx.clear(); }
+  /** Every element is at its time and has a picture: the frame on screen is final (safe to cache). */
+  settled() { for (const s of this.slots.values()) if (s.el.tagName === 'VIDEO' && (s.el.seeking || s.el.readyState < 2)) return false; return !this._miss; }
+  frameKey(sel) { const p = this.project; return `${this.ver}|${fontsVersion}|${Math.round(this.t * (p.fps || 30))}|${this.canvas.width}x${this.canvas.height}|${sel || ''}|${this.cropEdit || ''}`; }
   draw() {
     const { canvas, ctx } = this, p = this.project; if (!p) return;
+    const T0 = performance.now();
+    if (!this.playing && !this.compare && !this.guides && this.fcache.max > 0) {   // frame cache: scrubbing back over frames already seen
+      const sel0 = this.o.showSelection === false ? null : this.o.selected && this.o.selected(), key = this.frameKey(sel0), bm = this.fcache.get(key);
+      if (bm) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'copy'; ctx.drawImage(bm, 0, 0); ctx.restore(); this.boxes = this._bx.get(key) || this.boxes; this.stats.hits++; this.lastDraw = { ms: performance.now() - T0, cached: true }; return; }
+    }
+    this._miss = false;
     // lighter HD pass while playing / scrubbing; the full pass is drawn as soon as the picture settles
     const now = performance.now(), fast = this.playing || now - (this._lastSeek || 0) < 220;
     if (fast && !this.playing) { clearTimeout(this._settle); this._settle = setTimeout(() => this.requestDraw(), 240); }
     const sel = this.o.showSelection === false ? null : this.o.selected && this.o.selected(), cmp = this.compare;
-    const src = c => this.source(c);
+    const src = c => { const r = this.source(c); if (!r) this._miss = true; return r; };
     if (cmp && cmp.mode === 'before') { this.boxes = renderFrame(ctx, canvas.width, canvas.height, p, this.t, src, { plain: true, selectedId: sel }); if (this.guides) drawGuides(ctx, canvas.width, canvas.height, this.guides); return; }
-    this.boxes = renderFrame(ctx, canvas.width, canvas.height, p, this.t, src, { selectedId: cmp || this.cropEdit ? null : sel, fast, cropEdit: cmp ? null : this.cropEdit });
+    const low = this.playing && this.adaptive && this.lowScale < 1 && !cmp;
+    if (low) {   // smooth preview: a slow frame rate drops the internal resolution while playing (full quality when paused)
+      const w = Math.max(2, Math.round(canvas.width * this.lowScale)), h = Math.max(2, Math.round(canvas.height * this.lowScale));
+      if (!this._lo || this._lo.width !== w || this._lo.height !== h) this._lo = Object.assign(document.createElement('canvas'), { width: w, height: h });
+      renderFrame(this._lo.getContext('2d'), w, h, p, this.t, src, { selectedId: null, fast: true });
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingQuality = 'medium'; ctx.drawImage(this._lo, 0, 0, canvas.width, canvas.height); ctx.restore();
+    } else this.boxes = renderFrame(ctx, canvas.width, canvas.height, p, this.t, src, { selectedId: cmp || this.cropEdit ? null : sel, fast, cropEdit: cmp ? null : this.cropEdit });
+    const ms = performance.now() - T0; this.lastDraw = { ms, cached: false, low: low ? this.lowScale : 1 };
+    if (this.playing) { const S_ = this.stats; S_.frames++; S_.ms += ms; S_.list.push(ms); if (S_.list.length > 600) S_.list.shift(); if (ms > 16.7) S_.slow++;
+      if (this.adaptive) { this._ema = (this._ema ?? ms) * 0.85 + ms * 0.15;
+        if (this._ema > 22 && this.lowScale > 0.5) { this.lowScale = Math.max(0.5, this.lowScale - 0.25); this._ema = 14; }
+        else if (this._ema < 7 && this.lowScale < 1) { this.lowScale = Math.min(1, this.lowScale + 0.25); this._ema = 12; } } }
+    else if (!fast && !cmp && !this.guides && this.fcache.max > 0 && this.settled()) {
+      const key = this.frameKey(sel), bx = this.boxes, v = this.ver; this.stats.cached++;
+      createImageBitmap(canvas).then(bm => { if (v === this.ver) { this.fcache.put(key, bm); this._bx.set(key, bx); } else bm.close(); }, () => {});
+    }
     if (cmp && cmp.mode === 'split') {   // left of the line: original (plain), right: with HD / adjust
       const w = canvas.width, h = canvas.height, x = Math.max(0, Math.min(w, Math.round(cmp.x * w)));
       if (!this._before || this._before.width !== w || this._before.height !== h) this._before = Object.assign(document.createElement('canvas'), { width: w, height: h });

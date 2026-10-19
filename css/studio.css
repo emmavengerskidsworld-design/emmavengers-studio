@@ -417,3 +417,11 @@ body.in-nest #timeline{box-shadow:inset 0 0 0 2px #4fe3ff66}
 .kbd{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;font:13px system-ui,sans-serif}
 .kbd kbd{background:#24242e;border:1px solid #3a3a46;border-bottom-width:3px;border-radius:6px;padding:3px 7px;font:600 12px ui-monospace,monospace;color:#fff;white-space:nowrap}
 .attrs{flex-wrap:wrap}
+/* ---- Batch 11: performance ---- */
+.perfinfo h4{margin:12px 0 4px;font:700 14px system-ui,sans-serif;color:#cfd2dc}
+.pxrow{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #26262f;font:13px system-ui,sans-serif}
+.pxrow span{color:#aeb0bb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pxrow b{color:#fff;font-weight:600;white-space:nowrap}
+.membar{height:10px;border-radius:5px;background:#26262f;overflow:hidden}
+.membar i{display:block;height:100%;background:linear-gradient(90deg,#3ddc84,#ffcc33)}
+.spd.px{background:#4fa3ff;color:#fff}

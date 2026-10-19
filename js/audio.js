@@ -83,3 +83,8 @@ export async function ensureBaked(c) { if (!needsBake(c)) return null; const e =
 export const bakedPos = (e, c, t) => e.curve ? t - c.start : (c.in + (t - c.start) * c.speed - e.a) / e.rate;
 export const bakedRate = (e, c) => e.curve ? 1 : c.speed / e.rate;
 export const dropBakes = () => cache.clear();
+
+/* ---------- memory guard hooks ---------- */
+export const bakedBytes = () => [...cache.values()].reduce((n, e) => n + (e.buf ? e.buf.length * e.buf.numberOfChannels * 4 : 0), 0);
+/** Drop baked sound (least recently used first) until at most `to` bytes stay (it is re-made when needed). */
+export function trimBaked(to) { let b = bakedBytes(); for (const [k, e] of [...cache.entries()].sort((x, y) => x[1].used - y[1].used)) { if (b <= to) break; if (!e.buf) continue; b -= e.buf.length * e.buf.numberOfChannels * 4; cache.delete(k); } }

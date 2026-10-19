@@ -133,7 +133,7 @@ export async function exportVideo(p, opt) {
   if (!projectDuration(p)) throw new Error('Nothing to export yet');
   const [t0, t1] = rangeOf(p, opt.range), D = t1 - t0;
   await ensureProjectFonts(p);
-  const { W, H } = outputSize(p.aspect, short), vbr = forceBr ? Math.round(Math.max(3e5, Math.min(120e6, forceBr))) : planBitrate(W, H, fps, D, maxBytes, quality);
+  const { W, H } = opt.size || outputSize(p.aspect, short), vbr = forceBr ? Math.round(Math.max(3e5, Math.min(120e6, forceBr))) : planBitrate(W, H, fps, D, maxBytes, quality);
   const strict = !!(forceBr || maxBytes), codecs = mode === 'recorder' ? null : await pickCodecs(W, H, fps, vbr, strict);
   try {
     if (codecs) {

@@ -20,6 +20,8 @@ import { ensureFont, ensureProjectFonts, onFontLoad } from './fonts.js';
 import { onLut } from './colorpro.js';
 import { canvasClip } from './canvasbg.js';
 import * as work from './workpanel.js';
+import * as perfMod from './perf.js';
+import { initPerf, perfSheet, bench as perfBench } from './perfpanel.js';
 import * as workflow from './workflow.js';
 import * as storeApi from './store.js';
 import { decodeAudio } from './media.js';
@@ -73,6 +75,7 @@ async function boot() {
   setMediaGetter(id => media.get(id)); setDecoder(rec => decodeAudio(rec)); onEnvelope(() => { player.requestDraw(); if (player.playing) player.sync && player.sync(player.t); });
   initMixPanel({ player, timeline, toast, loudness: () => measureLoudness() });
   work.initWork({ player, timeline, toast, refreshToolbar });
+  initPerf({ player, timeline, toast });
   { const z = $('#zoom'); const mb = document.createElement('button'); mb.id = 'magBtn'; mb.className = 'ib tlbtn'; mb.innerHTML = icon('magnet', 18); mb.onclick = () => work.toggleMagnetic();
     const sb = document.createElement('button'); sb.id = 'selModeBtn'; sb.className = 'ib tlbtn'; sb.innerHTML = icon('select', 18); sb.title = 'Select several clips'; sb.onclick = () => work.setSelectMode(!timeline.selectMode);
     z.prepend(sb, mb); on('change', work.magBtn); work.magBtn(); }
@@ -87,7 +90,7 @@ async function boot() {
   setTimeout(async () => { try { await projects.askPersist(); await projects.cleanUp(); if (!(await projects.getThumb(S.project.id))) makeThumb(); } catch (e) { console.warn('clean-up', e); } }, 2500);
   const qs = new URLSearchParams(location.search);
   if (qs.has('home') || (matchMedia('(display-mode: standalone)').matches && !qs.has('editor'))) showHome();
-  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async (o = {}) => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project), null, o) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, layout: { apply: (id, o) => applyLayout(id, o), fill: (f, id, o) => fillCells(f, id, o), clear: () => clearLayout(), sheet: () => layoutSheet(), canvas: t => canvasSheet(t) }, motion: { stab: (id, lv) => stabilizeClip(id, lv), track: (id, x, y, o) => trackClip(id, x, y, o), copy: id => copyKeyframes(find(S.project, id).clip), paste: (id, L) => pasteKeyframes(id, L), slowmo: (id, s, bl) => slowmoClip(id, s, bl) }, mix: { sheet: t => mixSheet(t), project: () => projectMixSheet(), addMark: (id, t) => addMark(id, t), fillMarks: (id, b, f) => fillMarks(id, b, f), loudness: () => measureLoudness() }, work: { ...work, ...workflow, store: storeApi }, ready: true };
+  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async (o = {}) => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project), null, o) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, layout: { apply: (id, o) => applyLayout(id, o), fill: (f, id, o) => fillCells(f, id, o), clear: () => clearLayout(), sheet: () => layoutSheet(), canvas: t => canvasSheet(t) }, motion: { stab: (id, lv) => stabilizeClip(id, lv), track: (id, x, y, o) => trackClip(id, x, y, o), copy: id => copyKeyframes(find(S.project, id).clip), paste: (id, L) => pasteKeyframes(id, L), slowmo: (id, s, bl) => slowmoClip(id, s, bl) }, mix: { sheet: t => mixSheet(t), project: () => projectMixSheet(), addMark: (id, t) => addMark(id, t), fillMarks: (id, b, f) => fillMarks(id, b, f), loudness: () => measureLoudness() }, work: { ...work, ...workflow, store: storeApi }, perf: { ...perfMod, bench: perfBench, sheet: () => perfSheet() }, ready: true };
   document.body.classList.add('ready');
 }
 /* ---------------- projects ---------------- */
@@ -420,6 +423,7 @@ const ROOT_TOOLS = [
   { id: 'bg', icon: 'bg', label: 'Canvas', run: () => canvasSheet() },
   { id: 'layout', icon: 'layout', label: 'Layout', run: () => layoutSheet() },
   { id: 'guides', icon: 'safe', label: 'Safe area', run: pro.guidesSheet },
+  { id: 'perf', icon: 'speedo', label: 'Performance', run: () => perfSheet() },
 ];
 const CLIP_TOOLS = [
   { id: 'phreplace', icon: 'replace', label: 'Replace me', when: c => !!c.placeholder && c.placeholder !== 'text' && isPic(c), run: () => pro.replaceClip() },
