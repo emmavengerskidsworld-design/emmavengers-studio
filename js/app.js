@@ -17,6 +17,8 @@ import * as brandpanel from './brandpanel.js';
 import * as multiformat from './multiformat.js';
 import { mfSheet } from './mfpanel.js';
 import * as kids from './kids.js';
+import * as help from './help.js';
+import { HELP, TOOL_HELP, TOUR } from './helptips.js';
 import { kidsSheet, addBuilt as kidsAdd } from './kidspanel.js';
 import * as karaoke from './karaoke.js';
 import { karaokeSheet } from './karaokepanel.js';
@@ -101,8 +103,10 @@ async function boot() {
   setTimeout(async () => { try { await projects.askPersist(); await projects.cleanUp(); if (!(await projects.getThumb(S.project.id))) makeThumb(); } catch (e) { console.warn('clean-up', e); } }, 2500);
   const qs = new URLSearchParams(location.search);
   if (qs.has('home') || (matchMedia('(display-mode: standalone)').matches && !qs.has('editor'))) showHome();
-  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async (o = {}) => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project), null, o) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, ctx: () => adCtx(), adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, layout: { apply: (id, o) => applyLayout(id, o), fill: (f, id, o) => fillCells(f, id, o), clear: () => clearLayout(), sheet: () => layoutSheet(), canvas: t => canvasSheet(t) }, motion: { stab: (id, lv) => stabilizeClip(id, lv), track: (id, x, y, o) => trackClip(id, x, y, o), copy: id => copyKeyframes(find(S.project, id).clip), paste: (id, L) => pasteKeyframes(id, L), slowmo: (id, s, bl) => slowmoClip(id, s, bl) }, mix: { sheet: t => mixSheet(t), project: () => projectMixSheet(), addMark: (id, t) => addMark(id, t), fillMarks: (id, b, f) => fillMarks(id, b, f), loudness: () => measureLoudness() }, work: { ...work, ...workflow, store: storeApi }, perf: { ...perfMod, bench: perfBench, sheet: () => perfSheet() }, kids: { ...kids, sheet: tab => kidsSheet(kidsCtx(), tab), add: (b, label) => kidsAdd(kidsCtx(), b, label) }, mf: { ...multiformat, sheet: () => mfSheet(mfCtx()), ui: null }, brand: { ...brandkit, sheet: () => brandpanel.brandSheet(bCtx()), apply: o => brandpanel.applyKit(bCtx(), o), ensure: () => brandpanel.ensureKitLogo(bCtx()) }, photo: { ...photomode, sheet: () => photomode.photoSheet(phCtx()), save: () => photomode.savePhoto(phCtx()), blob: () => photomode.photoBlob(phCtx()) }, karaoke: { ...karaoke, sheet: () => karaokeSheet(kCtx()) }, elements: { list: ELEMENTS, cats: ELEMENT_CATS, sheet: () => elempanel.elementsSheet(elCtx()), add: (id, at) => elempanel.addElement(elCtx(), id, at) }, ready: true };
+  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async (o = {}) => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project), null, o) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, ctx: () => adCtx(), adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, layout: { apply: (id, o) => applyLayout(id, o), fill: (f, id, o) => fillCells(f, id, o), clear: () => clearLayout(), sheet: () => layoutSheet(), canvas: t => canvasSheet(t) }, motion: { stab: (id, lv) => stabilizeClip(id, lv), track: (id, x, y, o) => trackClip(id, x, y, o), copy: id => copyKeyframes(find(S.project, id).clip), paste: (id, L) => pasteKeyframes(id, L), slowmo: (id, s, bl) => slowmoClip(id, s, bl) }, mix: { sheet: t => mixSheet(t), project: () => projectMixSheet(), addMark: (id, t) => addMark(id, t), fillMarks: (id, b, f) => fillMarks(id, b, f), loudness: () => measureLoudness() }, work: { ...work, ...workflow, store: storeApi }, perf: { ...perfMod, bench: perfBench, sheet: () => perfSheet() }, help: { ...help, centre: () => help.helpCentre(ROOT_TOOLS), HELP, TOOL_HELP, TOUR }, kids: { ...kids, sheet: tab => kidsSheet(kidsCtx(), tab), add: (b, label) => kidsAdd(kidsCtx(), b, label) }, mf: { ...multiformat, sheet: () => mfSheet(mfCtx()), ui: null }, brand: { ...brandkit, sheet: () => brandpanel.brandSheet(bCtx()), apply: o => brandpanel.applyKit(bCtx(), o), ensure: () => brandpanel.ensureKitLogo(bCtx()) }, photo: { ...photomode, sheet: () => photomode.photoSheet(phCtx()), save: () => photomode.savePhoto(phCtx()), blob: () => photomode.photoBlob(phCtx()) }, karaoke: { ...karaoke, sheet: () => karaokeSheet(kCtx()) }, elements: { list: ELEMENTS, cats: ELEMENT_CATS, sheet: () => elempanel.elementsSheet(elCtx()), add: (id, at) => elempanel.addElement(elCtx(), id, at) }, ready: true };
   document.body.classList.add('ready');
+  { const home = $('#home'); let mo = null; const go = () => { if (home && !home.hidden) return; mo && mo.disconnect(); help.maybeTour(); };   // first-run tour once the editor shows
+    if (home && !home.hidden) { mo = new MutationObserver(go); mo.observe(home, { attributes: true, attributeFilter: ['hidden'] }); } else setTimeout(go, 400); }
 }
 /* ---------------- projects ---------------- */
 let thumbTimer = 0;
@@ -448,6 +452,7 @@ const ROOT_TOOLS = [
   { id: 'layout', icon: 'layout', label: 'Layout', run: () => layoutSheet() },
   { id: 'guides', icon: 'safe', label: 'Safe area', run: pro.guidesSheet },
   { id: 'perf', icon: 'speedo', label: 'Performance', run: () => perfSheet() },
+  { id: 'help', icon: 'help', label: 'Help', run: () => { select(null); help.helpCentre(ROOT_TOOLS); } },
 ];
 const CLIP_TOOLS = [
   { id: 'phreplace', icon: 'replace', label: 'Replace me', when: c => !!c.placeholder && c.placeholder !== 'text' && isPic(c), run: () => pro.replaceClip() },
@@ -889,11 +894,13 @@ function menuSheet() {
   openSheet('Emmavengers Studio', async body => {
     body.innerHTML = `<div class="menu">
       <button class="btn" id="newProj">${icon('home', 18)} My projects</button>
+      <button class="btn ghost" id="helpBtn">? Help, tips & tour</button>
       <button class="btn ghost" id="checkUpd">Check for update</button>
       <p class="hint">Your projects save automatically on this phone, even offline. <span id="storeInfo"></span></p>
       <p class="hint">Tips: tap a clip to edit it · drag its white edges to trim · press and hold a clip, then drag, to move it · pinch the timeline to zoom.</p>
       <p class="hint ver">Version <span id="buildId">…</span></p></div>`;
     $('#newProj').onclick = () => { closeSheet(); showHome(); };
+    $('#helpBtn').onclick = () => { closeSheet(); help.helpCentre(ROOT_TOOLS); };
     $('#checkUpd').onclick = async () => { const r = await navigator.serviceWorker?.getRegistration(); if (r) { await r.update().catch(() => {}); toast(r.installing || r.waiting ? 'Downloading the new version…' : 'You have the latest version'); } };
     try { const e = await navigator.storage.estimate(); $('#storeInfo').textContent = `Using ${(e.usage / 1e6).toFixed(0)} MB of storage.`; } catch (e) {}
     $('#buildId').textContent = window.STUDIO_BUILD || 'dev';

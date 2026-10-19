@@ -3,6 +3,7 @@ const P = {
   elements: '<circle cx="7" cy="7" r="3"/><path d="M17 3l1.2 2.8L21 7l-2.8 1.2L17 11l-1.2-2.8L13 7l2.8-1.2z"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 21l3.5-7 3.5 7z"/>',
   karaoke: '<path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/><path d="M3 10h3M3 14h3"/>',
   photo: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .8-1 1.5v.7"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>',
   kids: '<path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-5h6v5"/><circle cx="12" cy="10" r="1.6"/>',
   formats: '<rect x="2" y="7" width="11" height="7" rx="1.5"/><rect x="15" y="3" width="7" height="12" rx="1.5"/><rect x="6" y="16" width="6" height="6" rx="1.2"/>',
   brand: '<path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/><circle cx="12" cy="11.5" r="2"/>',

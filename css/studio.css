@@ -480,3 +480,16 @@ body.in-nest #timeline{box-shadow:inset 0 0 0 2px #4fe3ff66}
 .kv.on { background: rgba(255,210,63,.22); outline: 1.5px solid #ffd23f; } .kv small { opacity: .7; }
 .kqa { display: grid; gap: 2px; } .kqa label { display: grid; grid-template-columns: 22px 1fr; align-items: center; gap: 6px; }
 .kmchk { display: flex; gap: 8px; align-items: center; margin: 8px 0; } .kmerr { color: #ff6b6b; display: block; min-height: 1em; }
+/* ---- Batch 12: help (tour + tips) ---- */
+.tour { position: fixed; inset: 0; z-index: 9000; }
+.tour-hole { position: absolute; border-radius: 14px; box-shadow: 0 0 0 9999px rgba(8,8,20,.72); outline: 2px solid #ffd23f; transition: all .25s ease; pointer-events: none; }
+.tour:not(:has(.tour-hole[style*="block"])) { background: rgba(8,8,20,.72); }
+.tour-tip { position: absolute; width: min(320px, calc(100vw - 20px)); padding: 14px 16px; border-radius: 16px; background: #fff; color: #1b1b2f; box-shadow: 0 8px 30px rgba(0,0,0,.4); transition: top .25s, left .25s; }
+.tour-tip b { font-size: 17px; } .tour-tip p { margin: 6px 0 10px; line-height: 1.4; font-size: 14px; }
+.tour-dots { display: flex; gap: 5px; margin-bottom: 10px; } .tour-dots i { width: 7px; height: 7px; border-radius: 50%; background: #d0d4e0; } .tour-dots i.on { background: #7b3cff; width: 18px; border-radius: 4px; }
+.tour-btns { display: flex; justify-content: space-between; } .tour-tip .chipbtn { color: #1b1b2f; background: #eef0f6; } .tour-tip .chipbtn.primary { background: #ffd23f; font-weight: 700; }
+.sh-help { font-weight: 800; font-size: 17px; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.1); margin-left: auto; margin-right: 6px; }
+.sh-tip { margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255,210,63,.13); border: 1px solid rgba(255,210,63,.45); font-size: 13.5px; line-height: 1.4; }
+.sh-tip ul { margin: 6px 0 8px; padding-left: 18px; } .sh-tip .chipbtn { padding: 4px 12px; }
+.hclist { display: grid; gap: 6px; margin-top: 8px; } .hcrow { padding: 8px 12px; border-radius: 12px; background: rgba(255,255,255,.06); }
+.hcrow summary { font-weight: 700; cursor: pointer; } .hcrow ul { margin: 6px 0 2px; padding-left: 18px; font-size: 13.5px; line-height: 1.4; }

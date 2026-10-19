@@ -5,6 +5,7 @@ import { icon } from './icons.js';
 const sheet = () => document.getElementById('sheet');
 let onClose = null;
 export const sheetOpen = () => !sheet().classList.contains('hidden');
+import { HELP } from './helptips.js';
 export function openSheet(title, build, { gesture = true, className = '', onClose: extraClose = null } = {}) {
   closeSheet();
   const el = sheet(); el.className = 'sheet ' + className;
@@ -13,7 +14,25 @@ export function openSheet(title, build, { gesture = true, className = '', onClos
   onClose = () => { try { extraClose && extraClose(); } finally { if (gesture) end(); } };
   el.querySelector('.sh-done').onclick = () => closeSheet();
   build(el.querySelector('.sh-body'));
+  helpButton(el, title);
   document.body.classList.add('sheet-open');
+}
+/* "?" in the sheet header: this tool's tips (js/helptips.js). Shown once by itself the first time a tool opens (not under automation). */
+const SEEN = 'evs-tips-seen';
+function helpButton(el, title) {
+  const tips = HELP[title]; if (!tips) return;
+  const head = el.querySelector('.sh-head'), hb = document.createElement('button'); hb.className = 'ib sh-help'; hb.setAttribute('aria-label', 'Help for ' + title); hb.textContent = '?';
+  head.insertBefore(hb, head.querySelector('.sh-done')); hb.onclick = () => toggleTip(el, title, tips);
+  let seen = []; try { seen = JSON.parse(localStorage.getItem(SEEN) || '[]'); } catch (e) {}
+  if (!seen.includes(title) && !navigator.webdriver) toggleTip(el, title, tips);
+}
+export function toggleTip(el, title, tips = HELP[title]) {
+  const body = el.querySelector('.sh-body'), old = body.querySelector('.sh-tip'); if (old) { old.remove(); return false; }
+  const d = document.createElement('div'); d.className = 'sh-tip'; d.id = 'shTip';
+  d.innerHTML = `<b>💡 ${title}</b><ul>${tips.map(t => `<li>${t}</li>`).join('')}</ul><button class="chipbtn" id="shTipOk">Got it</button>`;
+  d.querySelector('#shTipOk').onclick = () => d.remove(); body.prepend(d);
+  try { const seen = JSON.parse(localStorage.getItem(SEEN) || '[]'); if (!seen.includes(title)) localStorage.setItem(SEEN, JSON.stringify([...seen, title])); } catch (e) {}
+  return true;
 }
 export function closeSheet() {
   const el = sheet(); if (el.classList.contains('hidden')) return;
