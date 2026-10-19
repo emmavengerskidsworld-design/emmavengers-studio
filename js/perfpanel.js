@@ -18,7 +18,9 @@ export function initPerf(ctx) {
     const r = await ex.exportVideo(p, { short: Math.min(W, H), size: { W, H }, fps: 30, quality: 'standard' }); return r.blob;
   });
   on('change', () => P.invalidate()); onMediaUpdate(() => P.invalidate());
-  perf.onPerf(() => { P.invalidate(); P.sync(P.t); P.requestDraw(); X.timeline.render(); });
+  // the timeline only needs a redraw when a proxy badge changes (not when the memory guard trims caches), and never mid-drag
+  let tlSig = '', tlT = 0; const tlSoon = () => { clearTimeout(tlT); if (X.timeline.drag || X.timeline.box) { tlT = setTimeout(tlSoon, 120); return; } X.timeline.render(); };
+  perf.onPerf(() => { P.invalidate(); P.sync(P.t); P.requestDraw(); const sig = [...perf.proxyState].join('|') + perf.proxiesOn(S.project); if (sig !== tlSig) { tlSig = sig; tlSoon(); } });
   // proxies are made in the background, but never while a finger / mouse is busy on the editor (no jank during drags)
   let pt = 0, lastInput = 0; for (const ev of ['pointerdown', 'pointermove', 'wheel']) addEventListener(ev, () => { lastInput = performance.now(); }, { capture: true, passive: true });
   const run = () => { if (performance.now() - lastInput < 1500) { pt = setTimeout(run, 600); return; } perf.ensureProxies(S.project).catch(e => console.warn('proxies', e)); };

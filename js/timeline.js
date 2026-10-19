@@ -66,6 +66,9 @@ export class Timeline {
 
   /* ---------- drawing ---------- */
   render() {
+    // a re-render (e.g. audio finished baking) mid move-drag would replace the clip under the finger and the browser would take the gesture: do it after the drop
+    if (this.drag && this.drag.active && this.drag.mode === 'move') { this._pendingRender = true; return; }
+    this._pendingRender = false;
     const p = S.project, pps = this.pps, D = projectDuration(p), w = Math.max(1, Math.ceil(D * pps));
     this.content.style.width = (w + this.pad * 2) + 'px';
     this.tracksEl.style.paddingLeft = this.pad + 'px'; this.tracksEl.style.paddingRight = this.pad + 'px';
@@ -289,6 +292,7 @@ export class Timeline {
     if (this.downEmpty && !this.drag) { if (Math.hypot(e.clientX - this.downEmpty.x, e.clientY - this.downEmpty.y) < 8 && e.target.closest('#tlScroll')) select(null); this.downEmpty = null; }
     const d = this.drag; if (!d || e.pointerId !== d.pid) return;
     clearTimeout(d.timer); this.drag = null; this.tip.hidden = true; document.body.classList.remove('tl-dragging');
+    if (this._pendingRender) this.render();
     if (!d.active) { if (S.multi.length || this.selectMode) { toggleMulti(d.id); this.render(); } else select(d.id); return; }
     // long-press and let go without moving = add to / remove from the multi-selection
     if (d.mode === 'move' && d.touch && Math.hypot(d.x - d.x0, d.y - d.y0) < 6) { end(); d.el.classList.remove('dragging'); d.el.style.transform = ''; toggleMulti(d.id); this.render(); return; }
@@ -301,7 +305,7 @@ export class Timeline {
     }
     end(); this.render(); this.o.afterEdit && this.o.afterEdit();
   }
-  cancel(e) { const d = this.drag; if (!d || (e && e.pointerId !== d.pid)) return; clearTimeout(d.timer); this.drag = null; this.tip.hidden = true; document.body.classList.remove('tl-dragging'); if (d.active) { end(); this.render(); } }
+  cancel(e) { const d = this.drag; if (!d || (e && e.pointerId !== d.pid)) return; clearTimeout(d.timer); this.drag = null; if (this._pendingRender) this.render(); this.tip.hidden = true; document.body.classList.remove('tl-dragging'); if (d.active) { end(); this.render(); } }
 }
 function rulerLabel(s, step) { const m = Math.floor(s / 60), sec = s % 60; if (step < 1) return (m ? m + ':' : '') + (m ? sec.toFixed(1).padStart(4, '0') : sec.toFixed(1)) ; return String(m).padStart(2, '0') + ':' + String(Math.round(sec)).padStart(2, '0'); }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
