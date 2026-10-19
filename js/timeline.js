@@ -104,7 +104,8 @@ export class Timeline {
     if (rec && rec.proxy && usingProxy(rec, S.project)) badges.push('<span class="spd px" title="Playing a light proxy copy (export uses the original)">P</span>');
     if (c.group) badges.push('<span class="spd" title="Grouped">⧉</span>');
     if (c.link) badges.push('<span class="spd" title="Linked">🔗</span>');
-    if (c.type === 'text') badges.push(`<span class="ctext">${esc(c.text.content.split('\n')[0] || 'Text')}</span>`);
+    if (c.type === 'element') badges.push(`<span class="ctext">✦ ${esc(c.name || 'Element')}</span>`);
+    else if (c.type === 'text') badges.push(`<span class="ctext">${esc(c.text.content.split('\n')[0] || 'Text')}</span>`);
     else if (c.type === 'effect') { const e = c.effect && (c.effect.kind === 'adjust' ? { name: 'Adjustment layer' } : c.effect.kind === 'filter' ? filterGL(c.effect.id) : effectById(c.effect.id)); badges.push(`<span class="ctext">${icon('effects', 12)} ${esc(e ? e.name : 'Effect')}</span>`); }
     else if (c.type === 'audio') badges.push(`<span class="cname">${esc(rec ? rec.name : 'Audio')}</span>`) && c.beat && badges.push(`<span class="spd bpm" title="Beat markers">♩${Math.round(c.beat.bpm)}</span>`);
     if (S.sel === c.id || c.type === 'video') badges.push(`<span class="dur">${fmtS(d)}</span>`);

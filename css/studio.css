@@ -425,3 +425,11 @@ body.in-nest #timeline{box-shadow:inset 0 0 0 2px #4fe3ff66}
 .membar{height:10px;border-radius:5px;background:#26262f;overflow:hidden}
 .membar i{display:block;height:100%;background:linear-gradient(90deg,#3ddc84,#ffcc33)}
 .spd.px{background:#4fa3ff;color:#fff}
+/* ---- Batch 11: overlay library ---- */
+.elsheet .elcats { flex-wrap: nowrap; overflow-x: auto; }
+.elsheet .elcats i { font-style: normal; opacity: .6; font-size: 11px; margin-left: 3px; }
+.elgrid { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); max-height: 46vh; overflow-y: auto; }
+.elgrid .eltile canvas { width: 54px; height: 96px; border-radius: 8px; background: #222; }
+.elgrid .eltile span { font-size: 10px; line-height: 1.15; }
+.elblend { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.elblend .chips { flex-wrap: nowrap; overflow-x: auto; }

@@ -1,5 +1,6 @@
 /* Inline SVG icon set (stroke icons, 24px grid). */
 const P = {
+  elements: '<circle cx="7" cy="7" r="3"/><path d="M17 3l1.2 2.8L21 7l-2.8 1.2L17 11l-1.2-2.8L13 7l2.8-1.2z"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 21l3.5-7 3.5 7z"/>',
   link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/>',
   unlink: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/><path d="M4 4l16 16"/>',
   group: '<rect x="3" y="3" width="11" height="8" rx="2"/><rect x="10" y="13" width="11" height="8" rx="2"/><path d="M7 11v4h3M17 13V9h-3"/>',

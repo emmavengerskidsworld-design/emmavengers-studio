@@ -3,6 +3,8 @@
    { img: CanvasImageSource, w, h, rot } (w/h = coded size, rot = display rotation in degrees). */
 import { TRACK_KINDS, propAt, filterCss, FONTS } from './registry.js';
 import { innerTracks } from './compound.js';
+import { drawElement } from './elements.js';
+import { drawKaraoke } from './karaoke.js';
 import { transitionById, helpers } from './transitions.js';
 import { clipEnd, clipDur, srcTime } from './project.js';
 import { clipAnimState, textAnimPlan, unitQ } from './animations.js';
@@ -32,6 +34,13 @@ function drawCompound(cx, W, H, clip, tr, local, t, getSource, opts) {
   nestDepth++; try { renderFrame(x, W, H, { tracks: innerTracks(clip), aspect: '', _nested: true }, t, getSource, { ...opts, selectedId: null }); } finally { nestDepth--; }
   return drawVisual(cx, W, H, { img: L, w: W, h: H, rot: 0 }, clip, tr, local, opts);
 }
+/** Overlay-library element: drawn procedurally into its own full-frame layer, then handled like a picture (blend, key, keyframes...). */
+const elL = [];
+function drawElementClip(cx, W, H, clip, tr, local, opts) {
+  let L = elL[nestDepth]; if (!L || L.width !== W || L.height !== H) L = elL[nestDepth] = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(W, H) : Object.assign(document.createElement('canvas'), { width: W, height: H });
+  if (!drawElement(L.getContext('2d'), W, H, clip.element && clip.element.id, local * (clip.speed || 1), clipDur(clip) * (clip.speed || 1))) return null;
+  return drawVisual(cx, W, H, { img: L, w: W, h: H, rot: 0 }, clip, tr, local, opts);
+}
 export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
@@ -43,7 +52,8 @@ export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
     const tr = { x: propAt(clip, 'x', local), y: propAt(clip, 'y', local), scale: propAt(clip, 'scale', local), rotation: propAt(clip, 'rotation', local), opacity: propAt(clip, 'opacity', local) };
     let box = null;
     if (clip.type === 'effect') { drawFrameEffect(cx, W, H, clip, local); return; }
-    if (clip.type === 'text') box = drawText(cx, W, H, clip, tr, local);
+    if (clip.type === 'text') box = clip.karaoke ? drawKaraoke(cx, W, H, clip, tr, local, fontCss) : drawText(cx, W, H, clip, tr, local);
+    else if (clip.type === 'element') box = drawElementClip(cx, W, H, clip, tr, local, opts);
     else if (clip.type === 'compound') box = drawCompound(cx, W, H, clip, tr, local, t, getSource, opts);
     else { const s = getSource(clip, t); if (s) box = drawVisual(cx, W, H, s, clip, tr, local, opts); }
     if (box) boxes.push({ id: clip.id, ...box, rotation: tr.rotation });

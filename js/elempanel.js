@@ -38,7 +38,7 @@ export function elementsSheet(ctx) {
     function fill() {
       grid.innerHTML = ''; const my = ++job, list = ELEMENTS.filter(e => e.cat === cat);
       for (const e of list) { const b = document.createElement('button'); b.className = 'trtile eltile'; b.dataset.v = e.id; b.innerHTML = `<canvas width="${TW}" height="${TH}"></canvas><span>${e.name}</span>`;
-        b.onclick = () => { const c = addElement(ctx, e.id); if (!c) return; last = c.id; grid.querySelectorAll('.eltile').forEach(x => x.classList.toggle('on', x === b)); select(c.id, true); timeline.render();
+        b.onclick = () => { const c = addElement(ctx, e.id); if (!c) return; last = c.id; grid.querySelectorAll('.eltile').forEach(x => x.classList.toggle('on', x === b)); timeline.render();
           showBlend(c); const back = player.t; player.playRange(c.start, Math.min(c.start + Math.min(2.5, c.dur), c.start + c.dur), back); toast(`${e.name} added`); };
         grid.append(b); }
       const todo = [...grid.querySelectorAll('.eltile')]; const step = () => { if (my !== job) return; const b = todo.shift(); if (!b) return; drawTile(b.querySelector('canvas'), elementById(b.dataset.v)); requestAnimationFrame(step); }; requestAnimationFrame(step);

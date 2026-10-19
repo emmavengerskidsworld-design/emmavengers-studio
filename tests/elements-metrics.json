@@ -1,0 +1,32 @@
+{
+ "library": {
+  "n": 178,
+  "cats": 16,
+  "green": 32,
+  "screen": 96,
+  "perCat": {
+   "leak": 12,
+   "bokeh": 12,
+   "smoke": 10,
+   "dust": 10,
+   "burn": 10,
+   "sparkle": 12,
+   "rain": 8,
+   "snow": 8,
+   "confetti": 12,
+   "frame": 16,
+   "countdown": 10,
+   "green": 32,
+   "rays": 8,
+   "hearts": 6,
+   "bubbles": 6,
+   "glitch": 6
+  }
+ },
+ "parity": [
+  1.57,
+  1.48,
+  1.46
+ ],
+ "keyed_green_left": 0.0
+}
