@@ -9,8 +9,8 @@ export const TRACK_KINDS = {
   caption: { label: 'Captions', visual: true,  magnetic: false, accepts: ['text'],           z: 4, height: 30 },
   text:    { label: 'Text',    visual: true,  magnetic: false, accepts: ['text'],           z: 3, height: 34 },
   effect:  { label: 'Effects', visual: true,  magnetic: false, accepts: ['effect'],         z: 2.5, height: 30 },
-  overlay: { label: 'Overlay', visual: true,  magnetic: false, accepts: ['video', 'image'], z: 2, height: 44 },
-  main:    { label: 'Main',    visual: true,  magnetic: true,  accepts: ['video', 'image'], z: 1, height: 58 },
+  overlay: { label: 'Overlay', visual: true,  magnetic: false, accepts: ['video', 'image', 'compound'], z: 2, height: 44 },
+  main:    { label: 'Main',    visual: true,  magnetic: true,  accepts: ['video', 'image', 'compound'], z: 1, height: 58 },
   audio:   { label: 'Audio',   visual: false, magnetic: false, accepts: ['audio'],          z: 0, height: 36 },
 };
 

@@ -3,6 +3,7 @@
    Faster than real time on most phones, frame-exact, no server, no special headers needed (works on GitHub Pages).
    Fallback: real-time MediaRecorder capture of the preview (WebM or MP4, whatever the browser records). */
 import { media, decodeAudio, dropAudioCache, loadBitmap } from './media.js';
+import { allClips, activeVisual } from './compound.js';
 import { renderFrame, visualTracks, activeAt } from './render.js';
 import { projectDuration, clipEnd, clipDur, srcTime, hasSource, ASPECTS, gainAt, panAt } from './project.js';
 import { ensurePresence, loudOn, LOUD_TARGET } from './audiomix.js';
@@ -91,7 +92,7 @@ export function recorderMime() {
 export async function mixAudio(p, D, onProgress, { raw = false } = {}) {
   await ensurePresence(p);   // voice envelopes for auto ducking (same gain curve as the preview)
   const oac = new OfflineAudioContext(2, Math.max(1, Math.ceil(D * SR)), SR);
-  const all = p.tracks.flatMap(t => t.clips).filter(c => hasSource(c) && c.start < D && !c.muteAudio), todo = all.filter(needsBake); let done = 0;
+  const all = allClips(p).filter(c => hasSource(c) && c.start < D && !c.muteAudio), todo = all.filter(needsBake); let done = 0;
   for (const c of all) {
     const rec = media.get(c.mediaId); if (!rec || rec.hasAudio === false) continue;
     // processed clips: the same baked buffer the preview plays
@@ -180,7 +181,7 @@ export async function exportAudio(p, { format = 'm4a', range, onProgress = () =>
 async function framesAt(p, t, sources, clips) {
   const frames = new Map();
   for (const c of canvasClip(p) ? [canvasClip(p)] : []) { const r = media.get(c.mediaId); if (r) { const bm = await loadBitmap(r); frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); } }
-  for (const tr of visualTracks(p)) for (const c of activeAt(tr, t)) {
+  for (const c of activeVisual(p, t)) {
     if (c.type === 'image') { const r = media.get(c.mediaId); if (r) { const bm = await loadBitmap(r); frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); } continue; }
     if (c.type !== 'video') continue;
     let s = sources.get(c.id); if (!s) { s = await openSource(media.get(c.mediaId), srcTime(c, t)); sources.set(c.id, s); clips.set(c.id, c); }
@@ -253,7 +254,7 @@ async function encodeWebCodecs(p, D, W, H, fps, codecs, onProgress, signal, tSta
     if (fail) throw fail;
     const t = tStart + i / fps, frames = new Map();
     for (const c of canvasClip(p) ? [canvasClip(p)] : []) { const r = media.get(c.mediaId); if (r) { const bm = await loadBitmap(r); frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); } }
-    for (const tr of vtracks) for (const c of activeAt(tr, t)) {
+    for (const c of activeVisual(p, t)) {
       if (c.type === 'image') { const r = media.get(c.mediaId); if (r) { const bm = await loadBitmap(r); frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); } continue; }
       if (c.type !== 'video') continue;
       let s = sources.get(c.id);

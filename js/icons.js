@@ -1,5 +1,16 @@
 /* Inline SVG icon set (stroke icons, 24px grid). */
 const P = {
+  link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/>',
+  unlink: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/><path d="M4 4l16 16"/>',
+  group: '<rect x="3" y="3" width="11" height="8" rx="2"/><rect x="10" y="13" width="11" height="8" rx="2"/><path d="M7 11v4h3M17 13V9h-3"/>',
+  ungroup: '<rect x="3" y="3" width="9" height="7" rx="2"/><rect x="12" y="14" width="9" height="7" rx="2"/><path d="M14 6h3M7 18h3" stroke-dasharray="2 2"/>',
+  compound: '<rect x="3" y="5" width="18" height="14" rx="3"/><rect x="6" y="8" width="6" height="3" rx="1"/><rect x="9" y="13" width="9" height="3" rx="1"/>',
+  select: '<path d="M4 4h4M4 4v4M20 4h-4M20 4v4M4 20h4M4 20v-4M20 20h-4M20 20v-4"/><path d="m9 12 2 2 4-4"/>',
+  marker: '<path d="M6 21V4M6 4h11l-2.5 4L17 12H6"/>',
+  history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
+  magnet: '<path d="M6 3v8a6 6 0 0 0 12 0V3h-4v8a2 2 0 0 1-4 0V3z"/><path d="M6 7h4M14 7h4"/>',
+  attrs: '<path d="M4 7h10M4 12h7M4 17h5"/><circle cx="17" cy="15" r="4"/><path d="M17 13v4M15 15h4"/>',
+  keyboard: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
   beat: '<path d="M3 12h2l2-6 3 12 3-9 2 5 2-2h4"/>',
   shuffle: '<path d="M3 7h3.5a4 4 0 0 1 3.2 1.6l4.6 6.8a4 4 0 0 0 3.2 1.6H21"/><path d="M3 17h3.5a4 4 0 0 0 3.2-1.6l.6-.9M14.3 8.6l.6-.9A4 4 0 0 1 18.1 6H21"/><path d="m18 3 3 3-3 3M18 15l3 3-3 3"/>',
   home: '<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/>',

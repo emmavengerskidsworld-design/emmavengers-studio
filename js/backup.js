@@ -48,7 +48,7 @@ export async function restoreBackup(file, { verify = true, onProgress } = {}) {
   const ids = [];
   for (const pm of man.projects) {
     const ent = z.get(pm.file); if (!ent) continue; const p = JSON.parse(await ent.slice().text());
-    for (const t of p.tracks || []) for (const c of t.clips || []) if (c.mediaId && map.has(c.mediaId)) c.mediaId = map.get(c.mediaId);
+    const walk = ts => { for (const t of ts || []) for (const c of t.clips || []) { if (c.mediaId && map.has(c.mediaId)) c.mediaId = map.get(c.mediaId); if (c.type === 'compound' && c.inner) walk(c.inner.tracks); } }; walk(p.tracks);
     if (p.canvas && p.canvas.mediaId && map.has(p.canvas.mediaId)) p.canvas.mediaId = map.get(p.canvas.mediaId);
     if (await db.get('projects', p.id)) { p.id = 'p_' + uid(); p.name = await freeName((p.name || 'My video') + ' (restored)'); }
     await db.put('projects', normalize(p)); ids.push(p.id);

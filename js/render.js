@@ -2,6 +2,7 @@
    so what you see is exactly what you export. getSource(clip, t) supplies the pixels for a video/image clip:
    { img: CanvasImageSource, w, h, rot } (w/h = coded size, rot = display rotation in degrees). */
 import { TRACK_KINDS, propAt, filterCss, FONTS } from './registry.js';
+import { innerTracks } from './compound.js';
 import { transitionById, helpers } from './transitions.js';
 import { clipEnd, clipDur, srcTime } from './project.js';
 import { clipAnimState, textAnimPlan, unitQ } from './animations.js';
@@ -21,11 +22,21 @@ export const activeAt = (track, t) => track.clips.filter(c => c.start <= t + 1e-
 
 const H_ = helpers(), layers = [];
 function layer(i, W, H) { let c = layers[i]; if (!c || c.width !== W || c.height !== H) c = layers[i] = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(W, H) : Object.assign(document.createElement('canvas'), { width: W, height: H }); return c; }
+/** Compound clip: its contents are composited into their own layer (transparent), which is then drawn like one picture
+    (position / scale / rotation / opacity / filters / effects / keyframes of the compound clip). */
+const nestL = []; let nestDepth = 0;
+function drawCompound(cx, W, H, clip, tr, local, t, getSource, opts) {
+  if (nestDepth > 4) return null; let L = nestL[nestDepth];
+  if (!L || L.width !== W || L.height !== H) L = nestL[nestDepth] = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(W, H) : Object.assign(document.createElement('canvas'), { width: W, height: H });
+  const x = L.getContext('2d'); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.globalCompositeOperation = 'source-over'; x.filter = 'none'; x.clearRect(0, 0, W, H);
+  nestDepth++; try { renderFrame(x, W, H, { tracks: innerTracks(clip), aspect: '', _nested: true }, t, getSource, { ...opts, selectedId: null }); } finally { nestDepth--; }
+  return drawVisual(cx, W, H, { img: L, w: W, h: H, rot: 0 }, clip, tr, local, opts);
+}
 export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
   ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = 1; ctx.filter = 'none'; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
   // canvas: colour, then gradient / pattern / image, or a blurred copy of the main clip in the letterbox bars
-  { const mt = p.tracks.find(x => x.kind === 'main'), act = mt ? activeAt(mt, t) : []; drawCanvasBg(ctx, W, H, p, t, getSource, act[act.length - 1]); }
+  if (!p._nested) { const mt = p.tracks.find(x => x.kind === 'main'), act = mt ? activeAt(mt, t) : []; drawCanvasBg(ctx, W, H, p, t, getSource, act[act.length - 1]); }
   const boxes = [];
   const drawClip = (cx, track, clip) => {
     const local = t - clip.start;
@@ -33,6 +44,7 @@ export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
     let box = null;
     if (clip.type === 'effect') { drawFrameEffect(cx, W, H, clip, local); return; }
     if (clip.type === 'text') box = drawText(cx, W, H, clip, tr, local);
+    else if (clip.type === 'compound') box = drawCompound(cx, W, H, clip, tr, local, t, getSource, opts);
     else { const s = getSource(clip, t); if (s) box = drawVisual(cx, W, H, s, clip, tr, local, opts); }
     if (box) boxes.push({ id: clip.id, ...box, rotation: tr.rotation });
   };

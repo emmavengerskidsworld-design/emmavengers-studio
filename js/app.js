@@ -1,5 +1,6 @@
 /* Emmavengers Studio — app shell: wires the store, preview player, timeline, toolbars, panels and export. */
 import { S, act, live, load, save, on, undo, redo, canUndo, canRedo, select, selected, reset, begin, end, useProject } from './store.js';
+import { activeVisual } from './compound.js';
 import { newClip, addToMain, addToKind, split, remove, duplicate, setSpeed, projectDuration, clipDur, clipEnd, hasSource, find, ASPECTS, mediaIds, kfTimes, kfAt, hasKeyframes, addKeyframe, removeKeyframe, setEase, setProp, kenBurns, KEN_BURNS, transEff, KF_EPS } from './project.js';
 import { TRANSITIONS, TRANSITION_CATS, transitionById, helpers as trHelpers, DEFAULT_TRANSITION_DUR, MIN_TRANSITION, MAX_TRANSITION } from './transitions.js';
 import { media, importFile, loadAll, useMedia, onMediaUpdate, kindOf, bitmapOf } from './media.js';
@@ -18,6 +19,9 @@ import { FILTER_CATS } from './registry.js';
 import { ensureFont, ensureProjectFonts, onFontLoad } from './fonts.js';
 import { onLut } from './colorpro.js';
 import { canvasClip } from './canvasbg.js';
+import * as work from './workpanel.js';
+import * as workflow from './workflow.js';
+import * as storeApi from './store.js';
 import { decodeAudio } from './media.js';
 import { initMixPanel, mixSheet, projectMixSheet, addMark, fillMarks } from './mixpanel.js';
 import { setDecoder, setMediaGetter, onEnvelope, loudOn } from './audiomix.js';
@@ -68,6 +72,10 @@ async function boot() {
   initMotionPanel({ player, timeline, toast, busy: (on, txt) => { $('#busy').hidden = !on; if (txt) $('#busyText').textContent = txt; } });
   setMediaGetter(id => media.get(id)); setDecoder(rec => decodeAudio(rec)); onEnvelope(() => { player.requestDraw(); if (player.playing) player.sync && player.sync(player.t); });
   initMixPanel({ player, timeline, toast, loudness: () => measureLoudness() });
+  work.initWork({ player, timeline, toast, refreshToolbar });
+  { const z = $('#zoom'); const mb = document.createElement('button'); mb.id = 'magBtn'; mb.className = 'ib tlbtn'; mb.innerHTML = icon('magnet', 18); mb.onclick = () => work.toggleMagnetic();
+    const sb = document.createElement('button'); sb.id = 'selModeBtn'; sb.className = 'ib tlbtn'; sb.innerHTML = icon('select', 18); sb.title = 'Select several clips'; sb.onclick = () => work.setSelectMode(!timeline.selectMode);
+    z.prepend(sb, mb); on('change', work.magBtn); work.magBtn(); }
   initLayoutPanel({ player, timeline, toast, busy: (on, txt) => { $('#busy').hidden = !on; if (txt) $('#busyText').textContent = txt; } });
   onBaked(() => { timeline.render(); if (player.playing) player.sync(player.t); });
   wireUI(); layoutPreview(); timeline.fitZoom(); timeline.render(); refreshToolbar(); updateUndo(); updateEmpty(); showTime(); setPlayIcon(false);
@@ -79,7 +87,7 @@ async function boot() {
   setTimeout(async () => { try { await projects.askPersist(); await projects.cleanUp(); if (!(await projects.getThumb(S.project.id))) makeThumb(); } catch (e) { console.warn('clean-up', e); } }, 2500);
   const qs = new URLSearchParams(location.search);
   if (qs.has('home') || (matchMedia('(display-mode: standalone)').matches && !qs.has('editor'))) showHome();
-  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async (o = {}) => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project), null, o) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, layout: { apply: (id, o) => applyLayout(id, o), fill: (f, id, o) => fillCells(f, id, o), clear: () => clearLayout(), sheet: () => layoutSheet(), canvas: t => canvasSheet(t) }, motion: { stab: (id, lv) => stabilizeClip(id, lv), track: (id, x, y, o) => trackClip(id, x, y, o), copy: id => copyKeyframes(find(S.project, id).clip), paste: (id, L) => pasteKeyframes(id, L), slowmo: (id, s, bl) => slowmoClip(id, s, bl) }, mix: { sheet: t => mixSheet(t), project: () => projectMixSheet(), addMark: (id, t) => addMark(id, t), fillMarks: (id, b, f) => fillMarks(id, b, f), loudness: () => measureLoudness() }, ready: true };
+  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async (o = {}) => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project), null, o) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, layout: { apply: (id, o) => applyLayout(id, o), fill: (f, id, o) => fillCells(f, id, o), clear: () => clearLayout(), sheet: () => layoutSheet(), canvas: t => canvasSheet(t) }, motion: { stab: (id, lv) => stabilizeClip(id, lv), track: (id, x, y, o) => trackClip(id, x, y, o), copy: id => copyKeyframes(find(S.project, id).clip), paste: (id, L) => pasteKeyframes(id, L), slowmo: (id, s, bl) => slowmoClip(id, s, bl) }, mix: { sheet: t => mixSheet(t), project: () => projectMixSheet(), addMark: (id, t) => addMark(id, t), fillMarks: (id, b, f) => fillMarks(id, b, f), loudness: () => measureLoudness() }, work: { ...work, ...workflow, store: storeApi }, ready: true };
   document.body.classList.add('ready');
 }
 /* ---------------- projects ---------------- */
@@ -91,7 +99,7 @@ async function makeThumb() {
     const [a, b] = ASPECTS[p.aspect] || [9, 16], W = a > b ? 320 : Math.round(320 * a / b), H = Math.round(W * b / a), D = projectDuration(p);
     const cv = new OffscreenCanvas(W, H), x = cv.getContext('2d', { alpha: false }); if (!D) { await projects.setThumb(p.id, null); return; }
     const t = player.t > 0.05 && player.t < D ? player.t : Math.min(1, D / 3), frames = new Map();
-    for (const tr of p.tracks) for (const c of tr.clips) if (c.type === 'image' && c.start <= t && t < clipEnd(c)) { const r = media.get(c.mediaId), bm = r && bitmapOf(r); if (bm) frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); }
+    for (const c of activeVisual(p, t)) if (c.type === 'image') { const r = media.get(c.mediaId), bm = r && bitmapOf(r); if (bm) frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); }
     renderFrame(x, W, H, p, t, c => frames.get(c.id) || player.source(c), { fast: true });
     await projects.setThumb(p.id, await cv.convertToBlob({ type: 'image/jpeg', quality: .78 }));
   } catch (e) { console.warn('thumb', e); }
@@ -388,6 +396,7 @@ async function onFiles(files, kind) {
 /* ---------------- toolbar ---------------- */
 const isVisualClip = c => c.type !== 'audio' && c.type !== 'effect';
 const ROOT_TOOLS = [
+  work.ROOT_EXTRA.find(t => t.id === 'nestback'),
   { id: 'media', icon: 'media', label: 'Media', run: () => pick('main') },
   { id: 'adshuffle', icon: 'shuffle', label: 'Shuffle ad', when: () => !!(S.project && S.project.ad), run: () => shuffleAd(adCtx()) },
   { id: 'adedit', icon: 'beat', label: 'Edit ad', when: () => !!(S.project && S.project.ad), run: () => adSheet(adCtx(), S.project.ad) },
@@ -406,6 +415,7 @@ const ROOT_TOOLS = [
   { id: 'adjlayer', icon: 'layers', label: 'Adjust layer', run: () => addAdjustmentLayer() },
   { id: 'overlay', icon: 'overlay', label: 'Overlay', run: () => pick('overlay') },
   { id: 'split', icon: 'split', label: 'Split', run: doSplit },
+  ...work.ROOT_EXTRA.filter(t => t.id !== 'nestback'),
   { id: 'ratio', icon: 'ratio', label: 'Ratio', run: ratioSheet },
   { id: 'bg', icon: 'bg', label: 'Canvas', run: () => canvasSheet() },
   { id: 'layout', icon: 'layout', label: 'Layout', run: () => layoutSheet() },
@@ -452,15 +462,16 @@ const CLIP_TOOLS = [
   { id: 'track', icon: 'track', label: 'Track', when: c => c.type === 'text' || ((c.type === 'image' || c.type === 'video') && find(S.project, c.id)?.track.kind !== 'main'), run: () => trackSheet() },
   { id: 'kenburns', icon: 'kenburns', label: 'Ken Burns', when: c => c.type === 'image', run: kenBurnsSheet },
   { id: 'transition', icon: 'transition', label: 'Transition', when: c => { const f = find(S.project, c.id); return f && TRACK_KINDS[f.track.kind].magnetic && f.track.clips.length > 1; }, run: () => { const f = selected(); const i = f.track.clips.indexOf(f.clip); transitionSheet(f.track.clips[Math.max(1, i)].id); } },
+  ...work.CLIP_EXTRA,
   { id: 'duplicate', icon: 'copy', label: 'Duplicate', run: () => { const b = act(p => duplicate(p, S.sel)); b && select(b.id); } },
   { id: 'delete', icon: 'trash', label: 'Delete', run: () => { const id = S.sel; select(null); act(p => remove(p, id)); player.gc(); } },
 ];
 function refreshToolbar() {
   const bar = $('#toolbar'), f = selected();
-  const tools = f ? CLIP_TOOLS.filter(t => !t.when || t.when(f.clip)) : ROOT_TOOLS.filter(t => !t.when || t.when());
-  const key = (f ? f.clip.id + ':' : 'root:') + tools.map(t => t.id).join(',');
+  const multi = S.multi.length > 1, tools = multi ? work.MULTI_TOOLS.filter(t => !t.when || t.when()) : f ? CLIP_TOOLS.filter(t => !t.when || t.when(f.clip)) : ROOT_TOOLS.filter(t => !t.when || t.when());
+  const key = (multi ? 'multi' + S.multi.length + ':' : f ? f.clip.id + ':' : 'root:') + tools.map(t => t.id).join(',');
   if (bar.dataset.key === key) return; bar.dataset.key = key;
-  bar.innerHTML = (f ? `<button class="tool back" data-tool="back">${icon('back')}<span>Back</span></button>` : '') +
+  bar.innerHTML = (multi ? `<span class="multicount" id="multiCount">${S.multi.length} selected</span>` : f ? `<button class="tool back" data-tool="back">${icon('back')}<span>Back</span></button>` : '') +
     tools.map(t => `<button class="tool" data-tool="${t.id}">${icon(t.icon)}<span>${t.label}</span></button>`).join('');
   bar.onclick = e => { const b = e.target.closest('.tool'); if (!b) return; if (b.dataset.tool === 'back') { select(null); return; }
     const t = tools.find(x => x.id === b.dataset.tool); if (player.playing) player.pause(); t && t.run(); };
@@ -596,7 +607,7 @@ async function renderStill({ t = 0, W, H, plain = false, fast = false, type = 'i
   const { loadBitmap } = await import('./media.js');
   const cv = new OffscreenCanvas(W, H), ctx = cv.getContext('2d', { alpha: false }), frames = new Map();
   { const cc = canvasClip(S.project); if (cc && media.get(cc.mediaId)) { const bm = await loadBitmap(media.get(cc.mediaId)); frames.set(cc.id, { img: bm, w: bm.width, h: bm.height }); } }
-  for (const tr of S.project.tracks) for (const c of tr.clips) if (c.type === 'image' && c.start <= t && t < clipEnd(c)) { const bm = await loadBitmap(media.get(c.mediaId)); frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); }
+  for (const c of activeVisual(S.project, t)) if (c.type === 'image') { const bm = await loadBitmap(media.get(c.mediaId)); frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); }
   player.seek(t); await new Promise(r => setTimeout(r, 300));
   renderFrame(ctx, W, H, S.project, t, c => frames.get(c.id) || player.source(c), { plain, fast });
   const blob = await cv.convertToBlob({ type }); const buf = new Uint8Array(await blob.arrayBuffer());
@@ -1087,15 +1098,10 @@ function wireUI() {
   new ResizeObserver(layoutPreview).observe($('#stage'));
   previewGestures(); compareUI();
   addEventListener('keydown', e => {
-    if (e.target.matches('input, textarea')) return;
-    const mod = e.ctrlKey || e.metaKey;
-    if (e.code === 'Space') { e.preventDefault(); player.toggle(); }
-    else if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
-    else if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); }
-    else if ((e.key === 'Delete' || e.key === 'Backspace') && S.sel) { const id = S.sel; select(null); act(p => remove(p, id)); }
-    else if (e.key.toLowerCase() === 's' && !mod) doSplit();
-    else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { player.pause(); player.seek(player.t + (e.key === 'ArrowLeft' ? -1 : 1) / S.project.fps); timeline.setTime(player.t); showTime(); }
+    if (e.target.matches('input, textarea, select, [contenteditable]')) return;
+    if (work.handleKey(e, { doSplit, showTime })) updateKf();
   });
+
   // drop files on desktop
   addEventListener('dragover', e => e.preventDefault());
   addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files.length) onFiles(e.dataTransfer.files, 'main'); });

@@ -3,6 +3,7 @@
    all work from the same data. New features (transitions, keyframes, stickers, filters...) are new fields on a clip
    plus an entry in js/registry.js — no rewrite of the timeline or the renderer. */
 import { TRACK_KINDS, DEFAULT_TRANSFORM, propAt, kfPropsFor, KEYFRAME_PROPS, setBase } from './registry.js';
+import { nestedMediaIds } from './compound.js';
 import { duckAt } from './audiomix.js';
 import { MIN_TRANSITION, MAX_TRANSITION } from './transitions.js';
 import { cvMean, cvV, curveSrc, subCurve, validCurve } from './speedcurve.js';
@@ -73,10 +74,15 @@ export function find(p, clipId) {
 export const trackOf = (p, id) => p.tracks.find(t => t.id === id);
 
 /** Main (magnetic) tracks never have gaps: clip starts follow array order. Other tracks are kept sorted by start. */
+/** Is this track magnetic (no gaps, clips follow array order)? The main track can be switched to free placement (track.free). */
+export const magnetic = t => !!t && TRACK_KINDS[t.kind].magnetic && !t.free;
 export function normalize(p) {
   if (!p.tracks.some(t => t.kind === 'main')) p.tracks.unshift(newTrack('main'));
   for (const t of p.tracks) {
-    if (TRACK_KINDS[t.kind].magnetic) { let s = 0; t.clips.forEach((c, i) => { const eff = i ? transEff(t.clips[i - 1], c) : 0; c.start = round(Math.max(0, s - eff)); s = c.start + clipDur(c); }); }
+    if (t.kind === 'main' && t.free) {   // free main track: gaps allowed, clips never overlap (except a transition onto a touching clip)
+      t.clips.sort((a, b) => a.start - b.start); let e = 0;
+      t.clips.forEach((c, i) => { let s = Math.max(0, c.start); if (i) { const eff = c.transitionIn && s <= e + 0.05 ? transEff(t.clips[i - 1], c) : 0; s = eff ? e - eff : Math.max(s, e); } c.start = round(s); e = clipEnd(c); });
+    } else if (TRACK_KINDS[t.kind].magnetic) { let s = 0; t.clips.forEach((c, i) => { const eff = i ? transEff(t.clips[i - 1], c) : 0; c.start = round(Math.max(0, s - eff)); s = c.start + clipDur(c); }); }
     else t.clips.sort((a, b) => a.start - b.start);
   }
   // drop empty secondary tracks (main always stays)
@@ -142,7 +148,8 @@ export function remove(p, clipId) { const f = find(p, clipId); if (!f) return; f
 export function duplicate(p, clipId) {
   const f = find(p, clipId); if (!f) return null;
   const b = JSON.parse(JSON.stringify(f.clip)); b.id = 'c_' + uid();
-  if (TRACK_KINDS[f.track.kind].magnetic) f.track.clips.splice(f.index + 1, 0, b);
+  if (magnetic(f.track)) f.track.clips.splice(f.index + 1, 0, b);
+  else if (f.track.kind === 'main') { b.start = clipEnd(f.clip); f.track.clips.splice(f.index + 1, 0, b); }
   else { b.start = clipEnd(f.clip); placeFree(p, f.track.kind, b, f.track); }
   normalize(p); return b;
 }
@@ -155,13 +162,14 @@ export function reorder(p, clipId, newIndex) {
 export function moveTo(p, clipId, start, targetTrackId) {
   const f = find(p, clipId); if (!f) return;
   f.track.clips.splice(f.index, 1); f.clip.start = round(Math.max(0, start));
+  if (f.track.kind === 'main') { f.track.clips.push(f.clip); normalize(p); return; }   // free main track: stays on main
   const target = trackOf(p, targetTrackId);
   placeFree(p, f.track.kind, f.clip, target && target.kind === f.track.kind ? target : f.track);
   normalize(p);
 }
 /** Trim an edge. `dt` = timeline seconds the edge moved (+ = right). mediaDur = length of the source file. */
 export function trim(p, clipId, edge, dt, mediaDur) {
-  const f = find(p, clipId); if (!f) return; const c = f.clip, mag = TRACK_KINDS[f.track.kind].magnetic;
+  const f = find(p, clipId); if (!f) return; const c = f.clip, mag = magnetic(f.track);
   const sp = avgSpeed(c), off0 = hasSource(c) ? c.in / sp : 0;
   if (hasSource(c)) {
     if (edge === 'left') { const nIn = clamp(c.in + dt * sp, 0, c.out - MIN_CLIP * sp); if (!mag) c.start = round(c.start + (nIn - c.in) / sp); c.in = round(nIn); }
@@ -249,7 +257,7 @@ export function kenBurns(c, id) {
 /* ---------- audio gain (volume keyframes x transition crossfade) ---------- */
 /** Equal-power crossfade factor for a main-track clip at timeline time t. */
 export function xfadeAt(track, c, t) {
-  if (!track || !TRACK_KINDS[track.kind].magnetic) return 1;
+  if (!track || track.kind !== 'main') return 1;
   const i = track.clips.indexOf(c); let g = 1;
   if (i > 0 && c.transitionIn) { const e = clipEnd(track.clips[i - 1]) - c.start; if (e > 0 && t < c.start + e) g *= Math.sin(Math.max(0, (t - c.start) / e) * Math.PI / 2); }
   const n = track.clips[i + 1]; if (n && n.transitionIn) { const e = clipEnd(c) - n.start; if (e > 0 && t > n.start) g *= Math.cos(Math.min(1, (t - n.start) / e) * Math.PI / 2); }
@@ -281,4 +289,4 @@ export function extractAudio(p, clipId) {
 export const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 
 /** Remove references to media that no longer exist (e.g. storage was cleared). */
-export function mediaIds(p) { const s = new Set(); for (const t of p.tracks) for (const c of t.clips) if (c.mediaId) s.add(c.mediaId); if (p.canvas && p.canvas.mediaId) s.add(p.canvas.mediaId); return s; }
+export function mediaIds(p) { const s = new Set(); for (const t of p.tracks) for (const c of t.clips) { if (c.mediaId) s.add(c.mediaId); if (c.type === 'compound') nestedMediaIds(c, s); } if (p.canvas && p.canvas.mediaId) s.add(p.canvas.mediaId); return s; }

@@ -2,6 +2,7 @@
    every frame through the shared compositor. A master clock drives playback; elements are re-synced to it, and the
    clock waits while a video is still buffering so picture and sound never drift apart. */
 import { media, bitmapOf } from './media.js';
+import { allClips } from './compound.js';
 import { renderFrame } from './render.js';
 import { drawGuides } from './protools.js';
 import { clipEnd, projectDuration, srcTime, speedAt, hasSource, gainAt, panAt } from './project.js';
@@ -52,7 +53,7 @@ export class Player {
   /** Make sure every clip that is audible/visible now (or starts soon while playing) has a synced element. */
   sync(t) {
     const p = this.project, want = new Map();
-    for (const track of p.tracks) for (const c of track.clips) {
+    for (const c of allClips(p)) {
       if (!hasSource(c) || !media.has(c.mediaId)) continue;
       const active = c.start <= t + 1e-9 && t < clipEnd(c) - 1e-9;
       const soon = this.playing && t < c.start && c.start - t < PRELOAD;
@@ -164,7 +165,7 @@ export class Player {
     return { img: s.el, w: s.el.videoWidth, h: s.el.videoHeight };
   }
   /** Drop elements for media that was removed (keeps phone decoders free). */
-  gc() { const ids = new Set(); for (const t of this.project.tracks) for (const c of t.clips) ids.add(c.mediaId);
+  gc() { const ids = new Set(); for (const c of allClips(this.project)) ids.add(c.mediaId);
     this.pool = this.pool.filter(s => { if (ids.has(s.mediaId)) return true; s.el.removeAttribute('src'); s.el.load(); this.count--; return false; }); }
   destroy() { this.pause(); for (const id of [...this.voices.keys()]) this.stopVoice(id); for (const s of [...this.slots.values(), ...this.pool]) { s.el.pause(); s.el.removeAttribute('src'); s.el.load(); } this.slots.clear(); this.pool = []; if (this.ac) this.ac.close(); }
 }
