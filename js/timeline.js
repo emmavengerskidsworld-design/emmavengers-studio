@@ -115,7 +115,7 @@ export class Timeline {
     if (c.voice && c.voice.fx && voiceFxById(c.voice.fx)) badges.push(`<span class="spd" title="${voiceFxById(c.voice.fx).name}">${voiceFxById(c.voice.fx).emoji}</span>`);
     if ((c.filter && c.filter.id) || (c.effects && c.effects.length)) badges.push(`<span class="spd">FX</span>`);
     if (c.placeholder && c.placeholder !== 'text') badges.push(`<span class="ph" title="${esc(c.placeholder)}">Replace</span>`);
-    if (!rec && c.type !== 'text' && c.type !== 'effect') badges.push('<span class="spd">missing</span>');
+    if (!rec && c.type !== 'text' && c.type !== 'effect' && c.type !== 'element' && c.type !== 'compound') badges.push('<span class="spd">missing</span>');
     el.insertAdjacentHTML('beforeend', `<div class="badges">${badges.join('')}</div>`);
     if (c.anim) { const { di, dO } = animSpans(c, d), lp = c.anim[loopKind(c)];
       if (di > 0) el.insertAdjacentHTML('beforeend', `<i class="anin" style="width:${(di * this.pps).toFixed(1)}px"></i>`);

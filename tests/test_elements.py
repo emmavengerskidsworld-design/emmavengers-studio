@@ -86,6 +86,7 @@ async def run():
         await P(pg, 'studio.act(p=>{for(const c of p.tracks.flatMap(t=>t.clips)) if(c.type==="element") c.start=0.2; p.tracks.forEach(t=>t.clips.sort((a,b)=>a.start-b.start))})')
         await seek(pg, 2.0, 700); await shot(pg, 'b11-elements-preview.png', 200)
         ok(await P(pg, '!!document.querySelector(".clip .ctext") && [...document.querySelectorAll(".clip .ctext")].some(e=>e.textContent.includes("✦"))'), 'timeline labels element clips')
+        ok(not await P(pg, '[...document.querySelectorAll(".clip .spd")].some(e=>e.textContent==="missing")'), 'element clips are not flagged as missing media')
 
         log('== look + preview == export')
         st = await still(pg, 2.0, 180, 320); gfrac = float(((st[..., 1] > 200) & (st[..., 0] < 80) & (st[..., 2] < 80)).mean())

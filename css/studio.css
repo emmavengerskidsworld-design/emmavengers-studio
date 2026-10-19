@@ -440,3 +440,9 @@ body.in-nest #timeline{box-shadow:inset 0 0 0 2px #4fe3ff66}
 .kst canvas { width: 96px; height: 54px; border-radius: 8px; }
 .kst.on { border-color: var(--accent, #7b3cff); }
 .ktap { width: 100%; margin-top: 10px; padding: 22px 0; font: 900 20px system-ui; border-radius: 16px; border: none; background: #ffd400; color: #111; }
+/* ---- Batch 11: photo mode + thumbnails ---- */
+.phsheet .bigbtn { width: 100%; padding: 14px 0; border-radius: 14px; border: none; background: var(--accent, #7b3cff); color: #fff; font: 800 16px system-ui; margin: 8px 0; }
+.phsheet h4 { margin: 12px 0 6px; font-size: 13px; opacity: .8; }
+.thgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.thp { display: flex; flex-direction: column; gap: 4px; background: none; border: 0; color: inherit; font-size: 12px; padding: 0; }
+.thp .thsw { display: block; aspect-ratio: 16 / 9; border-radius: 8px; border: 1px solid #3a3f4b; }

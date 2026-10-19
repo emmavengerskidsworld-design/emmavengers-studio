@@ -76,7 +76,10 @@ export const trackOf = (p, id) => p.tracks.find(t => t.id === id);
 /** Main (magnetic) tracks never have gaps: clip starts follow array order. Other tracks are kept sorted by start. */
 /** Is this track magnetic (no gaps, clips follow array order)? The main track can be switched to free placement (track.free). */
 export const magnetic = t => !!t && TRACK_KINDS[t.kind].magnetic && !t.free;
+/** Photo mode: any 'a:b' shape (the picture's own) works like the built-in ones. */
+export function registerAspect(a) { if (ASPECTS[a]) return true; const m = /^(\d+):(\d+)$/.exec(a || ''); if (!m || !+m[1] || !+m[2]) return false; ASPECTS[a] = [+m[1], +m[2]]; return true; }
 export function normalize(p) {
+  if (p.aspect && !ASPECTS[p.aspect]) registerAspect(p.aspect);
   if (!p.tracks.some(t => t.kind === 'main')) p.tracks.unshift(newTrack('main'));
   for (const t of p.tracks) {
     if (t.kind === 'main' && t.free) {   // free main track: gaps allowed, clips never overlap (except a transition onto a touching clip)
