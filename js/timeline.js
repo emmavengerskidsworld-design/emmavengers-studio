@@ -204,7 +204,7 @@ export class Timeline {
       return; }
     const id = clipEl.dataset.id, f = find(S.project, id); if (!f) return;
     if (!handle && (e.shiftKey || e.ctrlKey || e.metaKey)) { e.preventDefault(); toggleMulti(id); this.render(); return; }
-    const d = { id, el: clipEl, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, sl0: this.scroll.scrollLeft, touch: e.pointerType !== 'mouse', pid: e.pointerId,
+    const d = { id, el: clipEl, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, sl0: this.scroll.scrollLeft, touch: e.pointerType !== 'mouse', pid: e.pointerId, ts: performance.now(),
       orig: JSON.stringify(f.clip), kind: f.track.kind, track: f.track.id, mag: magnetic(f.track), start0: f.clip.start, active: false, mode: handle ? 'trim' : 'move', edge: handle && handle.dataset.edge };
     this.drag = d;
     if (handle) { e.preventDefault(); this.startDrag(); try { clipEl.setPointerCapture(e.pointerId); } catch (er) {} }
@@ -228,8 +228,9 @@ export class Timeline {
     d.x = e.clientX; d.y = e.clientY;
     const dist = Math.hypot(d.x - d.x0, d.y - d.y0);
     if (!d.active) {
-      if (d.touch) { if (dist > 8) { clearTimeout(d.timer); this.drag = null; } return; }
-      if (dist > 5) this.startDrag(); else return;
+      if (d.touch) { if (performance.now() - d.ts >= LONG_PRESS) { clearTimeout(d.timer); this.startDrag(); }   // held long enough (the timer was just late on a busy phone)
+        else { if (dist > 8) { clearTimeout(d.timer); this.drag = null; } return; } }
+      else if (dist > 5) this.startDrag(); else return;
     }
     e.preventDefault(); this.apply();
   }

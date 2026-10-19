@@ -19,7 +19,10 @@ export function initPerf(ctx) {
   });
   on('change', () => P.invalidate()); onMediaUpdate(() => P.invalidate());
   perf.onPerf(() => { P.invalidate(); P.sync(P.t); P.requestDraw(); X.timeline.render(); });
-  let pt = 0; const proxies = () => { clearTimeout(pt); pt = setTimeout(() => perf.ensureProxies(S.project).catch(e => console.warn('proxies', e)), 800); };
+  // proxies are made in the background, but never while a finger / mouse is busy on the editor (no jank during drags)
+  let pt = 0, lastInput = 0; for (const ev of ['pointerdown', 'pointermove', 'wheel']) addEventListener(ev, () => { lastInput = performance.now(); }, { capture: true, passive: true });
+  const run = () => { if (performance.now() - lastInput < 1500) { pt = setTimeout(run, 600); return; } perf.ensureProxies(S.project).catch(e => console.warn('proxies', e)); };
+  const proxies = () => { clearTimeout(pt); pt = setTimeout(run, 800); };
   on('change', proxies); onMediaUpdate(proxies); proxies();
   perf.registerCache('frames', { prio: 0, bytes: () => P.fcache.bytes, trim: to => P.fcache.trim(to) });
   perf.registerCache('decoded-audio', { prio: 1, bytes: audioCacheBytes, trim: trimAudioCache });
