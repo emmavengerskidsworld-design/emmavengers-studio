@@ -15,30 +15,46 @@ export const homeOpen = () => !$('#home').hidden;
 
 export function initHome(ctx) {
   X = ctx; const h = $('#home');
-  h.innerHTML = `<header class="hm-top"><div class="brand">Emmavengers <b>Studio</b></div><button class="ib" id="homeMenu" aria-label="Settings">${icon('menu')}</button></header>
-  <div class="hm-body">
-    <div class="hm-new"><button class="btn primary big" id="newProjBtn">${icon('plus', 20)} New project</button><button class="btn big ghost" id="homeTemplates">${icon('templates', 20)} Templates</button></div>
-    <button class="btn big hm-ad" id="homeAd">${icon('beat', 20)} <span><b>Beat Ad Maker</b><small>Photos + music → a video cut on the beat</small></span></button>
+  h.innerHTML = `<header class="hm-top"><div class="brand">Emmavengers <b>Studio</b></div><button class="ib" id="homeMenu" aria-label="Settings">${icon('gear')}</button></header>
+  <div class="hm-body" id="hvHome">
+    <button class="hm-hero" id="newProjBtn"><span class="hm-plus">${icon('plus', 34)}</span><b>New video</b><small>Pick videos and photos to start</small></button>
+    <div class="hm-two"><button class="hm-mini" id="homePhoto">${icon('photo', 22)}<b>Photo</b></button><button class="hm-mini" id="homeAd">${icon('beat', 22)}<b>Beat Ad</b></button></div>
+    <div class="hm-sec"><h3>Recent</h3><button class="link" id="homeSeeAll">See all</button></div>
+    <div class="hm-recent" id="homeRecent"></div>
+  </div>
+  <div class="hm-body" id="hvProjects" hidden>
+    <h2 class="hm-title">Projects</h2>
     <div class="hm-tools"><label class="sndsearch hm-search">${icon('search', 18)}<input id="homeSearch" type="search" placeholder="Search my projects" autocomplete="off"></label></div>
     <div id="homeSort"></div>
     <div class="hm-grid" id="homeGrid"></div>
     <div class="hm-store" id="homeStorage"></div>
     <div class="hm-backup"><button class="btn ghost" id="homeBackupAll">${icon('backup', 18)} Back up all</button><button class="btn ghost" id="homeImport">${icon('restore', 18)} Restore backup</button></div>
     <p class="hint">Projects are saved on this phone. Back up to keep a copy in Files or Google Drive (use Share → Drive), and to move projects to another phone.</p>
-  </div><input type="file" id="homeFile" accept="${BACKUP_EXT},application/zip,application/octet-stream" hidden>`;
+  </div>
+  <nav class="hm-tabs" id="homeTabs"><button id="tabHome" class="on">${icon('home', 22)}<span>Home</span></button><button id="homeTemplates">${icon('templates', 22)}<span>Templates</span></button><button id="tabProjects">${icon('media', 22)}<span>Projects</span></button></nav>
+  <input type="file" id="homeFile" accept="${BACKUP_EXT},application/zip,application/octet-stream" hidden>`;
   $('#homeMenu').onclick = () => X.menuSheet();
   $('#newProjBtn').onclick = newSheet;
   $('#homeTemplates').onclick = () => X.templatesSheet();
   $('#homeAd').onclick = () => X.adSheet();
+  $('#homePhoto').onclick = () => X.photoSheet();
+  $('#homeSeeAll').onclick = () => tab('projects');
+  $('#tabHome').onclick = () => tab('home');
+  $('#tabProjects').onclick = () => tab('projects');
   $('#homeSort').append(chips([{ value: 'edited', label: 'Last edited' }, { value: 'name', label: 'Name' }, { value: 'created', label: 'Newest' }, { value: 'length', label: 'Longest' }], sort, v => { sort = v; localStorage.setItem('studio.homeSort', v); render(); }, 'tabs hmsort'));
   let tm = 0; $('#homeSearch').oninput = e => { clearTimeout(tm); tm = setTimeout(() => { q = e.target.value; render(); }, 120); };
   $('#homeBackupAll').onclick = () => backup('all');
   $('#homeImport').onclick = () => { $('#homeFile').value = ''; $('#homeFile').click(); };
   $('#homeFile').onchange = async e => { const f = e.target.files[0]; if (f) await restore(f); e.target.value = ''; };
 }
+export function tab(t) {
+  $('#hvHome').hidden = t !== 'home'; $('#hvProjects').hidden = t !== 'projects';
+  $('#tabHome').classList.toggle('on', t === 'home'); $('#tabProjects').classList.toggle('on', t === 'projects');
+  (t === 'home' ? $('#hvHome') : $('#hvProjects')).scrollTop = 0;
+}
 export async function showHome() {
   if (S.project) await X.leaveProject();
-  document.body.classList.add('home-open'); $('#home').hidden = false; closeSheet(); await render();
+  document.body.classList.add('home-open'); $('#home').hidden = false; tab('home'); closeSheet(); await render();
 }
 export function hideHome() { $('#home').hidden = true; document.body.classList.remove('home-open'); }
 async function open(id) { X.busy(true, 'Opening…'); try { await P.openById(id); hideHome(); X.afterSwitch(); } catch (e) { console.warn(e); X.toast('Could not open this project'); } finally { X.busy(false); } }
@@ -57,6 +73,14 @@ export async function render() {
     b.querySelector('.pmore').onclick = () => moreSheet(p);
     g.append(b);
   }
+  const rec = P.sortProjects(await P.listProjects(), 'edited', '').slice(0, 6), rr = $('#homeRecent'); rr.innerHTML = '';
+  if (!rec.length) rr.innerHTML = '<p class="hint hm-none">No projects yet. Tap New video to start.</p>';
+  for (const p of rec) {
+    let url = thumbUrls.get(p.id); if (!url) { const th = await P.getThumb(p.id); if (th) { url = URL.createObjectURL(th); thumbUrls.set(p.id, url); } }
+    const b = document.createElement('button'); b.className = 'rcard'; b.dataset.id = p.id; b.setAttribute('aria-label', 'Open ' + p.name);
+    b.innerHTML = `<span class="rthumb">${url ? `<img alt="" src="${url}">` : icon('media', 26)}<i>${fmtD(p.dur)}</i></span><b>${esc(p.name)}</b><small>${P.ago(p.updated)}</small>`;
+    b.onclick = () => open(p.id); rr.append(b);
+  }
   const st = $('#homeStorage'), pct = info.quota ? Math.min(100, info.usage / info.quota * 100) : 0;
   st.className = 'hm-store ' + info.level;
   st.innerHTML = `<div class="hs-row">${icon('storage', 18)}<span id="storeText">${list.length} project${list.length === 1 ? '' : 's'} · files ${P.fmtBytes(info.files)}${info.quota ? ` · ${P.fmtBytes(info.free)} free on this phone` : ''}</span></div>
@@ -67,11 +91,41 @@ export async function render() {
   window.__homeInfo = { count: list.length, info };
 }
 function newSheet() {
-  openSheet('New project', body => {
-    body.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: 'Pick the video shape. You can change it later.' }));
-    body.append(chips([{ value: '9:16', html: '<b>9:16</b><small>TikTok · Reels · Shorts</small>' }, { value: '16:9', html: '<b>16:9</b><small>YouTube</small>' }, { value: '1:1', html: '<b>1:1</b><small>Square post</small>' }], null, async v => {
-      closeSheet(); X.busy(true, 'Making your project…'); try { await P.createProject(v); hideHome(); X.afterSwitch(); X.toast('New project ' + v); } finally { X.busy(false); } }, 'big newratio'));
-  }, { gesture: false });
+  let kind = 'video', aspect = '9:16'; const items = [];   // { f, url, type, dur, on }
+  openSheet('New video', body => {
+    const tabs = chips([{ value: 'video', label: 'Videos' }, { value: 'image', label: 'Photos' }], kind, v => { kind = v; draw(); }, 'tabs nptabs'); tabs.id = 'npTabs';
+    const fi = Object.assign(document.createElement('input'), { type: 'file', accept: 'video/*,image/*', multiple: true, hidden: true, id: 'npFile' });
+    const pick = Object.assign(document.createElement('button'), { className: 'btn ghost', id: 'npPick' }); pick.innerHTML = icon('import', 18) + ' Choose from phone';
+    pick.onclick = () => { fi.value = ''; fi.click(); };
+    const grid = Object.assign(document.createElement('div'), { className: 'npgrid', id: 'npGrid' });
+    const hdOn = () => +(localStorage.getItem('studio.res') || 1080) >= 1080;
+    const hd = Object.assign(document.createElement('button'), { className: 'nphd', id: 'npHD' });
+    const hdDraw = () => { hd.classList.toggle('on', hdOn()); hd.innerHTML = `<b>HD</b><span>${hdOn() ? 'On · 1080p or more' : 'Off · 720p'}</span>`; };
+    hd.onclick = () => { localStorage.setItem('studio.res', hdOn() ? 720 : 1080); hdDraw(); }; hdDraw();
+    const ratio = chips([{ value: '9:16', html: '<b>9:16</b><small>Shorts · TikTok</small>' }, { value: '16:9', html: '<b>16:9</b><small>YouTube</small>' }, { value: '1:1', html: '<b>1:1</b><small>Square</small>' }], aspect, v => { aspect = v; }, 'newratio');
+    const add = Object.assign(document.createElement('button'), { className: 'btn primary big', id: 'npAdd' });
+    const bar = Object.assign(document.createElement('div'), { className: 'npbar' }); bar.append(hd, add);
+    const fmt = d => d ? `${Math.floor(d / 60)}:${String(Math.round(d % 60)).padStart(2, '0')}` : '';
+    function draw() {
+      grid.innerHTML = ''; const list = items.filter(x => x.type === kind);
+      if (!list.length) grid.innerHTML = `<p class="hint npnone">${kind === 'video' ? 'No videos picked yet.' : 'No photos picked yet.'} Tap Choose from phone.</p>`;
+      for (const it of list) {
+        const c = document.createElement('button'); c.className = 'nptile' + (it.on ? ' on' : '');
+        c.innerHTML = (it.type === 'image' ? `<img alt="" src="${it.url}">` : `<video muted playsinline preload="metadata" src="${it.url}#t=0.1"></video>`) + `<em class="npsel">${it.on ? items.filter(x => x.on).indexOf(it) + 1 : ''}</em>${it.dur ? `<i>${fmt(it.dur)}</i>` : ''}`;
+        c.onclick = () => { it.on = !it.on; draw(); }; grid.append(c);
+      }
+      const n = items.filter(x => x.on).length; add.textContent = n ? `Add (${n})` : 'Start empty';
+    }
+    fi.onchange = () => { for (const f of fi.files) { const type = /^image\//.test(f.type) ? 'image' : /^video\//.test(f.type) ? 'video' : null; if (!type) continue;
+        const it = { f, url: URL.createObjectURL(f), type, dur: 0, on: true }; items.push(it);
+        if (type === 'video') { const v = document.createElement('video'); v.preload = 'metadata'; v.onloadedmetadata = () => { it.dur = v.duration; draw(); }; v.src = it.url; } }
+      if (fi.files.length && ![...fi.files].some(f => f.type.startsWith(kind))) { kind = kind === 'video' ? 'image' : 'video'; tabs.setActive && tabs.setActive(kind); }
+      draw(); };
+    add.onclick = async () => { const files = items.filter(x => x.on).map(x => x.f); closeSheet(); X.busy(true, 'Making your project…');
+      try { await P.createProject(aspect); hideHome(); X.afterSwitch(); X.toast('New project ' + aspect); } finally { X.busy(false); }
+      if (files.length) await X.addFiles(files); for (const x of items) URL.revokeObjectURL(x.url); };
+    body.append(tabs, pick, fi, grid, Object.assign(document.createElement('p'), { className: 'hint', textContent: 'Video shape (you can change it later)' }), ratio, bar); draw();
+  }, { gesture: false, className: 'npsheet' });
 }
 function moreSheet(p) {
   openSheet(esc(p.name), body => {

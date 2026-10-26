@@ -102,7 +102,7 @@ async def run():
         log('== Video: custom bitrate and file-size target (busy noise clip in its own project)')
         noise = OUT / 'noise.mp4'; subprocess.run(['ffmpeg', '-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=s=720x1280:d=3:r=30', '-vf', 'noise=alls=14:allf=t', '-c:v', 'libx264', '-crf', '12', '-pix_fmt', 'yuv420p', str(noise)], check=True)
         first = await P(pg, 'studio.S.project.id')
-        await pg.click('#menuBtn'); await pg.wait_for_selector('#homeGrid .pcard'); await pg.click('#newProjBtn'); await pg.click('.newratio .chipbtn[data-v="9:16"]'); await pg.wait_for_function(f'studio.S.project.id!=="{first}" && !document.body.classList.contains("home-open")')
+        await pg.click('#menuBtn'); await pg.wait_for_selector('#newProjBtn'); await pg.click('#newProjBtn'); await pg.click('.newratio .chipbtn[data-v="9:16"]'); await pg.click('#npAdd'); await pg.wait_for_function(f'studio.S.project.id!=="{first}" && !document.body.classList.contains("home-open")')
         await P(pg, 'document.querySelector("#fileMedia").value=""'); await pg.set_input_files('#fileMedia', [str(noise)]); await pg.wait_for_function('studio.S.project.tracks.flatMap(t=>t.clips).length===1', timeout=30000); await pg.wait_for_timeout(500)
         sizes = {}
         for mb in (2, 12):
@@ -119,7 +119,7 @@ async def run():
         est = float(await P(pg, 'document.querySelector("#exSize").dataset.bytes')); ok(est <= 2.05e6, f'estimate fits the 2 MB target ({est/1e6:.2f} MB)')
         f, m, _ = await finish(pg, 'size2', 'mp4', True); sz = f.stat().st_size; ok(sz <= 2.0e6 * 1.08 and sz > 2.0e6 * 0.5, f'file-size target 2 MB: file is {sz/1e6:.2f} MB'); METRICS['size_target_2MB'] = sz
         await back(pg, True)
-        await pg.click('#menuBtn'); await pg.wait_for_selector(f'#homeGrid .pcard[data-id="{first}"]'); await pg.click(f'#homeGrid .pcard[data-id="{first}"] .pthumb')
+        await pg.click('#menuBtn'); await pg.click('#tabProjects'); await pg.wait_for_selector(f'#homeGrid .pcard[data-id="{first}"]'); await pg.click(f'#homeGrid .pcard[data-id="{first}"] .pthumb')
         await pg.wait_for_function(f'studio.S.project.id==="{first}" && !document.body.classList.contains("home-open")'); await pg.wait_for_timeout(800)
         ok(await P(pg, 'studio.projectDuration(studio.S.project)') == D, 'back in the first project')
 

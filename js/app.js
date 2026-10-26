@@ -88,7 +88,7 @@ async function boot() {
   onBaked(() => { timeline.render(); if (player.playing) player.sync(player.t); });
   wireUI(); layoutPreview(); timeline.fitZoom(); timeline.render(); refreshToolbar(); updateUndo(); updateEmpty(); showTime(); setPlayIcon(false);
   player.seek(0);
-  initHome({ toast, busy, menuSheet, templatesSheet, adSheet: () => adSheet(adCtx()), afterSwitch, leaveProject, deliver });
+  initHome({ toast, busy, menuSheet, templatesSheet, photoSheet: () => photomode.photoSheet({ ...phCtx(), afterSwitch: (...a) => { hideHome(); afterSwitch(...a); } }), addFiles: f => onFiles(f, 'main'), adSheet: () => adSheet(adCtx()), afterSwitch, leaveProject, deliver });
   on('change', scheduleLoudness);
   on('change', () => { clearTimeout(thumbTimer); thumbTimer = setTimeout(makeThumb, 4000); });
   addEventListener('pagehide', () => makeThumb());
