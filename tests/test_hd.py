@@ -195,7 +195,7 @@ async def run():
         await pg.click('#exClose')
         # export with HD Enhance at 1080p, compare with a still render of the same frame (same pipeline) and with the preview
         await P(pg, '(()=>{studio.player.pause();studio.player.seek(0.5);studio.timeline.setTime(0.5)})()'); await pg.wait_for_timeout(900)
-        prevshot = Image.open(io.BytesIO(await pg.locator('#preview').screenshot())).convert('RGB')
+        await P(pg, 'document.querySelector("#fsBtn").style.visibility="hidden"'); prevshot = Image.open(io.BytesIO(await pg.locator('#preview').screenshot())).convert('RGB')
         cw, chh = await P(pg, '[studio.player.canvas.width, studio.player.canvas.height]')
         pcan = arr(Image.open(io.BytesIO(base64.b64decode(await P(pg, 'studio.player.draw(), studio.player.canvas.toDataURL("image/png").split(",")[1]')))))
         pcan_psnr = psnr(crop(pcan, 8), crop(arr(await still(pg, t=0.5, W=cw, H=chh)), 8))
