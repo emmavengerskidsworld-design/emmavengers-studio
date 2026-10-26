@@ -1133,7 +1133,7 @@ function wireUI() {
   $('#playBtn').onclick = () => player.toggle();
   $('#undoBtn').onclick = () => { player.pause(); undo(); };
   $('#redoBtn').onclick = () => { player.pause(); redo(); };
-  $('#kfBtn').onclick = () => { player.pause(); toggleKf(); }; $('#kfPrev').onclick = () => jumpKf(-1); $('#kfNext').onclick = () => jumpKf(1);
+  $('#kfBtn').onclick = () => { player.pause(); toggleKf(); }; $('#fsBtn').innerHTML = icon('fit'); $('#fsBtn').onclick = () => { document.body.classList.toggle('fs'); requestAnimationFrame(() => dispatchEvent(new Event('resize'))); }; $('#kfPrev').onclick = () => jumpKf(-1); $('#kfNext').onclick = () => jumpKf(1);
   $('#zoomIn').onclick = () => timeline.zoomBy(1.6); $('#zoomOut').onclick = () => timeline.zoomBy(1 / 1.6);
   $('#addMainBtn').onclick = () => pick('main');
   $('#emptyAdd').onclick = () => pick('main');

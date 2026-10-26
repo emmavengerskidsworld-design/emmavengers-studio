@@ -75,9 +75,9 @@ export class Timeline {
     const frag = document.createDocumentFragment();
     for (const t of p.tracks) {
       const K = TRACK_KINDS[t.kind], row = document.createElement('div');
-      row.className = 'row k-' + t.kind; row.dataset.track = t.id; row.style.height = K.height + 'px'; row.style.width = w + 'px';
+      const RH = this.rowH(t, K); row.className = 'row k-' + t.kind + (RH < K.height && t.kind !== 'main' ? ' thin' : ''); row.dataset.track = t.id; row.style.height = RH + 'px'; row.style.width = w + 'px';
       if (t.kind === 'main' && !t.clips.length) { row.classList.add('hint'); row.innerHTML = `<button class="rowhint" data-add="main">${icon('plus', 16)} Add video or photo</button>`; }
-      for (const c of t.clips) row.appendChild(this.clipEl(c, t, K));
+      for (const c of t.clips) row.appendChild(this.clipEl(c, t, K, RH));
       if (K.magnetic) t.clips.forEach((b, i) => { if (!i) return; const a = t.clips[i - 1]; if (t.free && b.start > clipEnd(a) + 0.05) return;
         const near = S.sel === a.id || S.sel === b.id;           // selected clip: keep the cut icon, but out of the trim handles' way (bottom)
         const x = (b.start + (clipEnd(a) - b.start) / 2) * this.pps, tr = b.transitionIn && transitionById(b.transitionIn.id);
@@ -87,16 +87,18 @@ export class Timeline {
         row.appendChild(j); });
       frag.appendChild(row);
     }
-    if (!p.tracks.some(t => t.kind === 'audio')) { const row = document.createElement('div'); row.className = 'row hint k-audio'; row.style.height = TRACK_KINDS.audio.height + 'px'; row.innerHTML = `<button class="rowhint" data-add="audio">${icon('music', 16)} Add audio</button>`; frag.appendChild(row); }
+    if (!p.tracks.some(t => t.kind === 'audio')) { const row = document.createElement('div'); row.className = 'row hint k-audio'; row.style.height = '22px'; row.innerHTML = `<button class="rowhint" data-add="audio">${icon('music', 13)} Add audio</button>`; frag.appendChild(row); }
     for (const m of p.markers || []) { const l = document.createElement('i'); l.className = 'mkl'; l.style.left = (this.pad + m.t * pps) + 'px'; l.style.background = m.color; frag.appendChild(l); }
     this.tracksEl.replaceChildren(frag);
     this.drawRuler();
   }
-  clipEl(c, t, K) {
+  /** Slim InShot-style timeline: main strip 50px; other tracks are thin 20px lanes that open up while one of their clips is selected. */
+  rowH(t, K) { if (t.kind === 'main') return 50; return t.clips.some(c => c.id === S.sel || S.multi.includes(c.id)) ? K.height : 20; }
+  clipEl(c, t, K, RH = K.height) {
     const el = document.createElement('div'), d = clipDur(c), wpx = Math.max(2, d * this.pps);
     el.className = 'clip c-' + c.type + (S.sel === c.id ? ' sel' : '') + (S.multi.includes(c.id) ? ' multi' : '') + (c.group ? ' grp' : ''); el.dataset.id = c.id;
     el.style.left = (c.start * this.pps) + 'px'; el.style.width = wpx + 'px';
-    const rec = media.get(c.mediaId), h = K.height - 4;
+    const rec = media.get(c.mediaId), h = RH - 4;
     if (c.type === 'video' || c.type === 'image' || c.type === 'audio') {
       const cv = document.createElement('canvas'), cw = Math.min(4096, Math.ceil(wpx));
       cv.width = cw; cv.height = h; cv.className = 'thumbs'; el.appendChild(cv);
@@ -111,7 +113,7 @@ export class Timeline {
     else if (c.type === 'text') badges.push(`<span class="ctext">${esc(c.text.content.split('\n')[0] || 'Text')}</span>`);
     else if (c.type === 'effect') { const e = c.effect && (c.effect.kind === 'adjust' ? { name: 'Adjustment layer' } : c.effect.kind === 'filter' ? filterGL(c.effect.id) : effectById(c.effect.id)); badges.push(`<span class="ctext">${icon('effects', 12)} ${esc(e ? e.name : 'Effect')}</span>`); }
     else if (c.type === 'audio') badges.push(`<span class="cname">${esc(rec ? rec.name : 'Audio')}</span>`) && c.beat && badges.push(`<span class="spd bpm" title="Beat markers">♩${Math.round(c.beat.bpm)}</span>`);
-    if (S.sel === c.id || c.type === 'video') badges.push(`<span class="dur">${fmtS(d)}</span>`);
+    if (S.sel === c.id) badges.push(`<span class="dur">${fmtS(d)}</span>`);
     if (c.curve) badges.push(`<span class="spd">curve</span>`); else if (c.speed !== 1) badges.push(`<span class="spd">${c.speed}x</span>`);
     if (hasSource(c) && (c.volume === 0 || c.muteAudio)) badges.push(`<span class="spd">${icon('volume', 11)}✕</span>`);
     if (c.voice && c.voice.enhance) badges.push('<span class="spd" title="Enhance voice">✨</span>');
