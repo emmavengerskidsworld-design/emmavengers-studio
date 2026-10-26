@@ -1,5 +1,5 @@
 :root{--bg:#0d0d10;--panel:#17171c;--panel2:#202027;--line:#2c2c35;--text:#f2f2f5;--mute:#9a9aa6;--accent:#ffcc33;--accent2:#ffb000;--sel:#ffffff;
-  --top:52px;--trans:46px;--tl:236px;--tool:66px;--safe-b:env(safe-area-inset-bottom,0px)}
+  --top:52px;--trans:46px;--tl:236px;--tool:60px;--safe-b:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:500 14px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden;overscroll-behavior:none;user-select:none;-webkit-user-select:none}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
@@ -61,7 +61,9 @@ body.tl-dragging #addMainBtn{opacity:.3}
 /* toolbar */
 #toolbar{height:var(--tool);flex:none;display:flex;overflow-x:auto;scrollbar-width:none;gap:2px;padding:4px 6px;background:var(--bg);border-top:1px solid var(--line)}
 #toolbar::-webkit-scrollbar{display:none}
-.tool{min-width:62px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border-radius:12px;font-size:11px;color:#dedee6;padding:0 4px}
+.tool{min-width:56px;max-width:68px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:10px;font-size:10.5px;line-height:1.15;color:#dedee6;padding:0 3px;text-align:center;white-space:nowrap}
+.tool span{overflow:hidden;text-overflow:ellipsis;max-width:100%}.tool .ico{width:22px;height:22px;stroke-width:1.7}
+#toolbar.cliprow{background:#16161b}
 .tool:active{background:#ffffff12}.tool.back{color:var(--accent);min-width:52px;border-right:1px solid var(--line);border-radius:0;margin-right:4px}
 /* sheets */
 .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--panel);border-radius:16px 16px 0 0;box-shadow:0 -6px 24px #0009;z-index:20;max-height:62%;display:flex;flex-direction:column;padding-bottom:var(--safe-b);animation:up .16s ease-out}
@@ -133,8 +135,10 @@ body.has-sel #addMainBtn{display:none}
 .link{color:#cfd3ff;font-weight:700;font-size:14px;text-decoration:underline;text-underline-offset:3px;padding:8px 2px}
 .btn.post span{text-align:left}
 /* transitions joint + keyframe diamonds */
-.joint{position:absolute;top:50%;width:24px;height:24px;margin-top:-12px;border-radius:7px;background:#f4f4f7;color:#222;display:grid;place-items:center;z-index:5;box-shadow:0 1px 4px #000b;touch-action:none}
-.joint.on{background:var(--accent);color:#231a00}
+.joint{position:absolute;top:50%;width:24px;height:24px;margin-top:-12px;background:none;color:#222;display:grid;place-items:center;z-index:5;touch-action:none;padding:0}
+.joint i{display:block;width:12px;height:12px;border-radius:3px;background:#f4f4f7cc;box-shadow:0 1px 3px #000a;display:grid;place-items:center}
+.joint.on i{width:16px;height:16px;background:var(--accent);color:#231a00}
+.joint.sel i{width:16px;height:16px;background:#fff}
 .kfd{position:absolute;bottom:3px;width:9px;height:9px;margin-left:-4.5px;background:#fff;transform:rotate(45deg);border:1.5px solid #222;z-index:2;pointer-events:none;border-radius:1px}
 .clip.sel .kfd{background:var(--accent)}
 #kfBar{display:inline-flex;margin-right:4px;border-right:1px solid var(--line);padding-right:4px}

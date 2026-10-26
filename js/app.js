@@ -409,84 +409,115 @@ const phCtx = () => ({ S, act, toast, busy, importFile, renderStill, downloadBlo
 const elCtx = () => ({ player, timeline, toast, act, find, newClip, addToKind, DEFAULT_TRANSFORM, select });
 const ROOT_TOOLS = [
   work.ROOT_EXTRA.find(t => t.id === 'nestback'),
+  { id: 'text', icon: 'text', label: 'Text', run: addText },
+  { id: 'stickers', icon: 'sticker', label: 'Sticker', run: () => stickers.stickerSheet({ player, toast, media, importFile, act, newClip, addToKind, DEFAULT_TRANSFORM, select }) },
+  { id: 'audio', icon: 'music', label: 'Audio', run: () => pick('audio') },
+  { id: 'sounds', icon: 'sounds', label: 'Sounds', run: () => soundsSheet({ player, timeline, toast }) },
+  { id: 'effects', icon: 'effects', label: 'Effect', run: () => { select(null); effectsSheet('track'); } },
+  { id: 'rootfilter', icon: 'filter', label: 'Filter', run: () => clipAtPlayhead(filterSheet) },
+  { id: 'bg', icon: 'bg', label: 'Canvas', run: () => canvasSheet() },
+  { id: 'overlay', icon: 'overlay', label: 'PIP', run: () => pick('overlay') },
+  { id: 'elements', icon: 'elements', label: 'Elements', run: () => { select(null); elempanel.elementsSheet(elCtx()); } },
+  { id: 'captions', icon: 'captions', label: 'Captions', run: captionsSheet },
+  { id: 'record', icon: 'mic', label: 'Record', run: recordSheet },
+  { id: 'speech', icon: 'speech', label: 'Add speech', run: speechSheet },
+  { id: 'adjlayer', icon: 'adjust', label: 'Adjust', run: () => addAdjustmentLayer() },
+  { id: 'mix', icon: 'duck', label: 'Mix', run: () => projectMixSheet() },
   { id: 'media', icon: 'media', label: 'Media', run: () => pick('main') },
   { id: 'adshuffle', icon: 'shuffle', label: 'Shuffle ad', when: () => !!(S.project && S.project.ad), run: () => shuffleAd(adCtx()) },
   { id: 'adedit', icon: 'beat', label: 'Edit ad', when: () => !!(S.project && S.project.ad), run: () => adSheet(adCtx(), S.project.ad) },
-  { id: 'templates', icon: 'templates', label: 'Templates', run: () => templatesSheet() },
-  { id: 'admaker', icon: 'beat', label: 'Beat ad', when: () => !(S.project && S.project.ad), run: () => adSheet(adCtx()) },
-  { id: 'audio', icon: 'music', label: 'Audio', run: () => pick('audio') },
-  { id: 'sounds', icon: 'sounds', label: 'Sounds', run: () => soundsSheet({ player, timeline, toast }) },
-  { id: 'record', icon: 'mic', label: 'Record', run: recordSheet },
-  { id: 'mix', icon: 'duck', label: 'Mix', run: () => projectMixSheet() },
-  { id: 'speech', icon: 'speech', label: 'Add speech', run: speechSheet },
-  { id: 'text', icon: 'text', label: 'Text', run: addText },
   { id: 'titles', icon: 'titles', label: 'Titles', run: addTitle },
-  { id: 'captions', icon: 'captions', label: 'Captions', run: captionsSheet },
   { id: 'karaoke', icon: 'karaoke', label: 'Karaoke', run: () => { select(null); karaokeSheet(kCtx()); } },
-  { id: 'stickers', icon: 'sticker', label: 'Stickers', run: () => stickers.stickerSheet({ player, toast, media, importFile, act, newClip, addToKind, DEFAULT_TRANSFORM, select }) },
-  { id: 'elements', icon: 'elements', label: 'Elements', run: () => { select(null); elempanel.elementsSheet(elCtx()); } },
-  { id: 'effects', icon: 'effects', label: 'Effects', run: () => { select(null); effectsSheet('track'); } },
-  { id: 'adjlayer', icon: 'layers', label: 'Adjust layer', run: () => addAdjustmentLayer() },
-  { id: 'overlay', icon: 'overlay', label: 'Overlay', run: () => pick('overlay') },
   { id: 'split', icon: 'split', label: 'Split', run: doSplit },
   ...work.ROOT_EXTRA.filter(t => t.id !== 'nestback'),
   { id: 'photo', icon: 'photo', label: 'Photo', run: () => { select(null); photomode.photoSheet(phCtx()); } },
   { id: 'ratio', icon: 'ratio', label: 'Ratio', when: () => !(S.project && S.project.photo), run: ratioSheet },
-  { id: 'bg', icon: 'bg', label: 'Canvas', run: () => canvasSheet() },
   { id: 'layout', icon: 'layout', label: 'Layout', run: () => layoutSheet() },
   { id: 'guides', icon: 'safe', label: 'Safe area', run: pro.guidesSheet },
   { id: 'perf', icon: 'speedo', label: 'Performance', run: () => perfSheet() },
 ];
 const CLIP_TOOLS = [
   { id: 'phreplace', icon: 'replace', label: 'Replace me', when: c => !!c.placeholder && c.placeholder !== 'text' && isPic(c), run: () => pro.replaceClip() },
-  { id: 'split', icon: 'split', label: 'Split', run: doSplit },
   { id: 'edit', icon: 'edit', label: 'Edit text', when: c => c.type === 'text', run: () => textSheet('edit') },
-  { id: 'captions', icon: 'captions', label: 'Captions', when: c => !!c.caption, run: captionsSheet },
   { id: 'textstyle', icon: 'textstyle', label: 'Text style', when: c => c.type === 'text', run: () => textSheet('style') },
-  { id: 'anim', icon: 'anim', label: 'Animation', when: isVisualClip, run: () => animSheet() },
+  { id: 'captions', icon: 'captions', label: 'Captions', when: c => !!c.caption, run: captionsSheet },
+  { id: 'split', icon: 'split', label: 'Split', run: doSplit },
+  { id: 'delete', icon: 'trash', label: 'Delete', run: () => { const id = S.sel; select(null); act(p => remove(p, id)); player.gc(); } },
   { id: 'speed', icon: 'speed', label: 'Speed', when: hasSource, run: () => selected().clip.curve ? pro.curveSpeedSheet() : speedSheet() },
-  { id: 'crop', icon: 'crop', label: 'Crop', when: c => isPic(c), run: pro.cropSheet },
-  { id: 'mask', icon: 'mask', label: 'Mask', when: c => isPic(c), run: pro.maskSheet },
-  { id: 'cutout', icon: 'cutout', label: 'Cutout', when: c => isPic(c), run: pro.cutoutSheet },
-  { id: 'blend', icon: 'blend', label: 'Blend', when: c => isPic(c), run: pro.blendSheet },
-  { id: 'tooverlay', icon: 'overlay', label: 'Overlay', when: c => isPic(c) && find(S.project, c.id)?.track.kind === 'main', run: () => pro.toTrack('overlay') },
-  { id: 'tomain', icon: 'tomain', label: 'Main track', when: c => isPic(c) && find(S.project, c.id)?.track.kind === 'overlay', run: () => pro.toTrack('main') },
-  { id: 'stab', icon: 'stab', label: 'Stabilise', when: c => c.type === 'video', run: () => stabSheet() },
-  { id: 'slowmo', icon: 'slowmo', label: 'Slow-mo', when: c => c.type === 'video', run: () => slowmoSheet() },
-  { id: 'freeze', icon: 'freeze', label: 'Freeze', when: c => c.type === 'video', run: () => pro.freezeSheet() },
-  { id: 'reverse', icon: 'reverse', label: 'Reverse', when: c => c.type === 'video', run: () => pro.reverseClip() },
-  { id: 'replace', icon: 'replace', label: 'Replace', when: c => isPic(c) && !(c.placeholder && c.placeholder !== 'text'), run: pro.replaceClip },
   { id: 'volume', icon: 'volume', label: 'Volume', when: hasSource, run: volumeSheet },
-  { id: 'audiomix', icon: 'eq', label: 'EQ & mix', when: hasSource, run: () => mixSheet() },
-  { id: 'marks', icon: 'marks', label: 'Beat marks', when: hasSource, run: () => mixSheet('marks') },
-  { id: 'enhvoice', icon: 'enhvoice', label: 'Enhance voice', when: hasSource, run: enhanceVoiceSheet },
-  { id: 'voicefx', icon: 'voicefx', label: 'Voice effects', when: hasSource, run: voiceFxSheet },
-  { id: 'extract', icon: 'extract', label: 'Extract audio', when: c => c.type === 'video', run: doExtract },
-  { id: 'mute', icon: 'mute', label: 'Mute sound', when: c => c.type === 'video', run: () => { act(p => { const c = find(p, S.sel).clip; c.muteAudio = !c.muteAudio; }); toast(selected().clip.muteAudio ? 'Original sound muted' : 'Original sound on'); } },
-  { id: 'duration', icon: 'clock', label: 'Duration', when: c => !hasSource(c), run: durationSheet },
+  { id: 'anim', icon: 'anim', label: 'Animation', when: isVisualClip, run: () => animSheet() },
+  { id: 'transition', icon: 'transition', label: 'Transition', when: c => { const f = find(S.project, c.id); return f && TRACK_KINDS[f.track.kind].magnetic && f.track.clips.length > 1; }, run: () => { const f = selected(); const i = f.track.clips.indexOf(f.clip); transitionSheet(f.track.clips[Math.max(1, i)].id); } },
+  { id: 'crop', icon: 'crop', label: 'Crop', when: c => isPic(c), run: pro.cropSheet },
   { id: 'hd', icon: 'hd', label: 'HD Enhance', when: c => c.type === 'video' || c.type === 'image', run: hdSheet },
+  { id: 'filters', icon: 'filter', label: 'Filter', when: c => c.type === 'video' || c.type === 'image' || isAdjLayer(c), run: filterSheet },
   { id: 'adjust', icon: 'adjust', label: 'Adjust', when: c => c.type === 'video' || c.type === 'image', run: colorSheet },
+  { id: 'enhvoice', icon: 'enhvoice', label: 'Voice Enhance', when: hasSource, run: enhanceVoiceSheet },
+  { id: 'voicefx', icon: 'voicefx', label: 'Voice Effect', when: hasSource, run: voiceFxSheet },
+  { id: 'cutout', icon: 'cutout', label: 'Cutout', when: c => isPic(c), run: pro.cutoutSheet },
+  { id: 'mask', icon: 'mask', label: 'Mask', when: c => isPic(c), run: pro.maskSheet },
+  { id: 'opacity', icon: 'opacity', label: 'Opacity', when: c => isVisualClip(c) || isAdjLayer(c), run: opacitySheet },
+  { id: 'blend', icon: 'blend', label: 'Blend', when: c => isPic(c), run: pro.blendSheet },
+  { id: 'replace', icon: 'replace', label: 'Switch', when: c => isPic(c) && !(c.placeholder && c.placeholder !== 'text'), run: pro.replaceClip },
+  { id: 'duplicate', icon: 'copy', label: 'Duplicate', run: () => { const b = act(p => duplicate(p, S.sel)); b && select(b.id); } },
+  { id: 'rotate', icon: 'rotate', label: 'Rotate / Flip', when: c => isPic(c), run: rotateSheet },
+  { id: 'freeze', icon: 'freeze', label: 'Freeze', when: c => c.type === 'video', run: () => pro.freezeSheet() },
+  { id: 'capture', icon: 'capture', label: 'Capture', when: c => isPic(c), run: captureFrame },
+  { id: 'reverse', icon: 'reverse', label: 'Reverse', when: c => c.type === 'video', run: () => pro.reverseClip() },
+  { id: 'stab', icon: 'stab', label: 'Stabilise', when: c => c.type === 'video', run: () => stabSheet() },
+  { id: 'track', icon: 'track', label: 'Track', when: c => c.type === 'text' || ((c.type === 'image' || c.type === 'video') && find(S.project, c.id)?.track.kind !== 'main'), run: () => trackSheet() },
+  { id: 'keyframe', icon: 'kf', label: 'Keyframe', run: () => { player.pause(); toggleKf(); } },
+  { id: 'clipbg', icon: 'bg', label: 'Background', when: c => isPic(c) && find(S.project, c.id)?.track.kind === 'main', run: () => canvasSheet() },
+  { id: 'extract', icon: 'extract', label: 'Extract audio', when: c => c.type === 'video', run: doExtract },
   { id: 'colorpro', icon: 'wheel', label: 'Colour', when: c => c.type === 'video' || c.type === 'image' || isAdjLayer(c), run: () => colorProSheet() },
-  { id: 'transform', icon: 'move', label: 'Transform', when: isVisualClip, run: transformSheet },
-  { id: 'effect', icon: 'effects', label: 'Effect', when: c => c.type === 'effect' && !isAdjLayer(c), run: () => effectsSheet('track') },
   { id: 'clipfx', icon: 'effects', label: 'Effects', when: c => c.type === 'video' || c.type === 'image' || isAdjLayer(c), run: () => effectsSheet('clip') },
-  { id: 'filters', icon: 'filter', label: 'Filters', when: c => c.type === 'video' || c.type === 'image' || isAdjLayer(c), run: filterSheet },
+  { id: 'effect', icon: 'effects', label: 'Effect', when: c => c.type === 'effect' && !isAdjLayer(c), run: () => effectsSheet('track') },
+  { id: 'transform', icon: 'move', label: 'Transform', when: isVisualClip, run: transformSheet },
   { id: 'mirror', icon: 'mirror', label: 'Mirror', when: c => c.type === 'video' || c.type === 'image', run: () => mirrorSheet() },
   { id: 'fit', icon: 'fit', label: 'Fit / Fill', when: c => c.type === 'video' || c.type === 'image', run: toggleFit },
+  { id: 'slowmo', icon: 'slowmo', label: 'Slow-mo', when: c => c.type === 'video', run: () => slowmoSheet() },
+  { id: 'tooverlay', icon: 'overlay', label: 'Overlay', when: c => isPic(c) && find(S.project, c.id)?.track.kind === 'main', run: () => pro.toTrack('overlay') },
+  { id: 'tomain', icon: 'tomain', label: 'Main track', when: c => isPic(c) && find(S.project, c.id)?.track.kind === 'overlay', run: () => pro.toTrack('main') },
+  { id: 'mute', icon: 'mute', label: 'Mute sound', when: c => c.type === 'video', run: () => { act(p => { const c = find(p, S.sel).clip; c.muteAudio = !c.muteAudio; }); toast(selected().clip.muteAudio ? 'Original sound muted' : 'Original sound on'); } },
+  { id: 'duration', icon: 'clock', label: 'Duration', when: c => !hasSource(c), run: durationSheet },
+  { id: 'audiomix', icon: 'eq', label: 'EQ & mix', when: hasSource, run: () => mixSheet() },
+  { id: 'marks', icon: 'marks', label: 'Beat marks', when: hasSource, run: () => mixSheet('marks') },
   { id: 'curve', icon: 'curve', label: 'Curve', when: c => hasKeyframes(c), run: curveSheet },
   { id: 'graph', icon: 'graph', label: 'Graph', when: c => hasKeyframes(c), run: () => graphSheet() },
-  { id: 'track', icon: 'track', label: 'Track', when: c => c.type === 'text' || ((c.type === 'image' || c.type === 'video') && find(S.project, c.id)?.track.kind !== 'main'), run: () => trackSheet() },
   { id: 'kenburns', icon: 'kenburns', label: 'Ken Burns', when: c => c.type === 'image', run: kenBurnsSheet },
-  { id: 'transition', icon: 'transition', label: 'Transition', when: c => { const f = find(S.project, c.id); return f && TRACK_KINDS[f.track.kind].magnetic && f.track.clips.length > 1; }, run: () => { const f = selected(); const i = f.track.clips.indexOf(f.clip); transitionSheet(f.track.clips[Math.max(1, i)].id); } },
   ...work.CLIP_EXTRA,
-  { id: 'duplicate', icon: 'copy', label: 'Duplicate', run: () => { const b = act(p => duplicate(p, S.sel)); b && select(b.id); } },
-  { id: 'delete', icon: 'trash', label: 'Delete', run: () => { const id = S.sel; select(null); act(p => remove(p, id)); player.gc(); } },
 ];
+function clipAtPlayhead(fn) {
+  if (!selected()) { const main = S.project.tracks.find(x => x.kind === 'main'), t = player.t; const c = main && (main.clips.find(c => c.start <= t && t < clipEnd(c)) || main.clips[0]); if (!c) { toast('Add a video or photo first'); return; } select(c.id); }
+  fn();
+}
+function opacitySheet() {
+  const c = selected().clip, L = localT(c);
+  openSheet('Opacity', body => {
+    body.append(slider('Opacity', { min: 0, max: 1, step: 0.01, value: propAt(c, 'opacity', L), fmt: v => Math.round(v * 100) + '%', id: 'opacityRange', onInput: v => editSel(cl => setProp(cl, 'opacity', v, L)) }));
+    if (hasKeyframes(c)) body.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: `Animated clip: this sets the opacity at ${fmtS(L)} (a keyframe).` }));
+  });
+}
+function rotateSheet() {
+  openSheet('Rotate / Flip', body => {
+    const row = document.createElement('div'); row.className = 'toggles';
+    const mk = (id, html, fn) => { const b = document.createElement('button'); b.className = 'chipbtn'; b.id = id; b.innerHTML = html; b.onclick = fn; row.append(b); return b; };
+    mk('rotLeft', icon('rotate', 16) + ' Rotate', () => editSel(cl => { cl.rot90 = ((cl.rot90 || 0) + 1) % 4; if (!cl.rot90) delete cl.rot90; }));
+    mk('flipHBtn', icon('fliph', 16) + ' Flip ↔', () => editSel(cl => { cl.flipH = !cl.flipH; if (!cl.flipH) delete cl.flipH; }));
+    mk('flipVBtn', icon('flipv', 16) + ' Flip ↕', () => editSel(cl => { cl.flipV = !cl.flipV; if (!cl.flipV) delete cl.flipV; }));
+    mk('mirrorMore', icon('mirror', 16) + ' Mirror…', () => mirrorSheet());
+    body.append(row, Object.assign(document.createElement('p'), { className: 'hint', textContent: 'Rotate turns the clip 90° each tap. For any angle, pinch with two fingers on the picture.' }));
+  });
+}
+async function captureFrame() {
+  player.pause();
+  try { const b = await renderStill({ t: player.t, blob: true, type: 'image/png' }); downloadBlob(b, `frame-${fmtS(player.t).replace(/[^0-9]/g, '')}.png`); toast('Frame saved as a picture'); }
+  catch (e) { toast('Could not capture this frame'); }
+}
 function refreshToolbar() {
   const bar = $('#toolbar'), f = selected();
   const multi = S.multi.length > 1, tools = multi ? work.MULTI_TOOLS.filter(t => !t.when || t.when()) : f ? CLIP_TOOLS.filter(t => !t.when || t.when(f.clip)) : ROOT_TOOLS.filter(t => !t.when || t.when());
   const key = (multi ? 'multi' + S.multi.length + ':' : f ? f.clip.id + ':' : 'root:') + tools.map(t => t.id).join(',');
-  if (bar.dataset.key === key) return; bar.dataset.key = key;
+  if (bar.dataset.key === key) return; bar.dataset.key = key; bar.classList.toggle('cliprow', !!f && !multi); bar.scrollLeft = 0;
   bar.innerHTML = (multi ? `<span class="multicount" id="multiCount">${S.multi.length} selected</span>` : f ? `<button class="tool back" data-tool="back">${icon('back')}<span>Back</span></button>` : '') +
     tools.map(t => `<button class="tool" data-tool="${t.id}">${icon(t.icon)}<span>${t.label}</span></button>`).join('');
   bar.onclick = e => { const b = e.target.closest('.tool'); if (!b) return; if (b.dataset.tool === 'back') { select(null); return; }

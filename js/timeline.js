@@ -79,11 +79,11 @@ export class Timeline {
       if (t.kind === 'main' && !t.clips.length) { row.classList.add('hint'); row.innerHTML = `<button class="rowhint" data-add="main">${icon('plus', 16)} Add video or photo</button>`; }
       for (const c of t.clips) row.appendChild(this.clipEl(c, t, K));
       if (K.magnetic) t.clips.forEach((b, i) => { if (!i) return; const a = t.clips[i - 1]; if (t.free && b.start > clipEnd(a) + 0.05) return;
-        if (S.sel === a.id || S.sel === b.id) return;            // keep trim handles free on the selected clip
+        const near = S.sel === a.id || S.sel === b.id;           // selected clip: keep the cut icon, but out of the trim handles' way (bottom)
         const x = (b.start + (clipEnd(a) - b.start) / 2) * this.pps, tr = b.transitionIn && transitionById(b.transitionIn.id);
-        const j = document.createElement('button'); j.className = 'joint' + (tr ? ' on' : ''); j.dataset.joint = b.id; j.style.left = (x - 12) + 'px';
+        const j = document.createElement('button'); j.className = 'joint' + (tr ? ' on' : '') + (near ? ' sel' : ''); j.dataset.joint = b.id; j.style.left = (x - 12) + 'px'; if (near) { j.style.top = 'auto'; j.style.bottom = '-10px'; j.style.marginTop = '0'; }
         j.title = tr ? tr.name : 'Add transition'; j.setAttribute('aria-label', j.title);
-        j.innerHTML = tr ? '<svg viewBox="0 0 24 24" width="14" height="14"><path d="M4 5l8 7-8 7zM20 5l-8 7 8 7z" fill="currentColor"/></svg>' : '<svg viewBox="0 0 24 24" width="12" height="12"><path d="M5 12h14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
+        j.innerHTML = tr || near ? '<i><svg viewBox="0 0 24 24" width="11" height="11"><path d="M4 5l8 7-8 7zM20 5l-8 7 8 7z" fill="currentColor"/></svg></i>' : '<i></i>';
         row.appendChild(j); });
       frag.appendChild(row);
     }
