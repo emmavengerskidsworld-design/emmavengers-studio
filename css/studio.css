@@ -492,3 +492,6 @@ body.fs #transport~#toolbar,body.fs #timeline{display:none}
 button,.tool,.chipbtn{touch-action:manipulation}.tool:active,.chipbtn:active,.ib:active{transform:scale(.94);transition:transform .05s}
 .sh-body.sh-loading{min-height:120px;background:linear-gradient(90deg,#ffffff06 25%,#ffffff10 50%,#ffffff06 75%) 0 0/200% 100%;animation:shl 1s linear infinite;border-radius:10px;margin:8px 12px}@keyframes shl{to{background-position:-200% 0}}
 .tool.pressed{background:#ffffff1a}
+#transport{display:flex;gap:4px}#transport .time{flex:1 1 0;min-width:0}#transport .hist{flex:1 1 0;min-width:0}
+body.has-sel #transport .time .sep,body.has-sel #ttot{display:none}body.has-sel #transport .hist{flex:0 0 auto}body.has-sel #transport .time{flex:0 0 auto}body.has-sel .pgrp{margin:0 auto}
+#app{overflow:hidden}body.sheet-open:not(.exporting) #stage{flex:none;height:max(160px,calc(100% - var(--top) - var(--sheet-h,0px)))}

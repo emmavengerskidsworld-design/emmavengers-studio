@@ -150,9 +150,9 @@ function layoutPreview() {
   const o = $('#cmp'); if (o) { o.style.width = cv.style.width; o.style.height = cv.style.height; }
   const dpr = Math.min(2, devicePixelRatio || 1), k = Math.min(dpr, 1080 / Math.min(w, h));
   const cw = Math.round(w * k), ch = Math.round(h * k);
-  // B16: the timeline grows / shrinks with its tracks; small preview size changes only rescale the canvas (CSS), so adding text or a layer never re-renders the frame synchronously
-  const sameShape = cv.width && Math.abs(cv.width / cv.height - cw / ch) < 0.01, near = sameShape && Math.abs(cv.width - cw) / cw < 0.25 && cv.width <= Math.round(1080 * Math.max(1, cw / ch)) && cv.width >= cw * 0.8;
-  const resized = !near && (cv.width !== cw || cv.height !== ch);
+  // B16: while a panel is open the preview shrinks above it (InShot style); that is a CSS-only rescale, so opening a panel never re-renders the frame
+  const cssOnly = document.body.classList.contains('sheet-open') && cv.width && Math.abs(cv.width / cv.height - cw / ch) < 0.01;
+  const resized = !cssOnly && (cv.width !== cw || cv.height !== ch);
   if (resized) { cv.width = cw; cv.height = ch; }
   // B16: never render the frame synchronously inside an edit: the next animation frame draws it (taps stay instant)
   if (player) { if (resized) player.draw(); else player.requestDraw(); }
@@ -1153,6 +1153,7 @@ function wireUI() {
   on('change', () => { $('#ratioBtn').textContent = S.project.aspect; layoutPreview(); });
   $('#ratioBtn').textContent = S.project.aspect;
   new ResizeObserver(layoutPreview).observe($('#stage'));
+  new ResizeObserver(() => { const s = $('#sheet'); document.documentElement.style.setProperty('--sheet-h', (s.classList.contains('hidden') ? 0 : s.offsetHeight) + 'px'); }).observe($('#sheet'));
   previewGestures(); compareUI();
   addEventListener('keydown', e => {
     if (e.target.matches('input, textarea, select, [contenteditable]')) return;
