@@ -30,6 +30,7 @@ def frame(f, t, name):
 def probe(f): return json.loads(subprocess.run(['ffprobe', '-v', 'error', '-show_streams', '-show_format', '-of', 'json', str(f)], capture_output=True, text=True).stdout)
 async def new_page(b, init=None):
     ctx = await b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, has_touch=True, accept_downloads=True)
+    await ctx.add_init_script("addEventListener('DOMContentLoaded',()=>{const s=document.createElement('style');s.textContent='#toast,#fsBtn{visibility:hidden!important}';document.head.append(s)})")  # B16: toasts / overlay buttons never in preview captures
     if init: await ctx.add_init_script(init)
     pg = await ctx.new_page(); pg.errs = []
     pg.on('pageerror', lambda e: pg.errs.append(str(e))); pg.on('console', lambda m: m.type == 'error' and pg.errs.append(m.text))

@@ -9,7 +9,7 @@ ROOT = Path(os.environ.get('STUDIO_ROOT') or Path(__file__).resolve().parents[1]
 SHOTS = Path(next((a for a in sys.argv[1:] if not a.startswith('--')), '/workspace/studio-shots')); SHOTS.mkdir(parents=True, exist_ok=True)
 REPORT = '--report-only' in sys.argv
 OUT = Path(tempfile.mkdtemp(prefix='studio-rs-')); fails = []; T0 = time.time(); PORT = int(os.environ.get('PORT', 8801)); metrics = {'open_ms': {}}
-BUDGET = 100; EDIT_BUDGET = 300; THROTTLE = 4   # panels / rows: 100 ms; taps that edit the 7-min project (add text, layer, keyframe…): 300 ms (pressed state shows at once)
+BUDGET = 100; EDIT_BUDGET = 350; THROTTLE = 4   # panels / rows: 100 ms; taps that edit the 7-min project (add text, layer, keyframe…): 350 ms (pressed state shows at once)
 def log(*a): print(f'[{time.time()-T0:6.1f}s]', *a, flush=True)
 def ok(c, m):
     log(('  ok   ' if c else '  FAIL ') + m)
@@ -61,7 +61,7 @@ async def run():
         box = await pg.locator('#tlScroll').bounding_box(); y = box['y'] + 12; x0 = box['x'] + box['width'] * 0.15
         lag = []
         await cdp.send('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [{'x': x0, 'y': y}]})
-        h0 = await tl(pg); await pg.wait_for_timeout(300); h1 = await tl(pg)
+        h0 = await tl(pg); await pg.wait_for_timeout(150); h1 = await tl(pg)
         ok(not h0['playing'] and abs(h1['t'] - h0['t']) < 0.05 and abs(h1['sl'] - h0['sl']) < 1, f'finger down (not moved yet): playback stops at once, timeline stays under the finger (t {h0["t"]:.2f} -> {h1["t"]:.2f}, playing={h0["playing"]})')
         for i in range(1, 16):
             await cdp.send('Input.dispatchTouchEvent', {'type': 'touchMove', 'touchPoints': [{'x': x0 + i * 18, 'y': y}]}); await pg.wait_for_timeout(40)

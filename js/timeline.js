@@ -25,10 +25,10 @@ export class Timeline {
     this.scroll.addEventListener('scroll', () => this.onScroll(), { passive: true });
     this.tracksEl.addEventListener('pointerdown', e => this.down(e));
     addEventListener('pointermove', e => this.move(e)); addEventListener('pointerup', e => this.up(e)); addEventListener('pointercancel', e => this.cancel(e));
-    this.scroll.addEventListener('touchstart', e => { this.beginScrub(); this.touchStart(e); }, { passive: true });
-    this.scroll.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') this.beginScrub(); }, { passive: true });
-    for (const ev of ['touchend', 'touchcancel']) this.scroll.addEventListener(ev, e => { if (!e.touches.length) this.endScrubSoon(); }, { passive: true });
-    addEventListener('pointerup', e => { if (this._fingerDown && e.pointerType === 'mouse') this.endScrubSoon(); }, { passive: true });
+    this.scroll.addEventListener('touchstart', e => { const p = e.touches[0]; this._sd = p ? { x: p.clientX, y: p.clientY, t: performance.now() } : null; this.beginScrub(); this.touchStart(e); }, { passive: true });
+    this.scroll.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') { this._sd = { x: e.clientX, y: e.clientY, t: performance.now() }; this.beginScrub(); } }, { passive: true });
+    for (const ev of ['touchend', 'touchcancel']) this.scroll.addEventListener(ev, e => { const p = e.changedTouches[0]; if (!e.touches.length && !(p && this.tapEnd(p.clientX, p.clientY))) this.endScrubSoon(); }, { passive: true });
+    addEventListener('pointerup', e => { if (this._fingerDown && e.pointerType === 'mouse' && !this.tapEnd(e.clientX, e.clientY)) this.endScrubSoon(); }, { passive: true });
     this.scroll.addEventListener('wheel', () => { if (this.o.isPlaying()) this.o.pause(); }, { passive: true });
     const ruler = document.getElementById('ruler'); ruler.style.pointerEvents = 'auto';
     ruler.addEventListener('pointerdown', e => { e.preventDefault(); this.seekTo(this.timeAtClientX(e.clientX)); });
@@ -59,6 +59,8 @@ export class Timeline {
   }
   /** A finger (or mouse) on the timeline: pause at once and let the playhead follow it; the exact frame is drawn on release. */
   beginScrub() { this._fingerDown = true; this.userScrub = true; this._expect = null; clearTimeout(this._scrubT); this.o.scrubbing && this.o.scrubbing(true); if (this.o.isPlaying()) this.o.pause(); }
+  /** A quick tap (< 6 px, < 250 ms) is a tap, not a scrub: release the timeline at once so selection / tools work normally. */
+  tapEnd(x, y) { const d = this._sd; if (d && Math.hypot(x - d.x, y - d.y) < 6 && performance.now() - d.t < 250) { this._fingerDown = false; clearTimeout(this._scrubT); this.userScrub = false; this.o.scrubbing && this.o.scrubbing(false); return true; } return false; }
   endScrubSoon() { this._fingerDown = false; clearTimeout(this._scrubT); this._scrubT = setTimeout(() => { this.userScrub = false; this.o.scrubbing && this.o.scrubbing(false); }, 140); }
   /** Tap on the ruler: jump there. */
   seekTo(t) { t = Math.max(0, Math.min(projectDuration(S.project), t)); if (this.o.isPlaying()) this.o.pause(); this.o.seek(t); this.userScrub = false; this.setTime(t); }

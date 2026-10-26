@@ -37,6 +37,7 @@ def red_centroid(im):
     return (sum(xs) / len(xs) / W if xs else -1), len(xs)
 async def new_page(b):
     ctx = await b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, has_touch=True, accept_downloads=True)
+    await ctx.add_init_script("addEventListener('DOMContentLoaded',()=>{const s=document.createElement('style');s.textContent='#toast,#fsBtn{visibility:hidden!important}';document.head.append(s)})")  # B16: toasts / overlay buttons never in preview captures
     pg = await ctx.new_page(); pg.errs = []
     pg.on('pageerror', lambda e: pg.errs.append(str(e))); pg.on('console', lambda m: m.type == 'error' and pg.errs.append(m.text))
     await pg.goto('http://127.0.0.1:8751/'); await pg.wait_for_function('window.studio && studio.ready', timeout=20000); return ctx, pg

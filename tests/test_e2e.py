@@ -51,6 +51,7 @@ async def no_overflow(pg, tag):
 
 async def new_page(b, port, w=390, h=844, path='/'):
     ctx = await b.new_context(viewport={'width': w, 'height': h}, device_scale_factor=2, is_mobile=True, has_touch=True, accept_downloads=True)
+    await ctx.add_init_script("addEventListener('DOMContentLoaded',()=>{const s=document.createElement('style');s.textContent='#toast,#fsBtn{visibility:hidden!important}';document.head.append(s)})")  # B16: toasts / overlay buttons never in preview captures
     pg = await ctx.new_page(); pg.errs = []
     pg.on('console', lambda m: pg.errs.append(m.text) if m.type == 'error' else None)
     pg.on('pageerror', lambda e: pg.errs.append('PAGEERROR ' + str(e)))

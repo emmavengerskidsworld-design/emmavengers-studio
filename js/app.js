@@ -149,11 +149,15 @@ function layoutPreview() {
   cv.style.width = Math.round(w) + 'px'; cv.style.height = Math.round(h) + 'px';
   const o = $('#cmp'); if (o) { o.style.width = cv.style.width; o.style.height = cv.style.height; }
   const dpr = Math.min(2, devicePixelRatio || 1), k = Math.min(dpr, 1080 / Math.min(w, h));
-  const cw = Math.round(w * k), ch = Math.round(h * k), resized = cv.width !== cw || cv.height !== ch;
+  const cw = Math.round(w * k), ch = Math.round(h * k);
+  // B16: the timeline grows / shrinks with its tracks; small preview size changes only rescale the canvas (CSS), so adding text or a layer never re-renders the frame synchronously
+  const sameShape = cv.width && Math.abs(cv.width / cv.height - cw / ch) < 0.01, near = sameShape && Math.abs(cv.width - cw) / cw < 0.25 && cv.width <= Math.round(1080 * Math.max(1, cw / ch)) && cv.width >= cw * 0.8;
+  const resized = !near && (cv.width !== cw || cv.height !== ch);
   if (resized) { cv.width = cw; cv.height = ch; }
   // B16: never render the frame synchronously inside an edit: the next animation frame draws it (taps stay instant)
   if (player) { if (resized) player.draw(); else player.requestDraw(); }
 }
+for (const ev of ['pointerdown', 'keydown']) addEventListener(ev, () => { window.__lastInput = performance.now(); }, { capture: true, passive: true });
 function previewGestures() {
   const cv = $('#preview'), pts = new Map(); let g = null, tap = null;
   const toCanvas = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) * cv.width / r.width, y: (e.clientY - r.top) * cv.height / r.height, r }; };
@@ -413,7 +417,7 @@ const ROOT_TOOLS = [
   work.ROOT_EXTRA.find(t => t.id === 'nestback'),
   { id: 'text', icon: 'text', label: 'Text', run: addText },
   { id: 'stickers', icon: 'sticker', label: 'Sticker', run: () => stickers.stickerSheet({ player, toast, media, importFile, act, newClip, addToKind, DEFAULT_TRANSFORM, select }) },
-  { id: 'audio', icon: 'music', label: 'Audio', run: () => soundsSheet({ player, timeline, toast, importAudio: () => pick('audio') }, 'music') },
+  { id: 'audio', icon: 'music', label: 'Audio', run: () => soundsSheet({ player, timeline, toast, importAudio: () => { closeSheet(); pick('audio'); } }, 'music') },
   { id: 'sounds', icon: 'sounds', label: 'Sounds', run: () => soundsSheet({ player, timeline, toast }) },
   { id: 'effects', icon: 'effects', label: 'Effect', run: () => { select(null); effectsSheet('track'); } },
   { id: 'rootfilter', icon: 'filter', label: 'Filter', run: () => clipAtPlayhead(filterSheet) },

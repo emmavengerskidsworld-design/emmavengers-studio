@@ -154,7 +154,9 @@ export class Player {
     this._raf = requestAnimationFrame(() => this.loop());
   }
   /** Preview redraw after UI changes: the UI (sheet, toolbar, timeline) is painted first, the frame right after it (taps never wait for the picture). */
-  requestDraw() { if (this._drawQueued) return; this._drawQueued = true; requestAnimationFrame(() => setTimeout(() => { this._drawQueued = false; this.draw(); }, 0)); }
+  requestDraw() { if (this._drawQueued) return; this._drawQueued = true; const go = () => setTimeout(() => { this._drawQueued = false; this.draw(); }, 0);
+    // after an input, wait until the UI frame has been presented (2 frames) before the heavy preview render
+    if (performance.now() - (window.__lastInput || 0) < 300 && !this.scrubbing) requestAnimationFrame(() => requestAnimationFrame(go)); else requestAnimationFrame(go); }
   /** Forget cached preview frames (the project, a media file or a font changed). */
   invalidate() { this.ver++; this.fcache.clear(); this._bx.clear(); }
   /** Every element is at its time and has a picture: the frame on screen is final (safe to cache). */
