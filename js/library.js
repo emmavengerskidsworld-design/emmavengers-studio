@@ -46,6 +46,7 @@ export function soundsSheet(X, startKind = 'sfx') {
     const tabs = chips([{ value: 'music', label: 'Music' }, { value: 'sfx', label: 'Sound effects' }], kind, v => { kind = v; cat = ''; fav = false; shown = 80; cats(); list(); }, 'tabs sndtabs');
     const sb = Object.assign(document.createElement('label'), { className: 'sndsearch' }); sb.innerHTML = `${icon('search', 18)}<input id="sndSearch" type="search" placeholder="Search sounds (e.g. sheep, pop, rain)" autocomplete="off">`;
     const catRow = document.createElement('div'), ul = Object.assign(document.createElement('div'), { className: 'sndlist', id: 'sndList' }), foot = Object.assign(document.createElement('p'), { className: 'hint', id: 'sndInfo' });
+    if (X.importAudio) { const im = document.createElement('button'); im.className = 'chipbtn sndimp'; im.id = 'sndImport'; im.innerHTML = `${icon('import', 14)} From my phone`; im.onclick = () => X.importAudio(); tabs.append(im); }
     body.append(tabs, sb, catRow, ul, foot);
     ul.textContent = 'Loading sounds…';
     let C; try { C = await loadCatalog(); } catch (e) { ul.textContent = 'Could not load the sound library. Connect to the internet once to open it.'; return; }
@@ -80,3 +81,6 @@ export function soundsSheet(X, startKind = 'sfx') {
     cats(); list();
   }, { className: 'tall', gesture: false, onClose: () => { if (audio) audio.pause(); } });
 }
+
+// warm the sound catalogue when the phone is idle, so Audio / Sounds open with their lists ready
+(window.requestIdleCallback || (f => setTimeout(f, 3000)))(() => { if (navigator.onLine !== false) loadCatalog().catch(() => {}); }, { timeout: 8000 });

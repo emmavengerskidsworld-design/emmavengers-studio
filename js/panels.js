@@ -12,12 +12,19 @@ export function openSheet(title, build, { gesture = true, className = '', onClos
   if (gesture) begin();
   onClose = () => { try { extraClose && extraClose(); } finally { if (gesture) end(); } };
   el.querySelector('.sh-done').onclick = () => closeSheet();
-  build(el.querySelector('.sh-body'));
   document.body.classList.add('sheet-open');
+  // Instant panels: the sheet (title + Done) is painted right away; its content is built just after that first frame,
+  // so a tap shows a response within one frame even on slow phones.
+  const body = el.querySelector('.sh-body'), tok = ++buildTok; body.classList.add('sh-loading');
+  const run = () => { if (tok !== buildTok || !body.isConnected) return; body.classList.remove('sh-loading'); build(body); };
+  pending = run; requestAnimationFrame(() => setTimeout(() => { if (pending === run) pending = null; run(); }, 0));
 }
+let buildTok = 0, pending = null;
+/** Build a sheet that is still waiting for its first frame right now (used by code/tests that need its controls immediately). */
+export function flushSheet() { const f = pending; pending = null; f && f(); }
 export function closeSheet() {
   const el = sheet(); if (el.classList.contains('hidden')) return;
-  el.classList.add('hidden'); el.innerHTML = ''; document.body.classList.remove('sheet-open');
+  buildTok++; pending = null; el.classList.add('hidden'); el.innerHTML = ''; document.body.classList.remove('sheet-open');
   const f = onClose; onClose = null; f && f();
 }
 export function slider(label, { min, max, step = 0.01, value, fmt = v => v, onInput, id }) {

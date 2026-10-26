@@ -89,7 +89,7 @@ export class Player {
         else if (Math.abs(el.currentTime - target) > RESYNC * Math.max(1, rate)) el.currentTime = target;
       } else {
         if (!el.paused) el.pause();
-        if (Math.abs(el.currentTime - target) > 0.01) el.currentTime = target;
+        if (Math.abs(el.currentTime - target) > 0.01) this.seekEl(el, target);
       }
     }
   }
@@ -106,6 +106,13 @@ export class Player {
       this.voices.set(c.id, v = { src, g, pn, buf: bk.buf, rate, off: Math.max(0, pos), t0: now });
     } else { v.g.gain.setTargetAtTime(vol, now, 0.008); v.pn.pan.setTargetAtTime(panAt(c, t), now, 0.008); }
   }
+  /** Coalesced seeking: while a video is still seeking, only the newest target is kept (no queue of stale seeks on long videos).
+      While the finger is scrubbing, fastSeek (nearest keyframe) is used when available; the exact frame follows on release. */
+  seekEl(el, target) {
+    if (el.seeking) { if (!el._pend) el.addEventListener('seeked', () => { const x = el._pend; el._pend = null; if (x != null && Math.abs(el.currentTime - x) > 0.01) this.seekEl(el, x); }, { once: true }); el._pend = target; return; }
+    const scrub = performance.now() - (this._lastSeek || 0) < 120 && this.scrubbing;
+    if (scrub && el.fastSeek) el.fastSeek(target); else el.currentTime = target;
+  }
   stopVoice(id) { const v = this.voices.get(id); if (!v) return; this.voices.delete(id); try { v.src.stop(); } catch (e) {} try { v.src.disconnect(); v.g.disconnect(); v.pn && v.pn.disconnect(); } catch (e) {} }
   stalled() {
     for (const s of this.slots.values()) { const f = this.project && this.slots.get(s.clipId) && s.el;
@@ -119,7 +126,9 @@ export class Player {
     this.ensureAudio();
     if (this.t >= d - 0.02) this.t = 0;
     this.playing = true; this.t0 = this.t; this.n0 = performance.now();
-    this.sync(this.t); this.loop(); this.o.onState && this.o.onState(true);
+    this.sync(this.t); this.o.onState && this.o.onState(true);
+    // B16: the first frame is drawn on the next animation frame, so the Play tap paints its new icon at once
+    cancelAnimationFrame(this._raf); this._raf = requestAnimationFrame(() => { if (this.playing) { this.n0 = performance.now(); this.t0 = this.t; this.loop(); } });
   }
   pause() {
     this.stopAt = null; if (!this.playing) return; this.playing = false; cancelAnimationFrame(this._raf);
@@ -144,7 +153,8 @@ export class Player {
     this.sync(this.t); this.draw(); this.o.onTime && this.o.onTime(this.t);
     this._raf = requestAnimationFrame(() => this.loop());
   }
-  requestDraw() { if (this._drawQueued) return; this._drawQueued = true; requestAnimationFrame(() => { this._drawQueued = false; this.draw(); }); }
+  /** Preview redraw after UI changes: the UI (sheet, toolbar, timeline) is painted first, the frame right after it (taps never wait for the picture). */
+  requestDraw() { if (this._drawQueued) return; this._drawQueued = true; requestAnimationFrame(() => setTimeout(() => { this._drawQueued = false; this.draw(); }, 0)); }
   /** Forget cached preview frames (the project, a media file or a font changed). */
   invalidate() { this.ver++; this.fcache.clear(); this._bx.clear(); }
   /** Every element is at its time and has a picture: the frame on screen is final (safe to cache). */

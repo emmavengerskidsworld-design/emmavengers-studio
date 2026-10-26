@@ -36,7 +36,8 @@ async def page(b, mock=True, ua=ANDROID_UA):
     await pg.goto('http://127.0.0.1:8741/'); await pg.wait_for_function('window.studio && studio.ready', timeout=20000)
     await pg.set_input_files('#fileMedia', [str(FX / 'video.mp4'), str(FX / 'image.png')])
     await pg.wait_for_function('studio.S.project.tracks.find(t=>t.kind==="main").clips.length===2', timeout=20000)
-    async with pg.expect_file_chooser() as fc: await pg.click('#toolbar .tool[data-tool="audio"]')
+    await pg.click('#toolbar .tool[data-tool="audio"]'); await pg.wait_for_selector('#sndImport', timeout=8000)
+    async with pg.expect_file_chooser() as fc: await pg.click('#sndImport')
     await (await fc.value).set_files([str(FX / 'music.mp3')]); await pg.wait_for_function("studio.S.project.tracks.some(t=>t.kind==='audio')")
     return ctx, pg
 async def export(pg, res):

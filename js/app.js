@@ -67,7 +67,7 @@ async function boot() {
   await load(); await projects.migrate();
   await useMedia(mediaIds(S.project));
   player = new Player($('#preview'), { getProject: () => S.project, selected: () => S.sel, onTime: t => { timeline.setTime(t); showTime(); updateKf(); }, onSeek: () => { if (!seekQ) { seekQ = true; requestAnimationFrame(() => { seekQ = false; showTime(); }); } }, onState: setPlayIcon });
-  timeline = new Timeline({ getTime: () => player.t, seek: t => { player.seek(t, true); showTime(); updateKf(); }, onJoint: id => transitionSheet(id), isPlaying: () => player.playing, pause: () => player.pause(), onAdd: k => pick(k), afterEdit: afterEdit });
+  timeline = new Timeline({ getTime: () => player.t, seek: t => { player.seek(t, true); showTime(); updateKf(); }, onJoint: id => transitionSheet(id), isPlaying: () => player.playing, pause: () => player.pause(), scrubbing: on => { player.scrubbing = on; if (!on) player.requestDraw(); }, onAdd: k => pick(k), afterEdit: afterEdit });
   on('change', () => { timeline.render(); player.seek(player.t); showTime(); refreshToolbar(); updateEmpty(); updateKf(); });
   on('select', () => { document.body.classList.toggle('has-sel', !!S.sel); timeline.render(); refreshToolbar(); player.requestDraw(); if (sheetOpen()) closeSheet(); updateKf(); });
   on('history', updateUndo);
@@ -149,8 +149,10 @@ function layoutPreview() {
   cv.style.width = Math.round(w) + 'px'; cv.style.height = Math.round(h) + 'px';
   const o = $('#cmp'); if (o) { o.style.width = cv.style.width; o.style.height = cv.style.height; }
   const dpr = Math.min(2, devicePixelRatio || 1), k = Math.min(dpr, 1080 / Math.min(w, h));
-  cv.width = Math.round(w * k); cv.height = Math.round(h * k);
-  player && player.draw();
+  const cw = Math.round(w * k), ch = Math.round(h * k), resized = cv.width !== cw || cv.height !== ch;
+  if (resized) { cv.width = cw; cv.height = ch; }
+  // B16: never render the frame synchronously inside an edit: the next animation frame draws it (taps stay instant)
+  if (player) { if (resized) player.draw(); else player.requestDraw(); }
 }
 function previewGestures() {
   const cv = $('#preview'), pts = new Map(); let g = null, tap = null;
@@ -411,7 +413,7 @@ const ROOT_TOOLS = [
   work.ROOT_EXTRA.find(t => t.id === 'nestback'),
   { id: 'text', icon: 'text', label: 'Text', run: addText },
   { id: 'stickers', icon: 'sticker', label: 'Sticker', run: () => stickers.stickerSheet({ player, toast, media, importFile, act, newClip, addToKind, DEFAULT_TRANSFORM, select }) },
-  { id: 'audio', icon: 'music', label: 'Audio', run: () => pick('audio') },
+  { id: 'audio', icon: 'music', label: 'Audio', run: () => soundsSheet({ player, timeline, toast, importAudio: () => pick('audio') }, 'music') },
   { id: 'sounds', icon: 'sounds', label: 'Sounds', run: () => soundsSheet({ player, timeline, toast }) },
   { id: 'effects', icon: 'effects', label: 'Effect', run: () => { select(null); effectsSheet('track'); } },
   { id: 'rootfilter', icon: 'filter', label: 'Filter', run: () => clipAtPlayhead(filterSheet) },
@@ -487,7 +489,8 @@ const CLIP_TOOLS = [
   ...work.CLIP_EXTRA,
 ];
 function clipAtPlayhead(fn) {
-  if (!selected()) { const main = S.project.tracks.find(x => x.kind === 'main'), t = player.t; const c = main && (main.clips.find(c => c.start <= t && t < clipEnd(c)) || main.clips[0]); if (!c) { toast('Add a video or photo first'); return; } select(c.id); }
+  if (!selected()) { const main = S.project.tracks.find(x => x.kind === 'main'), t = player.t; const c = main && (main.clips.find(c => c.start <= t && t < clipEnd(c)) || main.clips[0]); if (!c) { toast('Add a video or photo first'); return; }
+    openSheet('Filters', () => {}); setTimeout(() => { select(c.id); fn(); }, 0); return; }   // panel shows at once, the clip is selected just after
   fn();
 }
 function opacitySheet() {
@@ -520,6 +523,7 @@ function refreshToolbar() {
   if (bar.dataset.key === key) return; bar.dataset.key = key; bar.classList.toggle('cliprow', !!f && !multi); bar.scrollLeft = 0;
   bar.innerHTML = (multi ? `<span class="multicount" id="multiCount">${S.multi.length} selected</span>` : f ? `<button class="tool back" data-tool="back">${icon('back')}<span>Back</span></button>` : '') +
     tools.map(t => `<button class="tool" data-tool="${t.id}">${icon(t.icon)}<span>${t.label}</span></button>`).join('');
+  bar.onpointerdown = e => { const b = e.target.closest('.tool'); if (!b) return; b.classList.add('pressed'); setTimeout(() => b.classList.remove('pressed'), 220); };
   bar.onclick = e => { const b = e.target.closest('.tool'); if (!b) return; if (b.dataset.tool === 'back') { select(null); return; }
     const t = tools.find(x => x.id === b.dataset.tool); if (player.playing) player.pause(); t && t.run(); };
 }
@@ -1133,7 +1137,7 @@ function wireUI() {
   $('#playBtn').onclick = () => player.toggle();
   $('#undoBtn').onclick = () => { player.pause(); undo(); };
   $('#redoBtn').onclick = () => { player.pause(); redo(); };
-  $('#kfBtn').onclick = () => { player.pause(); toggleKf(); }; $('#fsBtn').innerHTML = icon('fit'); $('#fsBtn').onclick = () => { document.body.classList.toggle('fs'); requestAnimationFrame(() => dispatchEvent(new Event('resize'))); }; $('#kfPrev').onclick = () => jumpKf(-1); $('#kfNext').onclick = () => jumpKf(1);
+  $('#kfBtn').onclick = () => { player.pause(); toggleKf(); }; $('#fsBtn').innerHTML = icon('fit'); const jump = t => { player.pause(); timeline.userScrub = false; player.seek(t); timeline.setTime(player.t); showTime(); updateKf(); }; $('#toStart').innerHTML = icon('kfprev', 18); $('#toEnd').innerHTML = icon('kfnext', 18); $('#toStart').onclick = () => jump(0); $('#toEnd').onclick = () => jump(projectDuration(S.project)); $('#fsBtn').onclick = () => { document.body.classList.toggle('fs'); requestAnimationFrame(() => dispatchEvent(new Event('resize'))); }; $('#kfPrev').onclick = () => jumpKf(-1); $('#kfNext').onclick = () => jumpKf(1);
   $('#zoomIn').onclick = () => timeline.zoomBy(1.6); $('#zoomOut').onclick = () => timeline.zoomBy(1 / 1.6);
   $('#addMainBtn').onclick = () => pick('main');
   $('#emptyAdd').onclick = () => pick('main');
@@ -1171,6 +1175,15 @@ async function measureLoudness() {
   const low = (navigator.deviceMemory || 4) <= 4;
   const ex = await import('./export.js'), mix = await ex.mixAudio(p, D, null, { raw: true, sr: low ? 16000 : 24000, keep: !low }); if (seq !== loudSeq) return loudLast;
   loudSig = sig; window.__loudMixes = (window.__loudMixes || 0) + 1;
-  const r = ex.loudnessOf(mix); player.setLoud(loudOn(p) && isFinite(r.lufs) ? r.gain : 1); return loudLast = r;
+  // B16: the LUFS maths (seconds of CPU on a 7-min project) runs in a worker, so taps and scrubbing never freeze
+  const r = await lufsOffThread(mix, ex); if (seq !== loudSeq) return loudLast; player.setLoud(loudOn(p) && isFinite(r.lufs) ? r.gain : 1); return loudLast = r;
+}
+let lufsWorker = null, lufsId = 0;
+function lufsOffThread(mix, ex) {
+  try { if (!lufsWorker) lufsWorker = new Worker(new URL('./audioworker.js', import.meta.url), { type: 'module' }); } catch (e) { return Promise.resolve(ex.loudnessOf(mix)); }
+  const ch = [mix.getChannelData(0), mix.getChannelData(Math.min(1, mix.numberOfChannels - 1))].map(c => c.slice()), id = ++lufsId;
+  return new Promise(res => { const on = e => { if (e.data.id !== id) return; lufsWorker.removeEventListener('message', on);
+      if (e.data.error) { res(ex.loudnessOf(mix)); return; } const L = e.data.lufs, gainDb = isFinite(L) ? Math.max(-24, Math.min(24, -14 - L)) : 0; res({ lufs: L, gainDb, gain: Math.pow(10, gainDb / 20) }); };
+    lufsWorker.addEventListener('message', on); lufsWorker.postMessage({ lufs: true, id, ch, sr: mix.sampleRate }, ch.map(c => c.buffer)); });
 }
 function scheduleLoudness() { clearTimeout(loudTimer); loudTimer = setTimeout(() => measureLoudness().catch(e => console.warn('loudness', e)), 1500); }

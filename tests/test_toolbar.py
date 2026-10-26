@@ -133,7 +133,11 @@ async def run():
         for t in MAIN + ['titles', 'karaoke', 'photo', 'ratio', 'layout', 'guides', 'perf', 'markers', 'history', 'select', 'magnetic']:
             await P(pg, 'studio.select(null)'); await pg.wait_for_timeout(200); n0 = len(errs)
             if not await P(pg, f'!!document.querySelector("#toolbar .tool[data-tool={t}]")'): ok(False, f'main tool {t} present'); continue
-            if t in ('audio', 'media'):
+            if t == 'audio':
+                await pg.click('#toolbar .tool[data-tool=audio]'); await pg.wait_for_selector('#sndImport', timeout=8000)
+                async with pg.expect_file_chooser() as fc: await pg.click('#sndImport')
+                ok(bool(await fc.value) and len(errs) == n0, 'Audio opens the music library (+ From my phone picker)'); await close(pg); continue
+            if t in ('media',):
                 async with pg.expect_file_chooser() as fc: await pg.click(f'#toolbar .tool[data-tool={t}]')
                 ok(bool(await fc.value), f'main tool {t} opens the picker'); continue
             await pg.click(f'#toolbar .tool[data-tool={t}]'); await pg.wait_for_timeout(400)

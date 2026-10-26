@@ -25,7 +25,13 @@ export class Timeline {
     this.scroll.addEventListener('scroll', () => this.onScroll(), { passive: true });
     this.tracksEl.addEventListener('pointerdown', e => this.down(e));
     addEventListener('pointermove', e => this.move(e)); addEventListener('pointerup', e => this.up(e)); addEventListener('pointercancel', e => this.cancel(e));
-    this.scroll.addEventListener('touchstart', e => this.touchStart(e), { passive: true });
+    this.scroll.addEventListener('touchstart', e => { this.beginScrub(); this.touchStart(e); }, { passive: true });
+    this.scroll.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') this.beginScrub(); }, { passive: true });
+    for (const ev of ['touchend', 'touchcancel']) this.scroll.addEventListener(ev, e => { if (!e.touches.length) this.endScrubSoon(); }, { passive: true });
+    addEventListener('pointerup', e => { if (this._fingerDown && e.pointerType === 'mouse') this.endScrubSoon(); }, { passive: true });
+    this.scroll.addEventListener('wheel', () => { if (this.o.isPlaying()) this.o.pause(); }, { passive: true });
+    const ruler = document.getElementById('ruler'); ruler.style.pointerEvents = 'auto';
+    ruler.addEventListener('pointerdown', e => { e.preventDefault(); this.seekTo(this.timeAtClientX(e.clientX)); });
     this.scroll.addEventListener('touchmove', e => this.touchMove(e), { passive: false });
     this.scroll.addEventListener('touchend', e => { if (e.touches.length < 2) this.pinch = null; });
     this.scroll.addEventListener('wheel', e => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); this.zoomBy(Math.exp(-e.deltaY / 300)); } else if (e.shiftKey && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { e.preventDefault(); this.scroll.scrollLeft += e.deltaY; } }, { passive: false });
@@ -38,6 +44,7 @@ export class Timeline {
 
   /* ---------- scrolling = scrubbing ---------- */
   setTime(t) {
+    if (this.userScrub) return;                       // the finger owns the timeline: playback never drags it back
     const x = Math.round(t * this.pps); if (Math.abs(this.scroll.scrollLeft - x) < 0.5) { this.drawRuler(); return; }
     this._expect = x; this.scroll.scrollLeft = x; this.drawRuler();
   }
@@ -48,7 +55,13 @@ export class Timeline {
     this._expect = null;
     if (this.o.isPlaying()) this.o.pause();
     this.o.seek(Math.max(0, Math.min(projectDuration(S.project), x / this.pps)), true);
+    if (this.userScrub && !this._fingerDown) this.endScrubSoon();
   }
+  /** A finger (or mouse) on the timeline: pause at once and let the playhead follow it; the exact frame is drawn on release. */
+  beginScrub() { this._fingerDown = true; this.userScrub = true; this._expect = null; clearTimeout(this._scrubT); this.o.scrubbing && this.o.scrubbing(true); if (this.o.isPlaying()) this.o.pause(); }
+  endScrubSoon() { this._fingerDown = false; clearTimeout(this._scrubT); this._scrubT = setTimeout(() => { this.userScrub = false; this.o.scrubbing && this.o.scrubbing(false); }, 140); }
+  /** Tap on the ruler: jump there. */
+  seekTo(t) { t = Math.max(0, Math.min(projectDuration(S.project), t)); if (this.o.isPlaying()) this.o.pause(); this.o.seek(t); this.userScrub = false; this.setTime(t); }
   zoomBy(f) { this.setZoom(this.pps * f); }
   setZoom(pps) { const t = this.o.getTime(); this.pps = Math.max(MIN_PPS, Math.min(MAX_PPS, pps)); this.render(); this.setTime(t); }
   /** Pinch / wheel zoom: at most one re-layout per animation frame (smooth on long projects). */
@@ -90,6 +103,7 @@ export class Timeline {
     if (!p.tracks.some(t => t.kind === 'audio')) { const row = document.createElement('div'); row.className = 'row hint k-audio'; row.style.height = '22px'; row.innerHTML = `<button class="rowhint" data-add="audio">${icon('music', 13)} Add audio</button>`; frag.appendChild(row); }
     for (const m of p.markers || []) { const l = document.createElement('i'); l.className = 'mkl'; l.style.left = (this.pad + m.t * pps) + 'px'; l.style.background = m.color; frag.appendChild(l); }
     this.tracksEl.replaceChildren(frag);
+    if (this._cv) { const live = new Set(p.tracks.flatMap(t => t.clips.map(c => c.id))); for (const id of this._cv.keys()) if (!live.has(id)) this._cv.delete(id); }
     this.drawRuler();
   }
   /** Slim InShot-style timeline: main strip 50px; other tracks are thin 20px lanes that open up while one of their clips is selected. */
@@ -100,9 +114,12 @@ export class Timeline {
     el.style.left = (c.start * this.pps) + 'px'; el.style.width = wpx + 'px';
     const rec = media.get(c.mediaId), h = RH - 4;
     if (c.type === 'video' || c.type === 'image' || c.type === 'audio') {
-      const cv = document.createElement('canvas'), cw = Math.min(4096, Math.ceil(wpx));
-      cv.width = cw; cv.height = h; cv.className = 'thumbs'; el.appendChild(cv);
-      if (rec) this.paintClip(cv.getContext('2d'), c, rec, cw, h, cw / wpx);
+      const cw = Math.min(4096, Math.ceil(wpx));
+      // B16: re-use the painted thumbnail strip when nothing that it shows changed (selecting / editing other clips no longer repaints every strip)
+      const key = rec ? JSON.stringify([cw, h, this.pps, c.in, c.out, c.speed, c.curve, c.volume, c.muteAudio, c.fadeIn, c.fadeOut, c.keyframes && c.keyframes.volume, c.beat, c.marks, rec.thumbN, !!rec.thumbBitmap, rec.peaks && rec.peaks.length, rec.duration]) : '';
+      this._cv ??= new Map(); let cv = rec && this._cv.get(c.id);
+      if (!cv || cv._key !== key) { cv = document.createElement('canvas'); cv.width = cw; cv.height = h; cv.className = 'thumbs'; if (rec) { this.paintClip(cv.getContext('2d'), c, rec, cw, h, cw / wpx); cv._key = key; this._cv.set(c.id, cv); } }
+      el.appendChild(cv);
     }
     const badges = [];
     if (c.type === 'compound') badges.push(`<span class="ctext">▣ ${esc(c.name || 'Compound')} · ${compoundCount(c)}</span>`);
