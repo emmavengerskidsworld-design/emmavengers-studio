@@ -208,7 +208,8 @@ async def run():
         ps = psnr(A, S_); ok(ps > 34, f'export frame == HD still render (PSNR {ps:.1f} dB, only compression differs)')
         ok(lap_var(A) > lap_var(Pl) * 1.3, f'exported frame is enhanced (sharpness {lap_var(A):.0f} vs plain {lap_var(Pl):.0f})')
         g = lambda im: np.asarray(im.resize((9, 16), Image.BOX)).astype(np.float32)
-        dif = np.abs(g(prevshot) - g(fr)).max(); ok(dif < 12, f'preview == export (max 9x16 cell diff {dif:.0f}/255; preview is {prevshot.size[0]}x{prevshot.size[1]})')
+        # B15: the preview is bigger (InShot layout), live HD sharpening runs at a different scale than the 1080p export -> allow 16
+        dif = np.abs(g(prevshot) - g(fr)).max(); ok(dif < 16, f'preview == export (max 9x16 cell diff {dif:.0f}/255; preview is {prevshot.size[0]}x{prevshot.size[1]})')
         ok(pcan_psnr > 40, f'preview canvas == the export renderer at preview size (PSNR {pcan_psnr:.1f} dB)')
         fv = frame(f, 2.5, 'hd_2.5.png'); await P(pg, '(()=>{studio.player.pause();studio.player.seek(2.5)})()'); await pg.wait_for_timeout(900)
         sv = await still(pg, t=2.5); pv2 = psnr(crop(arr(fv), 16), crop(arr(sv), 16)); ok(pv2 > 30, f'video clip (lowvid.mp4) export == still render (PSNR {pv2:.1f} dB)')
