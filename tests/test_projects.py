@@ -93,7 +93,7 @@ async def run():
         await P(pg, 'studio.makeThumb && studio.makeThumb(true)'); await pg.wait_for_timeout(800)
         await home(pg); c = await cards(pg)
         ok(len(c) == 1 and c[0]['img'] and '0:0' in c[0]['meta'] and ('ago' in c[0]['meta'] or 'just now' in c[0]['meta']), f'home: card with thumbnail, name, length, last edited {c}')
-        await pg.click('#newProjBtn'); await pg.wait_for_selector('.newratio'); await shot(pg, 'b7-new-project-390.png', 300)
+        await pg.click('#tabHome'); await pg.click('#newProjBtn'); await pg.wait_for_selector('.newratio'); await shot(pg, 'b7-new-project-390.png', 300)
         await pg.click('.newratio .chipbtn[data-v="16:9"]'); await pg.click('#npAdd'); await pg.wait_for_function(f'studio.S.project.id!=="{old_id}" && !document.body.classList.contains("home-open")')
         p2 = await P(pg, 'studio.S.project.id'); ok(await P(pg, 'studio.S.project.aspect') == '16:9' and await P(pg, 'studio.S.project.tracks.flatMap(t=>t.clips).length') == 0, 'New project 16:9 opens empty')
         await add(pg, ['image.png', 'sharp.png'], 2)
