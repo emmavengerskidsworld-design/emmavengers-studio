@@ -6,7 +6,10 @@ export const media = new Map();          // id -> record (runtime, with url/bitm
 const listeners = new Set();
 export const onMediaUpdate = f => listeners.add(f);
 const emit = rec => listeners.forEach(f => f(rec));
-const MAX_IMG = 3840;                    // decoded image long side (sharp up to 4K exports, still bounded for phone memory)
+/* Phone memory class (navigator.deviceMemory is 0.25–8 GB, rounded). Phones with ≤4 GB get smaller decode caps. */
+export const DEV_GB = (typeof navigator !== 'undefined' && navigator.deviceMemory) || 4;
+export const LOW_MEM = DEV_GB <= 4 || (typeof location !== 'undefined' && /[?&]lite=1/.test(location.search));
+const MAX_IMG = LOW_MEM ? 2560 : 3840;   // decoded image long side (sharp up to 4K exports, still bounded for phone memory)
 export const TILE = 56;                  // timeline thumbnail tile size (px)
 
 export function kindOf(file) {
@@ -19,7 +22,7 @@ export function kindOf(file) {
 
 /** Content id of a file: SHA-256 of the bytes (files over 256 MB: size + first and last 4 MB), so the same photo or
     video added to several projects is stored once. */
-const HASH_FULL = 256 * 1024 * 1024, HASH_PART = 4 * 1024 * 1024;
+const HASH_FULL = 32 * 1024 * 1024, HASH_PART = 4 * 1024 * 1024;
 export async function hashBlob(blob) {
   const hex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
   if (!crypto.subtle) return 'n:' + blob.size + ':' + (blob.name || '');
@@ -62,7 +65,7 @@ async function hydrate(rec) {
   if (rec.thumbBlob && !rec.thumbBitmap) rec.thumbBitmap = await createImageBitmap(rec.thumbBlob).catch(() => null);
 }
 /* Decoded photos are big (a 2048px photo = 16 MB), so only the most recently used ones stay decoded. */
-const BITMAP_LRU = 14, lru = [];
+const BITMAP_LRU = LOW_MEM ? 5 : 14, lru = [];
 export async function loadBitmap(rec) {
   if (rec.bitmap) { touch(rec); return rec.bitmap; }
   if (rec._bmp) return rec._bmp;
@@ -151,8 +154,18 @@ async function makeFilmstrip(rec) {
   rec.thumbN = n; await finishThumb(rec, c);
 }
 export const PEAK_RATE = 50; // peaks per second
+/* Files bigger than this are never read into memory whole: their audio is decoded in small pieces straight from
+   storage (WebCodecs AudioDecoder). Reading a 600 MB phone video with blob.arrayBuffer() killed the page on phones. */
+const STREAM_OVER = 24 * 1024 * 1024;
 async function makePeaks(rec) {
-  if (rec.size > 400e6) { rec.peaks = null; rec.hasAudio = true; await save(rec); return; }
+  const n0 = Math.max(1, Math.ceil((rec.duration || 1) * PEAK_RATE));
+  if (rec.blob.size > STREAM_OVER) {          // peaks while streaming: nothing big is kept
+    const out = new Float32Array(n0); let any = false;
+    const r = await streamAudio(rec, (planes, sr, t0) => { for (let j = 0; j < planes[0].length; j += 4) { const i = Math.floor((t0 + j / sr) * PEAK_RATE); if (i >= n0) break;
+      let v = 0; for (const c of planes) { const a = Math.abs(c[j]); if (a > v) v = a; } if (v > out[i]) out[i] = v; any = true; } }).catch(() => null);
+    if (r) { rec.peaks = any ? out : null; rec.hasAudio = !!r.frames; await save(rec); return; }
+    if (rec.blob.size > 160e6) { rec.peaks = null; rec.hasAudio = true; await save(rec); return; }
+  }
   const buf = await decodeAudio(rec, false);
   if (!buf) { rec.peaks = null; rec.hasAudio = false; await save(rec); return; }
   const n = Math.max(1, Math.ceil(buf.duration * PEAK_RATE)), step = buf.length / n, out = new Float32Array(n);
@@ -161,16 +174,70 @@ async function makePeaks(rec) {
     for (const ch of chans) for (let j = a; j < b; j += 4) { const v = Math.abs(ch[j]); if (v > m) m = v; } out[i] = m; }
   rec.peaks = out; rec.hasAudio = true; await save(rec);
 }
+/** Stream-decode the audio track of an MP4/MOV/M4A from storage in small pieces. onData(planes[], sampleRate, startTime)
+    gets float planes per decoded block. Returns { sampleRate, channels, frames } or null when it can't (caller falls back). */
+export async function streamAudio(rec, onData, onInit) {
+  if (typeof MP4Box === 'undefined' || typeof AudioDecoder === 'undefined') return null;
+  const blob = rec.blob, head = new Uint8Array(await blob.slice(4, 8).arrayBuffer());
+  if (String.fromCharCode(...head) !== 'ftyp') return null;
+  const file = MP4Box.createFile(false); let info = null, err = null; file.onError = e => { err = e; }; file.onReady = i => { info = i; };
+  let off = 0, guard = 0; const CH = 4 << 20;
+  while (!info && !err && off < blob.size && guard++ < 10000) { const ab = await blob.slice(off, off + CH).arrayBuffer(); ab.fileStart = off; const nx = file.appendBuffer(ab); off = nx > off ? nx : off + ab.byteLength; }
+  if (!info) file.flush();
+  const tr = info && info.audioTracks && info.audioTracks[0]; if (err || !info) return null;
+  if (!tr) return { sampleRate: 48000, channels: 0, frames: 0 };
+  const trak = file.getTrackById(tr.id), S = trak.samples; if (!S || !S.length) return { sampleRate: 48000, channels: 0, frames: 0 };
+  let desc; try { const e = trak.mdia.minf.stbl.stsd.entries[0]; const d = e.esds && e.esds.esd.descs[0].descs[0]; if (d && d.data) desc = new Uint8Array(d.data); } catch (e) {}
+  const config = { codec: tr.codec === 'mp4a' ? 'mp4a.40.2' : tr.codec, sampleRate: tr.audio.sample_rate, numberOfChannels: tr.audio.channel_count, description: desc };
+  const sup = await AudioDecoder.isConfigSupported(config).catch(() => ({ supported: false })); if (!sup.supported) return null;
+  onInit && onInit(S.length * 1024 + 4096, config.sampleRate, Math.min(2, config.numberOfChannels));
+  let frames = 0, sr = config.sampleRate, chs = config.numberOfChannels, derr = null, t0 = null;
+  const dec = new AudioDecoder({ output: ad => { try { sr = ad.sampleRate; chs = Math.min(2, ad.numberOfChannels); const planes = [];
+      for (let c = 0; c < chs; c++) { const a = new Float32Array(ad.numberOfFrames); ad.copyTo(a, { planeIndex: c, format: 'f32-planar' }); planes.push(a); }
+      const t = ad.timestamp / 1e6; if (t0 === null) t0 = t; onData(planes, sr, t - t0); frames += ad.numberOfFrames; } finally { ad.close(); } },
+    error: e => { derr = e; } });
+  dec.configure(config);
+  const ts = S[0].timescale, GROUP = 2 << 20;
+  for (let i = 0; i < S.length && !derr;) {   // read ~2 MB of consecutive samples at a time
+    const lo = S[i].offset; let j = i, hi = lo;
+    while (j < S.length && S[j].offset >= lo && S[j].offset + S[j].size <= lo + GROUP) { hi = Math.max(hi, S[j].offset + S[j].size); j++; }
+    if (j === i) { j = i + 1; hi = lo + S[i].size; }
+    const buf = new Uint8Array(await blob.slice(lo, hi).arrayBuffer());
+    for (let k = i; k < j; k++) { const s = S[k]; const rel = s.offset - lo;
+      const data = rel >= 0 && rel + s.size <= buf.length ? buf.subarray(rel, rel + s.size) : new Uint8Array(await blob.slice(s.offset, s.offset + s.size).arrayBuffer());
+      dec.decode(new EncodedAudioChunk({ type: 'key', timestamp: Math.round(s.cts / ts * 1e6), duration: Math.round(s.duration / ts * 1e6), data })); }
+    i = j; if (dec.decodeQueueSize > 200) await new Promise(r => setTimeout(r, 0));
+    await dec.flush().catch(e => { derr = e; });
+  }
+  try { dec.close(); } catch (e) {}
+  if (derr) throw derr;
+  return { sampleRate: sr, channels: chs, frames };
+}
 /** Decode the audio of a media file (for waveform and export mixing). Returns null when the file has no audio. */
 const audioCache = new Map();
+async function decodeStreamed(rec) {
+  // decode straight into preallocated channel arrays (AAC = 1024 frames per sample), no second copy
+  let chs = null, n = 0, sr = 48000;
+  const r = await streamAudio(rec, (planes, s) => { if (!chs) return; sr = s;
+    for (let c = 0; c < chs.length; c++) { const src = planes[c] || planes[0], room = chs[c].length - n; if (room <= 0) break; chs[c].set(room < src.length ? src.subarray(0, room) : src, n); }
+    n = Math.min(chs[0].length, n + planes[0].length); }, (est, s, c) => { sr = s; chs = [...Array(Math.max(1, c))].map(() => new Float32Array(est)); });
+  if (!r) return undefined; if (!r.frames || !n || !chs) return null;
+  const ab = new AudioBuffer({ length: n, numberOfChannels: chs.length, sampleRate: r.sampleRate || sr });
+  for (let c = 0; c < chs.length; c++) { ab.copyToChannel(chs[c].subarray(0, n), c); chs[c] = null; }
+  return ab;
+}
 export async function decodeAudio(rec, keep = true) {
   if (audioCache.has(rec.id)) return audioCache.get(rec.id);
   let buf = null;
-  try { const ac = new OfflineAudioContext(2, 48000, 48000); buf = await ac.decodeAudioData(await rec.blob.arrayBuffer()); } catch (e) { buf = null; }
+  if (rec.blob && rec.blob.size > STREAM_OVER) {
+    buf = await decodeStreamed(rec).catch(e => { console.warn('streamed audio decode failed', e); return undefined; });
+    if (buf === undefined) buf = rec.blob.size > 160e6 ? null : await whole(rec);
+  } else buf = await whole(rec);
   if (keep) audioCache.set(rec.id, buf);
   return buf;
 }
-export const dropAudioCache = () => audioCache.clear();
+async function whole(rec) { try { const ac = new OfflineAudioContext(2, 48000, 48000); return await ac.decodeAudioData(await rec.blob.arrayBuffer()); } catch (e) { return null; } }
+export const dropAudioCache = id => id ? audioCache.delete(id) : audioCache.clear();
 
 /* ---------- memory guard hooks ---------- */
 export const bitmapBytes = () => lru.reduce((n, r) => n + (r.bitmap ? r.bitmap.width * r.bitmap.height * 4 : 0), 0);

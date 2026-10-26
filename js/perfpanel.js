@@ -2,7 +2,7 @@
 import { S, live, on } from './store.js';
 import { projectDuration, newClip } from './project.js';
 import { openSheet } from './panels.js';
-import { media, onMediaUpdate, bitmapBytes, trimBitmaps, audioCacheBytes, trimAudioCache } from './media.js';
+import { media, onMediaUpdate, bitmapBytes, trimBitmaps, audioCacheBytes, trimAudioCache, dropAudioCache } from './media.js';
 import { bakedBytes, trimBaked } from './audio.js';
 import { activeVisual } from './compound.js';
 import * as perf from './perf.js';
@@ -16,7 +16,7 @@ export function initPerf(ctx) {
     const p = { id: 'proxy_' + rec.id, name: 'proxy', aspect: '9:16', fps: 30, bg: '#000000', loudness: { on: false }, duck: { on: false },
       tracks: [{ id: 't_px', kind: 'main', clips: [newClip('video', { mediaId: rec.id, in: 0, out: rec.duration, start: 0 })] }] };
     const r = await ex.exportVideo(p, { short: Math.min(W, H), size: { W, H }, fps: 30, quality: 'standard' }); return r.blob;
-  });
+  }, id => dropAudioCache(id));
   on('change', () => P.invalidate()); onMediaUpdate(() => P.invalidate());
   // the timeline only needs a redraw when a proxy badge changes (not when the memory guard trims caches), and never mid-drag
   let tlSig = '', tlT = 0; const tlSoon = () => { clearTimeout(tlT); if (X.timeline.drag || X.timeline.box) { tlT = setTimeout(tlSoon, 120); return; } X.timeline.render(); };
@@ -26,6 +26,9 @@ export function initPerf(ctx) {
   const run = () => { if (performance.now() - lastInput < 1500) { pt = setTimeout(run, 600); return; } perf.ensureProxies(S.project).catch(e => console.warn('proxies', e)); };
   const proxies = () => { clearTimeout(pt); pt = setTimeout(run, 800); };
   on('change', proxies); onMediaUpdate(proxies); proxies();
+  // Android app (onTrimMemory) / page hidden: let go of everything that can be rebuilt
+  window.__emmaTrim = level => { try { perf.guard(level >= 15 ? 0.2 : 0.5); if (level >= 15) { dropAudioCache(); trimBitmaps(0, new Set()); } } catch (e) {} };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) window.__emmaTrim(20); });
   perf.registerCache('frames', { prio: 0, bytes: () => P.fcache.bytes, trim: to => P.fcache.trim(to) });
   perf.registerCache('decoded-audio', { prio: 1, bytes: audioCacheBytes, trim: trimAudioCache });
   perf.registerCache('baked-audio', { prio: 2, bytes: bakedBytes, trim: trimBaked });

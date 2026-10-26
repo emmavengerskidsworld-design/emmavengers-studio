@@ -89,15 +89,15 @@ export function recorderMime() {
 }
 
 /** Mix every audible clip into one stereo AudioBuffer (same gain/speed rules as the preview). */
-export async function mixAudio(p, D, onProgress, { raw = false } = {}) {
+export async function mixAudio(p, D, onProgress, { raw = false, sr = SR, keep = true } = {}) {
   await ensurePresence(p);   // voice envelopes for auto ducking (same gain curve as the preview)
-  const oac = new OfflineAudioContext(2, Math.max(1, Math.ceil(D * SR)), SR);
+  const oac = new OfflineAudioContext(2, Math.max(1, Math.ceil(D * sr)), sr);
   const all = allClips(p).filter(c => hasSource(c) && c.start < D && !c.muteAudio), todo = all.filter(needsBake); let done = 0;
   for (const c of all) {
     const rec = media.get(c.mediaId); if (!rec || rec.hasAudio === false) continue;
     // processed clips: the same baked buffer the preview plays
     const bk = needsBake(c) ? await ensureBaked(c) : null; if (bk) onProgress && onProgress(++done / Math.max(1, todo.length));
-    const buf = bk ? bk.buf : await decodeAudio(rec); if (!buf) continue;
+    const buf = bk ? bk.buf : await decodeAudio(rec, keep); if (!buf) continue;
     const src = oac.createBufferSource(); src.buffer = buf; src.playbackRate.value = bk ? bakedRate(bk, c) : c.speed;
     // gain curve = volume keyframes x transition crossfade (same function the preview uses)
     const g = oac.createGain(), len = Math.min(clipDur(c), D - c.start), n = Math.max(2, Math.ceil(len * 100)), curve = new Float32Array(n);

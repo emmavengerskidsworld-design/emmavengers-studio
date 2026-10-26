@@ -77,7 +77,7 @@ async function boot() {
   pro.initProTools({ player, timeline, toast, speedSheet });
   initColorPanel({ player, timeline, toast });
   initMotionPanel({ player, timeline, toast, busy: (on, txt) => { $('#busy').hidden = !on; if (txt) $('#busyText').textContent = txt; } });
-  setMediaGetter(id => media.get(id)); setDecoder(rec => decodeAudio(rec)); onEnvelope(() => { player.requestDraw(); if (player.playing) player.sync && player.sync(player.t); });
+  setMediaGetter(id => media.get(id)); setDecoder(rec => decodeAudio(rec, false)); onEnvelope(() => { player.requestDraw(); if (player.playing) player.sync && player.sync(player.t); });
   initMixPanel({ player, timeline, toast, loudness: () => measureLoudness() });
   work.initWork({ player, timeline, toast, refreshToolbar });
   initPerf({ player, timeline, toast });
@@ -1128,10 +1128,18 @@ boot().catch(e => { console.error(e); document.body.insertAdjacentHTML('beforeen
 
 /* ---------------- loudness: the preview plays at the level of the -14 LUFS export ---------------- */
 let loudTimer = 0, loudSeq = 0, loudLast = null;
+let loudSig = '';
 async function measureLoudness() {
   const p = S.project, seq = ++loudSeq; if (!p) return null;
   const D = projectDuration(p); if (!D || !p.tracks.some(t => t.clips.some(c => hasSource(c)))) { player.setLoud(1); return loudLast = null; }
-  const ex = await import('./export.js'), mix = await ex.mixAudio(p, D, null, { raw: true }); if (seq !== loudSeq) return loudLast;
+  // Only re-measure when something that changes the sound changed (adding text / stickers / effects used to
+  // re-mix the whole project each time: a 7-min project = hundreds of MB on every edit, which killed the app on phones).
+  const AK = ['mediaId', 'in', 'out', 'start', 'speed', 'volume', 'muteAudio', 'fadeIn', 'fadeOut', 'kf', 'vfx', 'eq', 'comp', 'role', 'duck', 'pitch', 'curve'];
+  const sig = JSON.stringify([D, p.duck, p.loudness, p.tracks.map(t => t.clips.filter(c => hasSource(c)).map(c => AK.map(k => c[k])))]);
+  if (sig === loudSig && loudLast) { player.setLoud(loudOn(p) && isFinite(loudLast.lufs) ? loudLast.gain : 1); return loudLast; }
+  const low = (navigator.deviceMemory || 4) <= 4;
+  const ex = await import('./export.js'), mix = await ex.mixAudio(p, D, null, { raw: true, sr: low ? 16000 : 24000, keep: !low }); if (seq !== loudSeq) return loudLast;
+  loudSig = sig; window.__loudMixes = (window.__loudMixes || 0) + 1;
   const r = ex.loudnessOf(mix); player.setLoud(loudOn(p) && isFinite(r.lufs) ? r.gain : 1); return loudLast = r;
 }
 function scheduleLoudness() { clearTimeout(loudTimer); loudTimer = setTimeout(() => measureLoudness().catch(e => console.warn('loudness', e)), 1500); }

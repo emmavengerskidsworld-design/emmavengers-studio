@@ -10,11 +10,14 @@ export const PROXY_SHORT = 540, PROXY_MIN = 1080;
 const listeners = new Set(); export const onPerf = f => listeners.add(f); const emit = () => listeners.forEach(f => { try { f(); } catch (e) {} });
 let enabled = true;
 export const proxiesOn = p => !(p && p.perf && p.perf.proxy === false);
-export const needsProxy = rec => rec && rec.type === 'video' && Math.min(rec.width || 0, rec.height || 0) >= PROXY_MIN;
+/* Phones with ≤4 GB play 1080p natively without trouble, but re-encoding a long 1080p clip in the background
+   (decode + encode + audio mix) used >1 GB and the system killed the app. There: proxies only for >1080p, ≤4 min. */
+const LOWMEM = ((typeof navigator !== 'undefined' && navigator.deviceMemory) || 4) <= 4 || (typeof location !== 'undefined' && /[?&]lite=1/.test(location.search));
+export const needsProxy = rec => rec && rec.type === 'video' && Math.min(rec.width || 0, rec.height || 0) >= (LOWMEM ? 1440 : PROXY_MIN) && !(LOWMEM && rec.duration > 240);
 export const proxyState = new Map();   // mediaId -> 'queued' | 'making' | 'ready' | 'failed'
 const queue = []; let busy = false, encoder = null;
 /** encoder(rec, W, H) -> Promise<Blob>: set by the app (uses exportVideo on a one-clip project). */
-export const setProxyEncoder = f => { encoder = f; };
+export const setProxyEncoder = (f, drop) => { encoder = f; dropDecoded = drop; }; let dropDecoded = null;
 /** URL the preview should play for this media (proxy when ready and wanted, else the original). */
 export function playUrl(rec, p) { return enabled && proxiesOn(p) && rec.proxy && rec.proxy.url ? rec.proxy.url : rec.url; }
 export const usingProxy = (rec, p) => playUrl(rec, p) !== rec.url;
@@ -33,7 +36,7 @@ async function pump() {
   if (busy || !encoder) return; busy = true;
   try { while (queue.length) { const id = queue.shift(), rec = media.get(id); if (!rec || rec.proxy) continue; proxyState.set(id, 'making'); emit();
       const t0 = performance.now();
-      try { const { W, H } = proxySize(rec), blob = await encoder(rec, W, H); await db.kvSet('proxy:' + id, blob).catch(() => {}); setProxy(rec, blob); rec.proxy.secs = (performance.now() - t0) / 1000; }
+      try { const { W, H } = proxySize(rec), blob = await encoder(rec, W, H); await db.kvSet('proxy:' + id, blob).catch(() => {}); dropDecoded && dropDecoded(id); setProxy(rec, blob); rec.proxy.secs = (performance.now() - t0) / 1000; }
       catch (e) { console.warn('proxy failed', rec.name, e); proxyState.set(id, 'failed'); emit(); } } }
   finally { busy = false; }
 }
