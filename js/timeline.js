@@ -89,7 +89,7 @@ export class Timeline {
     for (const t of p.tracks) {
       const K = TRACK_KINDS[t.kind], row = document.createElement('div');
       const RH = this.rowH(t, K); row.className = 'row k-' + t.kind + (RH < K.height && t.kind !== 'main' ? ' thin' : ''); row.dataset.track = t.id; row.style.height = RH + 'px'; row.style.width = w + 'px';
-      if (t.kind === 'main' && !t.clips.length) { row.classList.add('hint'); row.innerHTML = `<button class="rowhint" data-add="main">${icon('plus', 16)} Add video or photo</button>`; }
+      
       for (const c of t.clips) row.appendChild(this.clipEl(c, t, K, RH));
       if (K.magnetic) t.clips.forEach((b, i) => { if (!i) return; const a = t.clips[i - 1]; if (t.free && b.start > clipEnd(a) + 0.05) return;
         const near = S.sel === a.id || S.sel === b.id;           // selected clip: keep the cut icon, but out of the trim handles' way (bottom)
@@ -100,9 +100,12 @@ export class Timeline {
         row.appendChild(j); });
       frag.appendChild(row);
     }
-    if (!p.tracks.some(t => t.kind === 'audio')) { const row = document.createElement('div'); row.className = 'row hint k-audio'; row.style.height = '22px'; row.innerHTML = `<button class="rowhint" data-add="audio">${icon('music', 13)} Add audio</button>`; frag.appendChild(row); }
+    // B16: no dashed 'Add …' lanes: adding is the round + (media) and the Audio / Sounds tools
     for (const m of p.markers || []) { const l = document.createElement('i'); l.className = 'mkl'; l.style.left = (this.pad + m.t * pps) + 'px'; l.style.background = m.color; frag.appendChild(l); }
     this.tracksEl.replaceChildren(frag);
+    // B16: compact like InShot: the timeline is only as tall as its tracks (main strip + ruler ~ 90 px) and grows with extra tracks
+    { const rows = p.tracks.filter(t => t.clips.length || t.kind === 'main'); const hh = 14 + 18 + rows.reduce((s, t) => s + this.rowH(t, TRACK_KINDS[t.kind]), 0) + 4 * Math.max(0, rows.length - 1);
+      const want = Math.max(88, Math.min(Math.round(innerHeight * 0.24), hh)) + 'px'; if (document.documentElement.style.getPropertyValue('--tl') !== want) document.documentElement.style.setProperty('--tl', want); }
     if (this._cv) { const live = new Set(p.tracks.flatMap(t => t.clips.map(c => c.id))); for (const id of this._cv.keys()) if (!live.has(id)) this._cv.delete(id); }
     this.drawRuler();
   }
