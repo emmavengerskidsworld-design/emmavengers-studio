@@ -54,7 +54,7 @@ async def run():
         await P(pg, """(async()=>{const E=await import('./js/texteffects.js'), pj=await import('./js/project.js'), R=await import('./js/registry.js'), TS=await import('./js/textstyles.js'), TT=await import('./js/texttemplates.js');
           const mk=(eid,word,y,font)=>{const c=pj.newClip('text',{dur:4,transform:{...R.DEFAULT_TRANSFORM,y}}); c.text.content=word; c.text.size=170; if(font)c.text.font=font; TS.applyStyle(c.text,null); Object.assign(c.text, JSON.parse(JSON.stringify(E.effectById(eid).s))); c.text.styleId=eid; return c;};
           studio.act(p=>{ pj.addToKind(p,'text',mk('e_fire','FIRE',0.18,'anton'),0); pj.addToKind(p,'text',mk('e_neonmulti','NEON',0.38,'righteous'),0); pj.addToKind(p,'text',mk('e_graffiti','DRIP',0.58,'bangers'),0);
-            const t=TT.TEMPLATES[0], c=mk(t.fx,t.word,0.8,t.font); c.text.deco={...t.deco}; pj.addToKind(p,'text',c,0); }); })()""")
+            const t=TT.TEMPLATES[0], c=mk('e_gold',t.word,0.8,t.font); Object.assign(c.text, JSON.parse(JSON.stringify(t.s)), {track:t.track, sub:t.sub, deco:{...t.deco}, styleId:null}); pj.addToKind(p,'text',c,0); }); })()""")
         await pg.wait_for_timeout(300); await P(pg, 'document.fonts.ready'); await pg.wait_for_timeout(1200)
         n = await P(pg, 'studio.S.project.tracks.filter(t=>t.kind==="text").reduce((a,t)=>a+t.clips.length,0)'); ok(n == 4, f'{n} effect texts on the timeline')
         await seek_exact(pg, 1.0); await P(pg, 'studio.select(null)'); await pg.wait_for_timeout(600)
