@@ -13,7 +13,9 @@ async def run():
         b = await p.chromium.launch(channel='chrome', headless=True, args=['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'])
         ctx = await b.new_context(viewport={'width':390,'height':844}, device_scale_factor=2, is_mobile=True, has_touch=True)
         pg = await ctx.new_page(); await pg.goto(f'http://127.0.0.1:{PORT}/'); await pg.wait_for_function('window.studio && studio.ready')
-        await pg.evaluate('studio.home.hide()'); await pg.set_input_files('#fileMedia',[str(OUT/'a.mp4'),str(OUT/'a.mp4')])
+        await pg.evaluate('studio.home.hide()'); import os
+        if os.environ.get('ASPECT'): await pg.evaluate(f'studio.act(p=>{{p.aspect="{os.environ["ASPECT"]}"}})')
+        await pg.set_input_files('#fileMedia',[str(OUT/'a.mp4'),str(OUT/'a.mp4')])
         await pg.wait_for_function('studio.S.project.tracks.flatMap(t=>t.clips).length===2', timeout=60000)
         await pg.evaluate('studio.select(null); studio.player.seek(3.0)'); await pg.wait_for_timeout(1500)
         await pg.screenshot(path=sys.argv[1]); await b.close()

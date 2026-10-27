@@ -153,7 +153,7 @@ export function toast(msg, ms = 2200) { const t = $('#toast'); t.textContent = m
 /* ---------------- preview canvas ---------------- */
 function layoutPreview() {
   const stage = $('#stage'), cv = $('#preview'), [a, b] = ASPECTS[S.project.aspect];
-  const W = stage.clientWidth - 32, H = stage.clientHeight - 28; if (W <= 0 || H <= 0) return;
+  const wide = a > b, W = stage.clientWidth - (wide ? 0 : 32), H = stage.clientHeight - (wide ? 0 : 28); if (W <= 0 || H <= 0) return;   // landscape fills the screen width edge to edge (InShot)
   let w = W, h = W * b / a; if (h > H) { h = H; w = H * a / b; }
   cv.style.width = Math.round(w) + 'px'; cv.style.height = Math.round(h) + 'px';
   const o = $('#cmp'); if (o) { o.style.width = cv.style.width; o.style.height = cv.style.height; }

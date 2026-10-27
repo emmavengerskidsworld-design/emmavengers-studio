@@ -620,7 +620,7 @@ body.has-sel #transport .time .sep,body.has-sel #ttot{display:none}body.has-sel 
 .exportlink{background:none;border:0;color:#fff;font:700 15px system-ui,sans-serif;padding:0 10px;height:40px;letter-spacing:.2px;flex:none}
 .exportlink:disabled{color:#ffffff55}.exportlink:active{opacity:.6}
 #stage{background:#1f1f1f}
-#preview{border-radius:2px}
+#preview{border-radius:0}
 #transport{background:#121214;border-top:0}
 #app{background:#121214}
 .ib.tb{width:34px}.ib.tb svg{width:19px;height:19px}.ib.tb.on{color:var(--accent)}
