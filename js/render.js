@@ -1,3 +1,4 @@
+import { texPaint, fxPasses, drawDeco } from './textfx.js';
 /* The compositor: draws the project at time t onto a 2D canvas. Used by BOTH the live preview and the exporter,
    so what you see is exactly what you export. getSource(clip, t) supplies the pixels for a video/image clip:
    { img: CanvasImageSource, w, h, rot } (w/h = coded size, rot = display rotation in degrees). */
@@ -266,6 +267,7 @@ function drawBubble(ctx, T, shape, bw, bh, px, sc) {
 }
 /* fill paint: solid colour or a gradient laid out over the whole text block (ox, oy = where this glyph sits in the block) */
 function fillPaint(ctx, T, w, h, ox, oy, idx) {
+  if (T.tex) return texPaint(ctx, T.tex, w, h, ox, oy);
   const F = T.fill; if (!F || !F.colors || F.colors.length < 2) return T.color;
   if (F.dir === 'letters') return F.colors[idx % F.colors.length];
   const g = F.dir === 'h' ? ctx.createLinearGradient(-w / 2 - ox, 0, w / 2 - ox, 0) : F.dir === 'd' ? ctx.createLinearGradient(-w / 2 - ox, -h / 2 - oy, w / 2 - ox, h / 2 - oy) : ctx.createLinearGradient(0, -h / 2 - oy, 0, h / 2 - oy);
@@ -282,6 +284,7 @@ function textPasses(ctx, T, px, w, h, sc, lh) {
   }
   if (T.shadow) { const S = T.shadow; P.push((g, x, y) => { ctx.save(); if (S.blur > 0) { ctx.shadowColor = S.color; ctx.shadowBlur = S.blur * px * sc; }
     ctx.fillStyle = ctx.strokeStyle = S.color; ctx.lineJoin = 'round'; ctx.lineWidth = outer; const X = x + S.dx * px, Y = y + S.dy * px; if (outer > 0) ctx.strokeText(g.s, X, Y); ctx.fillText(g.s, X, Y); ctx.restore(); }); }
+  P.push(...fxPasses(ctx, T, px, sc, lh, 'pre'));
   if (s2) P.push(stroke(outer, T.stroke2.color));
   if (ow) P.push((g, x, y) => stroke(ow, T.outlineColor || '#000')(g, x, y));
   P.push((g, x, y) => { const gl = (g.glow || 0) * px * sc + (T.glow ? T.glow.blur * px * sc : 0);
@@ -289,6 +292,7 @@ function textPasses(ctx, T, px, w, h, sc, lh) {
     ctx.fillStyle = g.color || fillPaint(ctx, T, w, h, g.ox, g.oy, g.i); ctx.fillText(g.s, x, y);
     if (T.glow && gl > .002) ctx.fillText(g.s, x, y);   // neon: a second pass makes the glow strong
     ctx.shadowBlur = 0; });
+  P.push(...fxPasses(ctx, T, px, sc, lh, 'post'));
   if (T.gloss) P.push((g, x, y) => { const gr = ctx.createLinearGradient(0, y - lh / 2, 0, y + lh * 0.05); gr.addColorStop(0, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gr; ctx.fillText(g.s, x, y); });
   return P;
 }
@@ -315,6 +319,7 @@ export function drawText(ctx, W, H, clip, tr, local = 0) {
     if (B.blur > .002) ctx.filter = `blur(${(B.blur * px * tr.scale).toFixed(2)}px)`;
     if (B.reveal < 1) { ctx.beginPath(); ctx.rect(-bw / 2 - px, -bh / 2 - px, (bw + px) * B.reveal + px, bh + 2 * px); ctx.clip(); } }
   if (shape) drawBubble(ctx, T, shape, bw, bh, px, sc);
+  if (T.deco) drawDeco(ctx, T.deco, w, h, px);
   const ax = T.align === 'left' ? -w / 2 : T.align === 'right' ? w / 2 : 0;
   const passes = textPasses(ctx, T, px, w, h, sc, lh), perChar = curved || (plan && plan.units.length) || (T.fill && T.fill.dir === 'letters');
   if (!perChar) {

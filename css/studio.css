@@ -598,3 +598,9 @@ body.has-sel #transport .time .sep,body.has-sel #ttot{display:none}body.has-sel 
 .thlogo{position:absolute;left:8px;top:6px;font:900 15px system-ui;font-style:normal;text-shadow:0 1px 3px rgba(0,0,0,.4)}
 .thcheck{display:none;position:absolute;right:6px;bottom:6px;width:24px;height:24px;border-radius:50%;background:#ffcc33;color:#1b1b2f;font:800 14px/24px system-ui;text-align:center;font-style:normal}
 .thsw.on .thcheck{display:block}.thname{font-size:12.5px}
+/* B20 art grids */
+.artbrowser .trgrid.txgrid .trtile{background:#1d1d24;border-radius:12px;border:2px solid transparent}
+.artbrowser .trgrid.txgrid .trtile.on{border-color:#fff}
+.artbrowser .trtile.fav::after{content:"🔖";position:absolute;top:2px;right:3px;font-size:10px}
+.artbrowser .trtile{position:relative;-webkit-touch-callout:none;user-select:none}
+.artsearch{width:100%;margin:6px 0;padding:8px 12px;border-radius:10px;background:#2a2a33;color:#fff;border:1px solid #3a3a46}

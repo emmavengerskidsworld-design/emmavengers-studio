@@ -36,6 +36,8 @@ import { initMotionPanel, stabSheet, trackSheet, graphSheet, slowmoSheet, stabil
 import { initLayoutPanel, canvasSheet, layoutSheet, mirrorSheet, applyLayout, fillCells, clearLayout } from './layoutpanel.js';
 import { initColorPanel, colorSheet as colorProSheet, addAdjustmentLayer, isAdjLayer, pickWhite } from './colorpanel.js';
 import { TEXT_STYLES, BUBBLES, TITLES, applyStyle, applyTitle } from './textstyles.js';
+import { EFFECTS, EFFECT_CATS, effectById } from './texteffects.js';
+import { TEMPLATES, TEMPLATE_CATS, TRENDING_T } from './texttemplates.js';
 import { FILTERS, FONTS, COLORS, BG_COLORS, SPEED_PRESETS, KEYFRAME_PROPS, DEFAULT_TRANSFORM, TRACK_KINDS, propAt, kfPropsFor, EASING_LIST, TRANSFORM_PROPS } from './registry.js';
 import { exportVideo, exportAudio, exportStill, exportGif, GIF_MAX, AUDIO_BR, outputSize, pickCodecs, recorderMime, planBitrate, qualityFloor, QUALITY, RESOLUTIONS, supportedResolutions, estimateBytes, bitrateFor } from './export.js';
 import { ADJUST, DEFAULT_STRENGTH, enhanceOn, glAvailable } from './enhance.js';
@@ -801,6 +803,35 @@ function textSheet(startTab) {
       unsub && unsub(); unsub = onFontLoad(() => document.body.contains(g) && g.querySelectorAll('[data-drawn]').forEach(draw));
       return g;
     };
+    // CapCut-style browser: ⊘ / ★ Saved / category chips + search, 4-col tiles drawn only when visible, animated tiles only while visible, hold to save
+    const artBrowser = o => {
+      const wrap = document.createElement('div'); wrap.className = 'artbrowser'; let cat = 'trending', q = ''; const favs = new Set(lsGet(o.favKey, []));
+      const bar = document.createElement('div'); bar.className = 'fontbar';
+      const sb = document.createElement('button'); sb.className = 'iconbtn'; sb.textContent = '🔍'; sb.id = o.cls + 'Search';
+      const si = document.createElement('input'); si.type = 'search'; si.placeholder = o.ph; si.hidden = true; si.className = 'artsearch';
+      sb.onclick = () => { si.hidden = !si.hidden; if (!si.hidden) si.focus(); else { q = ''; si.value = ''; fill(); } }; si.oninput = () => { q = si.value.trim().toLowerCase(); fill(); };
+      const cx = chips([...(o.none ? [{ value: 'none', label: '⊘' }] : []), { value: 'fav', label: '🔖 Saved' }, ...o.cats.map(([value, label]) => ({ value, label }))], cat, v => { if (v === 'none') { o.pick(null); grid.querySelectorAll('.trtile').forEach(x => x.classList.remove('on')); cx.setActive && cx.setActive(cat); return; } cat = v; fill(); }, 'tabs fxcats');
+      bar.append(sb, cx); const grid = document.createElement('div'); grid.className = 'trgrid txgrid g4 ' + o.cls; wrap.append(bar, si, grid);
+      let io = null, vis = new Set(), raf = 0, list = [];
+      const tileT = (it, now) => { const c = o.mk(it); if (!c.anim) return [c, 0]; const cyc = (now / 1000) % 2.6; c.dur = 3; return [c, Math.min(2.9, cyc)]; };
+      const draw = (b, now = 0) => { const it = list[+b.dataset.i]; if (!it) return; const x = b.querySelector('canvas').getContext('2d');
+        if (it.none) { x.fillStyle = '#23232d'; x.fillRect(0, 0, TW, TH); return; } if (it.font) ensureFont(it.font);
+        const [c, t] = o.animated ? tileT(it, now) : [o.mk(it), 0]; textTile(x, TW, TH, c, o.animated ? t : undefined); b.dataset.drawn = 1; };
+      const loop = now => { if (!document.body.contains(grid)) return; if (now - (loop.l || 0) > 66) { loop.l = now; for (const b of vis) draw(b, now); } raf = requestAnimationFrame(loop); };
+      function fill() { grid.innerHTML = ''; const cur = o.cur() || null;
+        list = [...(o.dflt ? [{ id: null, dflt: true, name: 'Default' }] : []), ...o.items.filter(it => q ? (it.name + ' ' + (it.cat || '')).toLowerCase().includes(q) : cat === 'fav' ? favs.has(it.id) : cat === 'trending' ? (o.trending ? o.trending.has(it.id) : it.trend) : it.cat === cat)];
+        if (!list.length) grid.innerHTML = `<p class="hint">${cat === 'fav' ? 'Press and hold a tile to save it here.' : 'Nothing found.'}</p>`;
+        list.forEach((it, i) => { const b = document.createElement('button'); b.className = 'trtile' + ((it.id ?? null) === cur ? ' on' : '') + (favs.has(it.id) ? ' fav' : ''); b.dataset.v = it.id ?? 'none'; b.dataset.i = i; b.dataset.lazy = 1;
+          b.innerHTML = `<canvas width="${TW}" height="${TH}"></canvas><span>${it.name}</span>`;
+          let hold = 0, held = false; b.onpointerdown = () => { held = false; hold = setTimeout(() => { held = true; if (!it.id) return; favs.has(it.id) ? favs.delete(it.id) : favs.add(it.id); lsSet(o.favKey, [...favs]); b.classList.toggle('fav', favs.has(it.id)); toast(favs.has(it.id) ? 'Saved' : 'Removed from Saved'); }, 550); };
+          b.onpointerup = b.onpointercancel = b.onpointerleave = () => clearTimeout(hold); b.oncontextmenu = e => e.preventDefault();
+          b.onclick = () => { if (held) return; grid.querySelectorAll('.trtile').forEach(x => x.classList.toggle('on', x === b)); o.pick(it.dflt ? { dflt: true } : it); }; grid.append(b); });
+        io && io.disconnect(); vis = new Set();
+        requestAnimationFrame(() => { io = lazyDraw(grid, b => { draw(b, performance.now()); }); if (o.animated && 'IntersectionObserver' in window) { const vio = new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? vis.add(e.target) : vis.delete(e.target)), { root: grid }); grid.querySelectorAll('.trtile').forEach(b => vio.observe(b)); } }); }
+      fill(); if (o.animated) { cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); }
+      unsub && unsub(); unsub = onFontLoad(() => document.body.contains(grid) && grid.querySelectorAll('[data-drawn]').forEach(b => draw(b, performance.now())));
+      return wrap;
+    };
     const show = () => {
       pane.innerHTML = ''; const T = clipNow().text; pane.dataset.tab = textTab;
       if (textTab === 'edit') {
@@ -867,19 +898,12 @@ function textSheet(startTab) {
           fio && fio.disconnect(); fio = lazyDraw(grid, b => { ensureFont(b.dataset.v); b.style.font = FONTS[b.dataset.v].css.replace('SIZE', '15'); }); }
         fill();
       } else if (textTab === 'style') {
-        ensureFont(T.font); let cat = 'all', q = ''; const favs = new Set(lsGet('emma.fxFav', []));
-        const all = [{ id: null, name: 'None', none: true }, ...TEXT_STYLES, ...EXTRA_FX];
-        const bar = document.createElement('div'); bar.className = 'fontbar';
-        const sb = document.createElement('button'); sb.className = 'iconbtn'; sb.id = 'fxSearchBtn'; sb.textContent = '🔍';
-        const bm = document.createElement('button'); bm.className = 'iconbtn'; bm.id = 'fxFavBtn'; bm.title = 'Save the current effect'; bm.textContent = '🔖';
-        const si = document.createElement('input'); si.type = 'search'; si.id = 'fxSearch'; si.placeholder = 'Search effects'; si.hidden = true;
-        sb.onclick = () => { si.hidden = !si.hidden; if (!si.hidden) si.focus(); else { q = ''; si.value = ''; fill(); } }; si.oninput = () => { q = si.value.trim().toLowerCase(); fill(); };
-        bm.onclick = () => { const cur = clipNow().text.styleId; if (!cur) { toast('Pick an effect first'); return; } favs.has(cur) ? favs.delete(cur) : favs.add(cur); lsSet('emma.fxFav', [...favs]); toast(favs.has(cur) ? 'Effect saved' : 'Removed from saved'); if (cat === 'fav') fill(); };
-        bar.append(sb, bm, chips(FX_CATS.map(([value, label]) => ({ value, label })), cat, v => { cat = v; fill(); }, 'tabs fxcats')); const holder = document.createElement('div'); pane.append(bar, si, holder);
-        function fill() { holder.innerHTML = ''; const list = all.filter(st => st.none || (q ? st.name.toLowerCase().includes(q) : cat === 'all' || (cat === 'fav' ? favs.has(st.id) : fxCat(st) === cat)));
-          holder.append(tileGrid(list, clipNow().text.styleId || null, st => ({ ...clipNow(), anim: null, text: fxStyle({ ...clipNow().text, content: 'ART', curve: 0, size: 160, box: false, bubble: null }, st.id) }),
-            st => editSel(cl => { const keep = { box: cl.text.box, bubble: cl.text.bubble, boxColor: cl.text.boxColor }; fxStyle(cl.text, st.id); if (!cl.text.bubble && keep.bubble) Object.assign(cl.text, keep); }), 'stylegrid')); }
-        fill();
+        ensureFont(T.font);
+        const keepB = t => ({ box: t.box, bubble: t.bubble, boxColor: t.boxColor, bubbleBorder: t.bubbleBorder });
+        const applyFx = (t, e) => { const kb = keepB(t); applyStyle(t, null); if (e) { Object.assign(t, JSON.parse(JSON.stringify(e.s))); t.styleId = e.id; } Object.assign(t, kb); return t; };
+        pane.append(artBrowser({ items: EFFECTS, cats: EFFECT_CATS, favKey: 'emma.fxFav2', cur: () => clipNow().text.styleId, cls: 'stylegrid', none: true, ph: 'Search effects',
+          mk: e => ({ ...clipNow(), anim: null, text: applyFx({ ...clipNow().text, content: 'ART', curve: 0, size: 170, box: false, bubble: null, deco: null }, e) }),
+          pick: e => editSel(cl => { applyFx(cl.text, e); }) }));
       } else if (textTab === 'anim') {
         animSheet('in', pane);
       } else if (textTab === 'bubble') {
@@ -909,14 +933,13 @@ function textSheet(startTab) {
           holder.append(tileGrid(L, null, pr => ({ ...clipNow(), anim: null, text: { ...pr.text, content: 'Aa', curve: 0, size: 160 } }), pr => { ensureFont(pr.text.font); editSel(cl => { Object.assign(cl.text, JSON.parse(JSON.stringify(pr.text))); if (pr.anim) cl.anim = JSON.parse(JSON.stringify(pr.anim)); else delete cl.anim; }); timeline.render(); }, 'presetgrid')); }
         fillP();
       } else if (textTab === 'title') {
-        const tcat = t => t.cat || FONTS[t.font]?.group || 'system', TCATS = [['all', 'Trending'], ...FONT_GROUPS.filter(([g]) => TITLES.some(t => tcat(t) === g))];
-        let tc = 'all'; const holder = document.createElement('div');
-        pane.append(chips(TCATS.map(([value, label]) => ({ value, label })), tc, v => { tc = v; fillT(); }, 'tabs tplcats'), holder);
-        function fillT() { holder.innerHTML = ''; const list = [{ id: null, name: 'Default', none: false, dflt: true }, ...TITLES.filter(t => tc === 'all' || tcat(t) === tc)];
-          holder.append(tileGrid(list, clipNow().titleId || null, t => t.dflt ? { ...clipNow(), anim: null, text: { ...applyStyle({ ...clipNow().text }, null), content: 'Text', curve: 0, size: 160 } } : applyTitle({ id: 'tile', type: 'text', start: 0, dur: 3, transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, text: { ...clipNow().text } }, t.id),
-            t => { if (t.dflt) { editSel(cl => { applyStyle(cl.text, null); cl.text.curve = 0; cl.text.box = false; cl.text.bubble = null; delete cl.titleId; delete cl.anim; }); timeline.render(); return; }
-              ensureFont(t.font); const typed = ta.value.trim() && !TITLES.some(x => x.content === ta.value); editSel(cl => { applyTitle(cl, t.id, typed); }); if (!typed) ta.value = clipNow().text.content; timeline.render(); }, 'titlegrid')); }
-        fillT();
+        const tmpl = (t, c) => { const e = effectById(t.fx), tx = c.text; applyStyle(tx, null); if (e) Object.assign(tx, JSON.parse(JSON.stringify(e.s))); tx.styleId = t.fx; tx.font = t.font; tx.size = t.size; tx.curve = 0; tx.deco = t.deco ? { ...t.deco } : null; tx.box = false; tx.bubble = null;
+          c.anim = JSON.parse(JSON.stringify(t.anim)); if (!Object.keys(c.anim).length) delete c.anim; c.titleId = t.id; return c; };
+        pane.append(artBrowser({ items: TEMPLATES, cats: TEMPLATE_CATS, trending: TRENDING_T, favKey: 'emma.tplFav', cur: () => clipNow().titleId, cls: 'titlegrid', dflt: true, animated: true, ph: 'Search templates',
+          mk: t => t.dflt ? { ...clipNow(), anim: null, text: { ...applyStyle({ ...clipNow().text }, null), content: 'Text', curve: 0, size: 160 } } : tmpl(t, { id: 'tile', type: 'text', start: 0, dur: 3, transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, text: { ...clipNow().text, content: t.word } }),
+          pick: t => { if (t.dflt) { editSel(cl => { applyStyle(cl.text, null); cl.text.curve = 0; delete cl.titleId; delete cl.anim; }); timeline.render(); return; }
+            ensureFont(t.font); const typed = ta.value.trim() && !TEMPLATES.some(x => x.word === ta.value) && !TITLES.some(x => x.content === ta.value);
+            editSel(cl => { tmpl(t, cl); if (!typed) { cl.text.content = t.word; delete cl.placeholder; } }); if (!typed) ta.value = clipNow().text.content; timeline.render(); } }));
       }
     };
     show();

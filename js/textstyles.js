@@ -3,8 +3,8 @@
      color, outline + outlineColor + outlineW (em), fill {colors, dir: 'v'|'h'|'d'|'letters'}, stroke2 {color, w} (outer outline),
      shadow {color, dx, dy, blur}, glow {color, blur}, extrude {color, depth, angle} (3D), gloss (shine on the top half),
      bubble (background shape) + boxColor + bubbleBorder {color, w}. Sizes are in em (fraction of the font size). */
-export const STYLE_KEYS = ['color', 'outline', 'outlineColor', 'outlineW', 'fill', 'stroke2', 'shadow', 'glow', 'extrude', 'gloss', 'box', 'bubble', 'boxColor', 'bubbleBorder'];
-export const STYLE_DEFAULTS = { color: '#ffffff', outline: false, outlineColor: '#000000', outlineW: 0.14, fill: null, stroke2: null, shadow: null, glow: null, extrude: null, gloss: false, box: false, bubble: null, boxColor: '#000000', bubbleBorder: null };
+export const STYLE_KEYS = ['color', 'outline', 'outlineColor', 'outlineW', 'fill', 'stroke2', 'shadow', 'glow', 'extrude', 'gloss', 'box', 'bubble', 'boxColor', 'bubbleBorder', 'tex', 'fx', 'deco'];
+export const STYLE_DEFAULTS = { color: '#ffffff', outline: false, outlineColor: '#000000', outlineW: 0.14, fill: null, stroke2: null, shadow: null, glow: null, extrude: null, gloss: false, box: false, bubble: null, boxColor: '#000000', bubbleBorder: null, tex: null, fx: null, deco: null };
 const RAINBOW = ['#ff4d4d', '#ff9f1c', '#ffe600', '#3ddc84', '#1fb6ff', '#a259ff'];
 const GOLD = ['#fff6c2', '#ffd23f', '#d49a00', '#ffe27a', '#b07800'];
 const d3 = (top, bot, line, side, extra = {}) => ({ color: top, fill: { colors: [top, bot], dir: 'v' }, outline: true, outlineColor: line, outlineW: 0.1, extrude: { color: side, depth: 0.12, angle: 90 }, gloss: true, ...extra });
@@ -74,8 +74,9 @@ export const TEXT_STYLES = [
 export const styleById = id => TEXT_STYLES.find(s => s.id === id);
 /** Put a style preset on a text object (resets every style field first, so presets never mix by accident). */
 export function applyStyle(text, id) {
-  const st = styleById(id); if (!st) return text;
+  const st = styleById(id);
   for (const k of STYLE_KEYS) text[k] = STYLE_DEFAULTS[k];
+  if (!st) { delete text.styleId; return text; }
   Object.assign(text, JSON.parse(JSON.stringify(st.s))); text.styleId = id; return text;
 }
 export const BUBBLES = [
