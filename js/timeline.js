@@ -48,16 +48,16 @@ export class Timeline {
     const x = Math.round(t * this.pps); if (Math.abs(this.scroll.scrollLeft - x) < 0.5) { this.drawRuler(); return; }
     this._expect = x; this.scroll.scrollLeft = x; this.drawRuler();
   }
-  // scroll events can arrive several times per frame on fast phones: do the ruler + seek work once per animation frame
-  onScroll() { if (this._scrollRaf) return; this._scrollRaf = requestAnimationFrame(() => { this._scrollRaf = 0; this.onScrollFrame(); }); }
-  onScrollFrame() {
-    this.drawRuler();
+  // our own scroll (playhead following playback, setTime) is recognised at once; a user scroll's ruler + seek work runs once per animation frame
+  onScroll() {
     const x = this.scroll.scrollLeft;
-    if (this._expect != null && Math.abs(x - this._expect) <= 1) { this._expect = null; return; }
+    if (this._expect != null && Math.abs(x - this._expect) <= 1) { this._expect = null; return; }   // setTime already drew the ruler
     this._expect = null;
     if (this.o.isPlaying()) this.o.pause();
-    this.o.seek(Math.max(0, Math.min(projectDuration(S.project), x / this.pps)), true);
-    if (this.userScrub && !this._fingerDown) this.endScrubSoon();
+    if (this._scrollRaf) return;
+    this._scrollRaf = requestAnimationFrame(() => { this._scrollRaf = 0; this.drawRuler();
+      this.o.seek(Math.max(0, Math.min(projectDuration(S.project), this.scroll.scrollLeft / this.pps)), true);
+      if (this.userScrub && !this._fingerDown) this.endScrubSoon(); });
   }
   /** A finger (or mouse) on the timeline: pause at once and let the playhead follow it; the exact frame is drawn on release. */
   beginScrub() { this._fingerDown = true; this.userScrub = true; this._expect = null; clearTimeout(this._scrubT); this.o.scrubbing && this.o.scrubbing(true); if (this.o.isPlaying()) this.o.pause(); }

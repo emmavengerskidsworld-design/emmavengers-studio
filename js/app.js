@@ -92,7 +92,7 @@ async function boot() {
   player.seek(0);
   initHome({ toast, busy, menuSheet, templatesSheet, photoSheet: () => photomode.photoSheet({ ...phCtx(), afterSwitch: (...a) => { hideHome(); afterSwitch(...a); } }), addFiles: f => onFiles(f, 'main'), adSheet: () => adSheet(adCtx()), afterSwitch, leaveProject, deliver });
   on('change', scheduleLoudness);
-  on('change', () => { clearTimeout(thumbTimer); thumbTimer = setTimeout(makeThumb, 4000); });
+  on('change', () => { clearTimeout(thumbTimer); thumbTimer = setTimeout(idleThumb, 4000); });
   addEventListener('pagehide', () => makeThumb());
   setTimeout(async () => { try { await projects.askPersist(); await projects.cleanUp(); if (!(await projects.getThumb(S.project.id))) makeThumb(); } catch (e) { console.warn('clean-up', e); } }, 2500);
   const qs = new URLSearchParams(location.search);
@@ -103,6 +103,9 @@ async function boot() {
 /* ---------------- projects ---------------- */
 let thumbTimer = 0;
 /** Small picture of the project for the home grid: the frame under the playhead (or 1 s in), drawn by the real renderer. */
+/** Thumbnail refresh while editing: only when the user is idle (not playing, no touch in the last 1.5 s), never in the middle of a gesture. */
+function idleThumb() { if (player.playing || performance.now() - (window.__lastInput || 0) < 1500) { clearTimeout(thumbTimer); thumbTimer = setTimeout(idleThumb, 1500); return; }
+  (window.requestIdleCallback || (f => setTimeout(f, 0)))(() => makeThumb(), { timeout: 3000 }); }
 async function makeThumb() {
   clearTimeout(thumbTimer); const p = S.project; if (!p) return;
   try {
@@ -110,7 +113,10 @@ async function makeThumb() {
     const cv = new OffscreenCanvas(W, H), x = cv.getContext('2d', { alpha: false }); if (!D) { await projects.setThumb(p.id, null); return; }
     const t = player.t > 0.05 && player.t < D ? player.t : Math.min(1, D / 3), frames = new Map();
     for (const c of activeVisual(p, t)) if (c.type === 'image') { const r = media.get(c.mediaId), bm = r && bitmapOf(r); if (bm) frames.set(c.id, { img: bm, w: bm.width, h: bm.height }); }
-    renderFrame(x, W, H, p, t, c => frames.get(c.id) || player.source(c), { fast: true });
+    // cheap path: the preview already shows this frame (no selection box / guides on it) -> just downscale it (no 100+ ms re-render while the user edits)
+    const pv = $('#preview');
+    if (pv && pv.width && !selected() && !player.compare && !player.guides && Math.abs(player.t - t) < 1e-3 && player.settled()) x.drawImage(pv, 0, 0, W, H);
+    else renderFrame(x, W, H, p, t, c => frames.get(c.id) || player.source(c), { fast: true });
     await projects.setThumb(p.id, await cv.convertToBlob({ type: 'image/jpeg', quality: .78 }));
   } catch (e) { console.warn('thumb', e); }
 }
