@@ -15,13 +15,28 @@ export const homeOpen = () => !$('#home').hidden;
 
 export function initHome(ctx) {
   X = ctx; const h = $('#home');
-  h.innerHTML = `<header class="hm-top"><div class="brand">Emmavengers <b>Studio</b></div><button class="ib" id="homeMenu" aria-label="Settings">${icon('gear')}</button></header>
+  const CLK = '<svg viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="12" r="10" fill="#fff"/><path d="M12 6v6l3 2" stroke="#2b1a10" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>';
+  h.innerHTML = `<header class="hm-top"><div class="brand hm-logo" aria-label="Emmavengers">Emmavengers</div><button class="ib" id="homeMenu" aria-label="Settings">${icon('gear')}</button></header>
   <div class="hm-body" id="hvHome">
-    <button class="hm-hero" id="newProjBtn"><span class="hm-plus">${icon('plus', 34)}</span><b>New video</b><small>Pick videos and photos to start</small></button>
-    <div class="hm-two"><button class="hm-mini" id="homePhoto">${icon('photo', 22)}<b>Photo</b></button><button class="hm-mini" id="homeAd">${icon('beat', 22)}<b>Beat Ad</b></button></div>
-    <div class="hm-sec"><h3>Recent</h3><button class="link" id="homeSeeAll">See all</button></div>
-    <div class="hm-recent" id="homeRecent"></div>
+    <div class="hm-space"></div>
+    <h4 class="hm-label">CREATE NEW</h4>
+    <div class="hm-create">
+      <div class="hm-cb"><button class="hm-circ c-video" id="newProjBtn" aria-label="New video">${icon('media', 34)}</button><button class="hm-clock" id="draftsVideo" aria-label="Drafts">${CLK}</button><span>Video</span></div>
+      <div class="hm-cb"><button class="hm-circ c-photo" id="homePhoto" aria-label="Photo">${icon('photo', 32)}</button><button class="hm-clock" id="draftsPhoto" aria-label="Drafts">${CLK}</button><span>Photo</span></div>
+      <div class="hm-cb"><button class="hm-circ c-ad" id="homeAd" aria-label="Beat Ad">${icon('beat', 32)}</button><span>Beat Ad</span></div>
+    </div>
+    <div class="hm-wnrow"><h4 class="hm-label">WHAT'S NEW</h4><button class="hm-all" id="homeAll">ALL ›</button></div>
+    <div class="hm-wn">
+      <button class="wn wn-tpl" id="wnTemplates"><svg viewBox="0 0 100 70" aria-hidden="true"><rect x="10" y="8" width="36" height="52" rx="6" fill="#ffb3c7"/><rect x="52" y="8" width="38" height="24" rx="6" fill="#9fd0ff"/><rect x="52" y="36" width="38" height="24" rx="6" fill="#ffe27a"/><circle cx="28" cy="26" r="8" fill="#fff"/></svg><b>TEMPLATES</b></button>
+      <button class="wn wn-stk" id="wnStickers"><svg viewBox="0 0 100 70" aria-hidden="true"><path d="M26 10l6 14 15 1-12 9 4 15-13-8-13 8 4-15-12-9 15-1z" fill="#fff6e0"/><path d="M70 54c-14-9-20-17-14-24 4-5 10-3 14 2 4-5 10-7 14-2 6 7 0 15-14 24z" fill="#ff9de2"/><circle cx="72" cy="16" r="9" fill="#5fd0ff"/></svg><b>STICKERS</b></button>
+      <button class="wn wn-new" id="wnNew"><svg viewBox="0 0 100 70" aria-hidden="true"><rect x="26" y="16" width="48" height="36" rx="10" fill="#ffe0b8"/><text x="50" y="41" font-size="16" font-weight="800" text-anchor="middle" fill="#c26a1a" font-family="system-ui">New</text><path d="M14 20l2 5 5 2-5 2-2 5-2-5-5-2 5-2zM86 44l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="#fff"/></svg><b>NEW &amp; FEATURED</b></button>
+    </div>
   </div>
+  <div class="hm-drafts" id="homeDrafts" hidden><div class="hd-stack">
+    <button class="hd-new" id="draftNew"><b>NEW</b><span class="hd-plus">${icon('plus', 22)}</span></button>
+    <div id="homeRecent" class="hd-list"></div>
+    <button class="hd-more" id="homeSeeAll">DRAFTS ›</button>
+  </div></div>
   <div class="hm-body" id="hvProjects" hidden>
     <h2 class="hm-title">Projects</h2>
     <div class="hm-tools"><label class="sndsearch hm-search">${icon('search', 18)}<input id="homeSearch" type="search" placeholder="Search my projects" autocomplete="off"></label></div>
@@ -38,7 +53,13 @@ export function initHome(ctx) {
   $('#homeTemplates').onclick = () => X.templatesSheet();
   $('#homeAd').onclick = () => X.adSheet();
   $('#homePhoto').onclick = () => X.photoSheet();
-  $('#homeSeeAll').onclick = () => tab('projects');
+  const drafts = on => { $('#homeDrafts').hidden = !on; };
+  $('#draftsVideo').onclick = $('#draftsPhoto').onclick = () => drafts(true);
+  $('#homeDrafts').onclick = e => { if (e.target.id === 'homeDrafts' || e.target.classList.contains('hd-stack')) drafts(false); };
+  $('#draftNew').onclick = () => { drafts(false); newSheet(); };
+  $('#homeSeeAll').onclick = () => { drafts(false); tab('projects'); };
+  $('#homeAll').onclick = $('#wnTemplates').onclick = $('#wnNew').onclick = () => X.templatesSheet();
+  $('#wnStickers').onclick = () => X.templatesSheet();
   $('#tabHome').onclick = () => tab('home');
   $('#tabProjects').onclick = () => tab('projects');
   $('#homeSort').append(chips([{ value: 'edited', label: 'Last edited' }, { value: 'name', label: 'Name' }, { value: 'created', label: 'Newest' }, { value: 'length', label: 'Longest' }], sort, v => { sort = v; localStorage.setItem('studio.homeSort', v); render(); }, 'tabs hmsort'));
@@ -54,7 +75,7 @@ export function tab(t) {
 }
 export async function showHome() {
   if (S.project) await X.leaveProject();
-  document.body.classList.add('home-open'); $('#home').hidden = false; tab('home'); closeSheet(); await render();
+  document.body.classList.add('home-open'); $('#home').hidden = false; $('#homeDrafts').hidden = true; tab('home'); closeSheet(); await render();
 }
 export function hideHome() { $('#home').hidden = true; document.body.classList.remove('home-open'); }
 async function open(id) { X.busy(true, 'Opening…'); try { await P.openById(id); hideHome(); X.afterSwitch(); } catch (e) { console.warn(e); X.toast('Could not open this project'); } finally { X.busy(false); } }
@@ -73,13 +94,16 @@ export async function render() {
     b.querySelector('.pmore').onclick = () => moreSheet(p);
     g.append(b);
   }
-  const rec = P.sortProjects(await P.listProjects(), 'edited', '').slice(0, 6), rr = $('#homeRecent'); rr.innerHTML = '';
-  if (!rec.length) rr.innerHTML = '<p class="hint hm-none">No projects yet. Tap New video to start.</p>';
+  const all = P.sortProjects(await P.listProjects(), 'edited', ''), rec = all.slice(0, 3), rr = $('#homeRecent'); rr.innerHTML = '';
+  $('#homeSeeAll').textContent = `${all.length} DRAFT${all.length === 1 ? '' : 'S'} ›`;
+  if (!rec.length) rr.innerHTML = '<p class="hint hm-none">No drafts yet. Tap NEW to start.</p>';
+  const ymd = t => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   for (const p of rec) {
     let url = thumbUrls.get(p.id); if (!url) { const th = await P.getThumb(p.id); if (th) { url = URL.createObjectURL(th); thumbUrls.set(p.id, url); } }
-    const b = document.createElement('button'); b.className = 'rcard'; b.dataset.id = p.id; b.setAttribute('aria-label', 'Open ' + p.name);
-    b.innerHTML = `<span class="rthumb">${url ? `<img alt="" src="${url}">` : icon('media', 26)}<i>${fmtD(p.dur)}</i></span><b>${esc(p.name)}</b><small>${P.ago(p.updated)}</small>`;
-    b.onclick = () => open(p.id); rr.append(b);
+    const b = document.createElement('div'); b.className = 'rcard drow'; b.dataset.id = p.id;
+    b.innerHTML = `<button class="dr-main" aria-label="Open ${esc(p.name)}"><span class="dr-txt"><small>${ymd(p.updated || p.created || Date.now())}</small><i>${p.dur ? fmtD(p.dur) : '0:00'}</i></span><span class="rthumb">${url ? `<img alt="" src="${url}">` : icon('media', 22)}</span></button><button class="ib dr-more" aria-label="More for ${esc(p.name)}">⋮</button>`;
+    b.querySelector('.dr-main').onclick = () => { $('#homeDrafts').hidden = true; open(p.id); };
+    b.querySelector('.dr-more').onclick = () => moreSheet(p); rr.append(b);
   }
   const st = $('#homeStorage'), pct = info.quota ? Math.min(100, info.usage / info.quota * 100) : 0;
   st.className = 'hm-store ' + info.level;
