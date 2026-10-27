@@ -520,3 +520,4 @@ body.has-sel #transport .time .sep,body.has-sel #ttot{display:none}body.has-sel 
 .bubgrid .bubtile{display:flex;flex-direction:column;align-items:center;gap:3px;padding:3px;height:auto;border-radius:10px}
 .bubgrid .bubtile canvas{width:100%;aspect-ratio:76/64;border-radius:8px}.bubgrid .bubtile span{font-size:11px}
 .textpane[data-tab=anim] .trgrid.angrid{max-height:min(40vh,320px)}
+.textsheet .chips.texttabs{gap:4px!important}.textsheet .chips.texttabs .chipbtn{padding:6px 7px!important;font-size:12.5px!important;min-width:0!important}

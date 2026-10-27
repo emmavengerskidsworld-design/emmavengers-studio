@@ -301,7 +301,7 @@ function animSheet(startKind, mount) {
     };
     body.append(tabEl, grid, sl, note); fill();
     // animated tiles: the real renderer draws every tile (same code as preview + export)
-    const tc = { id: 'tile', type: isText ? 'text' : 'image', fit: 'contain', transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, start: 0, dur: 1, text: { ...(f0.clip.text || {}), content: mount ? 'ABC123' : 'Abc', size: 300, align: 'center', box: false } };
+    const tc = { id: 'tile', type: isText ? 'text' : 'image', fit: 'contain', transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, start: 0, dur: 1, text: { ...(f0.clip.text || {}), content: mount ? 'ABC123' : 'Abc', size: 300, align: 'center', box: false, bubble: null, curve: 0 } };
     const src = { img: art, w: art.width, h: art.height };
     cancelAnimationFrame(animLoop);
     const loop = now => { if (!document.body.contains(grid)) return;
@@ -716,7 +716,8 @@ const fontCat = (k, cat) => { const f = FONTS[k], g = f.group || 'system', i = O
   if (cat === 'brand') return g === 'display' || g === 'kids' && i % 3 === 1; return g === cat; };
 // draw thumbnails only when they scroll into view (panel opens instantly)
 const lazyDraw = (root, draw) => { if (!('IntersectionObserver' in window)) { setTimeout(() => root.querySelectorAll('[data-lazy]').forEach(draw), 0); return; }
-  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { io.unobserve(e.target); draw(e.target); } }), { root: null, rootMargin: '120px' });
+  const q = [], pump = () => { const t0 = performance.now(); while (q.length && performance.now() - t0 < 8) { const b = q.shift(); document.body.contains(b) && draw(b); } if (q.length) setTimeout(pump, 0); };
+  const io = new IntersectionObserver(es => { const was = q.length; es.forEach(e => { if (e.isIntersecting) { io.unobserve(e.target); q.push(e.target); } }); if (!was && q.length) setTimeout(pump, 0); }, { root: null, rootMargin: '120px' });
   root.querySelectorAll('[data-lazy]').forEach(b => io.observe(b)); return io; };
 function textSheet(startTab) {
   const f0 = selected(); if (!f0) return; const id = f0.clip.id;
@@ -739,7 +740,7 @@ function textSheet(startTab) {
     const tileGrid = (items, cur, mk, onPick, cls) => {
       const g = document.createElement('div'); g.className = 'trgrid txgrid g4 ' + cls;
       const draw = b => { const it = items[+b.dataset.i]; if (it.none) { const x = b.querySelector('canvas').getContext('2d'); x.fillStyle = '#23232d'; x.fillRect(0, 0, TW, TH); x.strokeStyle = '#888'; x.lineWidth = 3 * dpr; x.beginPath(); x.arc(TW / 2, TH / 2, TH * .22, 0, 7); x.moveTo(TW / 2 - TH * .16, TH / 2 + TH * .16); x.lineTo(TW / 2 + TH * .16, TH / 2 - TH * .16); x.stroke(); return; }
-        textTile(b.querySelector('canvas').getContext('2d'), TW, TH, mk(it)); b.dataset.drawn = 1; };
+        if (it.font) ensureFont(it.font); textTile(b.querySelector('canvas').getContext('2d'), TW, TH, mk(it)); b.dataset.drawn = 1; };
       items.forEach((it, i) => { const b = document.createElement('button'); b.className = 'trtile' + ((it.id ?? null) === (cur ?? null) ? ' on' : ''); b.dataset.v = it.id ?? 'none'; b.dataset.i = i; b.dataset.lazy = 1; b.innerHTML = `<canvas width="${TW}" height="${TH}"></canvas><span>${it.name}</span>`;
         b.onclick = () => { g.querySelectorAll('.trtile').forEach(x => x.classList.toggle('on', x === b)); onPick(it); }; g.append(b); });
       io && io.disconnect(); requestAnimationFrame(() => { io = lazyDraw(g, draw); });
@@ -835,7 +836,6 @@ function textSheet(startTab) {
         let tc = 'all'; const holder = document.createElement('div');
         pane.append(chips(TCATS.map(([value, label]) => ({ value, label })), tc, v => { tc = v; fillT(); }, 'tabs tplcats'), holder);
         function fillT() { holder.innerHTML = ''; const list = [{ id: null, name: 'Default', none: false, dflt: true }, ...TITLES.filter(t => tc === 'all' || tcat(t) === tc)];
-          list.forEach(t => t.font && ensureFont(t.font));
           holder.append(tileGrid(list, clipNow().titleId || null, t => t.dflt ? { ...clipNow(), anim: null, text: { ...applyStyle({ ...clipNow().text }, null), content: 'Text', curve: 0, size: 160 } } : applyTitle({ id: 'tile', type: 'text', start: 0, dur: 3, transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, text: { ...clipNow().text } }, t.id),
             t => { if (t.dflt) { editSel(cl => { applyStyle(cl.text, null); cl.text.curve = 0; cl.text.box = false; cl.text.bubble = null; delete cl.titleId; delete cl.anim; }); timeline.render(); return; }
               ensureFont(t.font); const typed = ta.value.trim() && !TITLES.some(x => x.content === ta.value); editSel(cl => { applyTitle(cl, t.id, typed); }); if (!typed) ta.value = clipNow().text.content; timeline.render(); }, 'titlegrid')); }
