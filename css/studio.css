@@ -612,3 +612,18 @@ body.has-sel #transport .time .sep,body.has-sel #ttot{display:none}body.has-sel 
 .textsheet .stsub .chipbtn { flex: none; }
 /* B25 perf: skip layout/paint for grid tiles that are off-screen (big sticker / effect / font grids) */
 .trtile,.stk,.fontpill,.bubtile{content-visibility:auto;contain-intrinsic-size:auto 76px}
+/* B26 clean editor (InShot-style): quiet top bar, controls off the picture, roomy dark stage */
+#top{gap:6px;padding:0 6px 0 4px;background:#121214}
+#top .brand{font-size:13.5px;font-weight:600;color:#e9e9ee;letter-spacing:0}
+#top .brand b{color:inherit;font-weight:600}
+.ratiolink{background:none;border:1px solid #ffffff26;color:#b8b8c2;font:600 11px system-ui,sans-serif;height:24px;padding:0 8px;border-radius:7px;flex:none}
+.exportlink{background:none;border:0;color:#fff;font:700 15px system-ui,sans-serif;padding:0 10px;height:40px;letter-spacing:.2px;flex:none}
+.exportlink:disabled{color:#ffffff55}.exportlink:active{opacity:.6}
+#stage{background:#1f1f1f}
+#preview{border-radius:2px}
+#transport{background:#121214;border-top:0}
+#app{background:#121214}
+.ib.tb{width:34px}.ib.tb svg{width:19px;height:19px}.ib.tb.on{color:var(--accent)}
+#cmpBtn[hidden]{display:none}
+.tool{font-size:10px;color:#c9c9d2;gap:5px}.tool .ico{width:21px;height:21px;stroke-width:1.5}
+#zoom{opacity:.35;background:none;transition:opacity .2s}#timeline:active #zoom,#zoom:hover,#zoom:focus-within{opacity:.9}

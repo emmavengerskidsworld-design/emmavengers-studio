@@ -63,9 +63,9 @@ let player, timeline, seekQ = false;
 
 /* ---------------- boot ---------------- */
 async function boot() {
-  for (const [id, n] of [['menuBtn', 'home'], ['undoBtn', 'undo'], ['redoBtn', 'redo'], ['zoomIn', 'zoomin'], ['zoomOut', 'zoomout'], ['kfPrev', 'kfprev'], ['kfNext', 'kfnext'], ['kfBtn', 'kf']]) $('#' + id).innerHTML = icon(n);
+  for (const [id, n] of [['menuBtn', 'back'], ['undoBtn', 'undo'], ['redoBtn', 'redo'], ['zoomIn', 'zoomin'], ['zoomOut', 'zoomout'], ['kfPrev', 'kfprev'], ['kfNext', 'kfnext'], ['kfBtn', 'kf']]) $('#' + id).innerHTML = icon(n);
   $('#addMainBtn').innerHTML = icon('plus', 26);
-  $('#exportBtn').innerHTML = icon('export', 18) + '<span>Export</span>';
+  $('#exportBtn').innerHTML = '<span>Export</span>';
   await load(); await projects.migrate();
   await useMedia(mediaIds(S.project));
   player = new Player($('#preview'), { getProject: () => S.project, selected: () => S.sel, onTime: t => { timeline.setTime(t); showTime(); updateKf(); }, onSeek: () => { if (!seekQ) { seekQ = true; requestAnimationFrame(() => { seekQ = false; showTime(); }); } }, onState: setPlayIcon });
@@ -124,7 +124,7 @@ async function makeThumb() {
 async function leaveProject() { player.pause(); closeSheet(); select(null); await save(); await makeThumb(); }
 /** The open project changed (opened, created, deleted): refresh everything on screen. */
 function afterSwitch() {
-  player.pause(); player.gc(); ensureProjectFonts(S.project); $('#ratioBtn').textContent = S.project.aspect;
+  player.pause(); player.gc(); ensureProjectFonts(S.project); $('#ratioBtn').textContent = S.project.aspect; $('#projName').textContent = S.project.name || 'Untitled';
   layoutPreview(); timeline.fitZoom(); timeline.render(); refreshToolbar(); updateUndo(); updateEmpty(); player.seek(0); showTime();
   clearTimeout(thumbTimer); thumbTimer = setTimeout(makeThumb, 1500);
 }
@@ -152,7 +152,7 @@ export function toast(msg, ms = 2200) { const t = $('#toast'); t.textContent = m
 /* ---------------- preview canvas ---------------- */
 function layoutPreview() {
   const stage = $('#stage'), cv = $('#preview'), [a, b] = ASPECTS[S.project.aspect];
-  const W = stage.clientWidth - 16, H = stage.clientHeight - 12; if (W <= 0 || H <= 0) return;
+  const W = stage.clientWidth - 32, H = stage.clientHeight - 28; if (W <= 0 || H <= 0) return;
   let w = W, h = W * b / a; if (h > H) { h = H; w = H * a / b; }
   cv.style.width = Math.round(w) + 'px'; cv.style.height = Math.round(h) + 'px';
   const o = $('#cmp'); if (o) { o.style.width = cv.style.width; o.style.height = cv.style.height; }
@@ -685,7 +685,7 @@ function colorSheet() {
 function setCompare(c) { player.compare = c; const o = $('#cmp'); o.hidden = !c || c.mode !== 'split'; if (c && c.mode === 'split') o.querySelector('.cmpline').style.left = (c.x * 100) + '%';
   $('#cmpBtn').classList.toggle('on', !!c); $('#cmpTag').hidden = !c || c.mode !== 'before'; player.requestDraw(); }
 function compareUI() {
-  const b = $('#cmpBtn'); b.innerHTML = icon('compare', 20); let hold = null, held = false, prev = null, eat = false;
+  const b = $('#cmpBtn'); b.innerHTML = icon('compare'); let hold = null, held = false, prev = null, eat = false;
   b.addEventListener('pointerdown', e => { e.preventDefault(); held = false; eat = false; prev = player.compare; hold = setTimeout(() => { held = true; setCompare({ mode: 'before' }); }, 280); });
   const up = () => { clearTimeout(hold); if (held) { setCompare(prev); held = false; eat = true; setTimeout(() => { eat = false; }, 400); } };
   b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('pointerleave', () => { if (held) up(); });
@@ -1429,8 +1429,8 @@ function wireUI() {
   $('#exportBtn').onclick = exportView;
   $('#fileMedia').onchange = e => onFiles(e.target.files, pickTarget);
   $('#fileAudio').onchange = e => onFiles(e.target.files, 'audio');
-  on('change', () => { $('#ratioBtn').textContent = S.project.aspect; layoutPreview(); });
-  $('#ratioBtn').textContent = S.project.aspect;
+  on('change', () => { $('#ratioBtn').textContent = S.project.aspect; $('#projName').textContent = S.project.name || 'Untitled'; layoutPreview(); });
+  $('#ratioBtn').textContent = S.project.aspect; $('#projName').textContent = S.project.name || 'Untitled';
   new ResizeObserver(layoutPreview).observe($('#stage'));
   new ResizeObserver(() => { const s = $('#sheet'); document.documentElement.style.setProperty('--sheet-h', (s.classList.contains('hidden') ? 0 : s.offsetHeight) + 'px'); }).observe($('#sheet'));
   previewGestures(); compareUI();
