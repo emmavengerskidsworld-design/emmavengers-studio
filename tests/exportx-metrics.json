@@ -1,7 +1,7 @@
 {
  "range_first_psnr": 41.8,
- "bitrate_2": 2374018,
- "bitrate_12": 12025824,
+ "bitrate_2": 2373701,
+ "bitrate_12": 12009042,
  "size_target_2MB": 1938156,
  "m4a_codec": "opus",
  "still_png_psnr": 42.2,
