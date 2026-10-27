@@ -36,7 +36,7 @@ export async function addSticker(X, it, t) {
   act(p => addToKind(p, 'overlay', c, t)); select(c.id); keepOffline(it.url); return c;
 }
 export function stickerSheet(X) {
-  let cat = 'emma-characters', q = '', shown = 60;
+  let cat = 'arrows', q = '', shown = 60;
   openSheet('Stickers', async body => {
     const sb = Object.assign(document.createElement('label'), { className: 'sndsearch' });
     sb.innerHTML = `${icon('search', 18)}<input id="stkSearch" type="search" placeholder="Search stickers (e.g. lion, star, A)" autocomplete="off">`;
@@ -44,7 +44,9 @@ export function stickerSheet(X) {
     body.append(sb, catRow, grid, foot); grid.textContent = 'Loading stickers…';
     await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));   // let the sheet paint first
     let L; try { L = await loadStickers(); } catch (e) { grid.textContent = 'Could not load the sticker library. Connect to the internet once to open it.'; return; }
-    const cats = [{ value: 'fav', html: icon('heart', 14) + ' Favourites' }, { value: 'anim', html: icon('anim', 14) + ' Animated' }, ...L.cats.map(c => ({ value: c.id, label: c.name }))];
+    const cats = [{ value: 'fav', html: icon('heart', 14) + ' Favourites' }, { value: 'anim', html: icon('anim', 14) + ' Animated' }, ...(() => { const PRO = ['arrows', 'shapes', 'frames', 'bubbles', 'stars', 'emoji-symbols', 'flags', 'numbers', 'emoji-nature', 'emoji-faces', 'emoji-food'], KID = id => /^emma-|^emoji-fun|^emoji-animals/.test(id);
+      const by = id => L.cats.find(c => c.id === id); const pro = PRO.map(by).filter(Boolean), rest = L.cats.filter(c => !PRO.includes(c.id) && !KID(c.id)), kids = L.cats.filter(c => KID(c.id));
+      return [...pro, ...rest, ...kids].map(c => ({ value: c.id, label: KID(c.id) ? 'Kids · ' + c.name.replace(/^Emma kids$/, 'Emma') : c.name })); })()];
     const catChips = chips(cats, cat, v => { cat = v; shown = 60; list(); }, 'tabs stkcats'); catRow.append(catChips);
     const list = () => {
       const all = filterStickers(L, { cat: q ? '' : cat, q }), F = favs(); grid.innerHTML = '';

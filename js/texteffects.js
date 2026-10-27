@@ -122,6 +122,10 @@ add('lightning', 'Lightning', 'glow', { color: '#ffffff', glow: { color: '#00b3f
 add('plasma', 'Plasma', 'neon', { tex: 'galaxy', fx: [{ k: 'neon', color: '#ff6ad5', blur: .7 }] });
 add('frost', 'Frostbite', 'fireice', { color: '#e0fbff', fx: [{ k: 'drip', color: '#9be7ff' }, st('#1f5bff', .08)], glow: { color: '#9be7ff', blur: .4 } });
 add('blaze', 'Blaze', 'fireice', { tex: 'fire', fx: [{ k: 'neon', color: '#ff5a00', blur: .8 }] }, 1);
+// B24 audit: Trending shows only pro-grade looks (cartoon/kids ones stay in their own chips)
+const PRO_TREND = ['e_cine', 'e_trailer', 'e_gold', 'e_chrome', 'e_silver', 'e_rosegold', 'e_bronze', 'e_sunsettex', 'e_neoncyan', 'e_neonpink', 'e_neonmulti', 'e_starlight', 'e_aura', 'e_ember', 'e_glitch', 'e_glitchvhs', 'e_triple', 'e_double', 'e_inline', 'e_emboss', 'e_letterpress', 'e_marble', 'e_holo', 'e_metal', 'e_steel3d', 'e_goldblock', 'e_block3d', 'e_long', 'e_ice', 'e_blaze', 'e_fireice', 'e_dusk', 'e_aqua', 'e_lightning'];
+for (const e of E) e.trend = PRO_TREND.includes(e.id);
+E.sort((a, b) => (b.trend ? 1 : 0) - (a.trend ? 1 : 0) || (PRO_TREND.indexOf(a.id) - PRO_TREND.indexOf(b.id)) * (a.trend ? 1 : 0));
 export const EFFECTS = E;
 export const EFFECT_CATS = [['trending', 'Trending'], ['kids', 'Kids'], ['comic', 'Comic'], ['metal', 'Metal'], ['glow', 'Glow'], ['textured', 'Textured'], ['3d', '3D'], ['neon', 'Neon'], ['fireice', 'Fire & Ice'], ['gradient', 'Gradient'], ['festive', 'Festive'], ['halloween', 'Halloween'], ['trend', 'Style']];
 export const effectById = id => E.find(e => e.id === id);

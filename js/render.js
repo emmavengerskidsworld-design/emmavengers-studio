@@ -340,7 +340,9 @@ export function drawText(ctx, W, H, clip, tr, local = 0) {
     if (B.blur > .002) ctx.filter = `blur(${(B.blur * px * tr.scale).toFixed(2)}px)`;
     if (B.reveal < 1) { ctx.beginPath(); ctx.rect(-bw / 2 - px, -bh / 2 - px, (bw + px) * B.reveal + px, bh + 2 * px); ctx.clip(); } }
   if (shape) drawBubble(ctx, T, shape, bw, bh, px, sc);
-  if (T.deco) drawDeco(ctx, T.deco, w, h + 2 * sext, px, T);
+  // per-letter / word animations: lines, frames and the subtitle fade in (and out) together with the title
+  let dA = 1; if (plan) for (const U of plan.units) if (!U.loop) { const q = Math.max(0, Math.min(1, U.q)); dA *= q * q * (3 - 2 * q); }
+  if (T.deco && dA > .002) { const ga = ctx.globalAlpha; ctx.globalAlpha = ga * dA; drawDeco(ctx, T.deco, w, h + 2 * sext, px, T); ctx.globalAlpha = ga; }
   const ax = T.align === 'left' ? -w / 2 : T.align === 'right' ? w / 2 : 0;
   if (T.align === 'justify') T = { ...T, align: lines.length > 1 ? 'justify' : 'center' };
   const passes = textPasses(ctx, T, px, w, h, sc, lh), perChar = (T.align === 'justify' && lines.length > 1) || curved || (plan && plan.units.length) || (T.fill && T.fill.dir === 'letters');
@@ -365,7 +367,7 @@ export function drawText(ctx, W, H, clip, tr, local = 0) {
       ctx.save(); ctx.globalAlpha = alpha * Math.min(1, s.a); ctx.translate(g.X, g.Y); if (g.rot) ctx.rotate(g.rot); ctx.translate(s.dx * px, s.dy * px); if (s.rot) ctx.rotate(s.rot * Math.PI / 180); if (s.s !== 1 || s.sx !== 1 || s.sy !== 1) ctx.scale(s.s * s.sx, s.s * s.sy);
       P(g, 0, 0); ctx.restore(); }
   }
-  if (SB) { ctx.save(); ctx.shadowBlur = 0; ctx.filter = 'none'; ctx.font = fontCss({ font: SB.font || T.font }, spx); if ('letterSpacing' in ctx) ctx.letterSpacing = ((SB.track ?? .25) * spx).toFixed(2) + 'px'; ctx.textAlign = T.align || 'center';
+  if (SB && dA > .002) { ctx.save(); ctx.globalAlpha *= dA; ctx.shadowBlur = 0; ctx.filter = 'none'; ctx.font = fontCss({ font: SB.font || T.font }, spx); if ('letterSpacing' in ctx) ctx.letterSpacing = ((SB.track ?? .25) * spx).toFixed(2) + 'px'; ctx.textAlign = T.align || 'center';
     ctx.fillStyle = SB.color || T.color; if (SB.glow) { ctx.shadowColor = SB.glow; ctx.shadowBlur = spx * .8 * sc; } const sy = SB.pos === 'above' ? -h0 / 2 - sgap - spx / 2 : h0 / 2 + sgap + spx / 2; ctx.fillText(SB.text, ax, sy); ctx.restore(); }
   if (T.under) { ctx.save(); ctx.shadowBlur = 0; ctx.filter = 'none'; ctx.fillStyle = T.color; widths.forEach((lw, i) => { const L = T.align === 'justify' && i < lines.length - 1 ? w : lw, x0 = T.align === 'left' || (T.align === 'justify' && i < lines.length - 1) ? -w / 2 : T.align === 'right' ? w / 2 - L : -L / 2; ctx.fillRect(x0, -h0 / 2 + lh * (i + 0.5) + px * .56, L, Math.max(1, px * .06)); }); ctx.restore(); }
   if (B && B.underline && B.underline[1] - B.underline[0] > 1e-4) {
