@@ -89,7 +89,7 @@ async def run():
         async def measure(group, q, label):
             await close(pg); await P(pg, OBS)
             if group == 'textrow': await P(pg, 'studio.select(null); studio.setSubRow("text")'); await pg.wait_for_timeout(80); await P(pg, OBS)
-            elif group in ('main', 'sheet', 'row'): await P(pg, 'studio.setSubRow(null)'); await pg.wait_for_timeout(50); await P(pg, OBS)
+            elif group in ('main', 'sheet', 'row'): await P(pg, 'studio.setSubRow(null)'); await pg.wait_for_timeout(250); await P(pg, OBS)
             if not await P(pg, f'!!document.querySelector({json.dumps(q)})'): metrics['open_ms'][f'{group}:{label}'] = -1; ok(False, f'{group} {label}: missing'); return
             snap0 = await P(pg, 'JSON.stringify(studio.S.project.tracks)'); n0 = len(errs)
             await pg.locator(q).first.click(timeout=5000); await pg.wait_for_timeout(450)

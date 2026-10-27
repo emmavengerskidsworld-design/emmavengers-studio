@@ -109,7 +109,9 @@ async def run():
         ok(await P(pg, 'studio.S.project.tracks.find(t=>t.kind==="main").clips.length') == 3, 'Delete')
 
         log('== text + audio rows')
-        await P(pg, 'studio.select(null)'); await pg.wait_for_timeout(200); await pg.click('#toolbar .tool[data-tool=text]'); await pg.wait_for_timeout(400); await close(pg)
+        await P(pg, 'studio.select(null)'); await pg.wait_for_timeout(200); await pg.click('#toolbar .tool[data-tool=text]'); await pg.wait_for_timeout(300)
+        r = await row(pg); ok(r == ['back', 'addtext', 'captions', 'stickers', 'texttpl', 'speech', 'karaoke'] or r[:4] == ['back', 'addtext', 'captions', 'stickers'], f'text sub-row {r}'); await shot(pg, 'b17-text-subrow.png', 300)
+        await pg.click('#toolbar .tool[data-tool=addtext]'); await pg.wait_for_timeout(400); await close(pg)
         r = await row(pg); want = ['edit', 'textstyle', 'split', 'delete', 'anim', 'duplicate', 'keyframe']
         ok(all(t in r for t in want) and r[1:3] == ['edit', 'textstyle'], f'text row: Edit, Style, Split, Delete, Animation, Duplicate, Keyframe ({r[:10]})')
         await shot(pg, 'b14-text-row-390.png')
@@ -139,6 +141,7 @@ async def run():
         log('== every main tool opens')
         for t in MAIN + ['titles', 'karaoke', 'photo', 'ratio', 'layout', 'guides', 'perf', 'markers', 'history', 'select', 'magnetic']:
             await P(pg, 'studio.select(null)'); await pg.wait_for_timeout(200); n0 = len(errs)
+            await P(pg, 'studio.setSubRow(null)'); await pg.wait_for_timeout(60)
             if not await P(pg, f'!!document.querySelector("#toolbar .tool[data-tool={t}]")'): ok(False, f'main tool {t} present'); continue
             if t == 'audio':
                 await pg.click('#toolbar .tool[data-tool=audio]'); await pg.wait_for_selector('#sndImport', timeout=8000)

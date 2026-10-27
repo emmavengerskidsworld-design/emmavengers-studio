@@ -138,11 +138,11 @@ const R = {
   laser: q => ({ wipe: q, glow: .7 * (1 - q) }), wobble: q => ({ rot: 25 * Math.sin(q * 12) * (1 - q), a: cl(q * 3) }),
   throwIn: q => ({ dx: 3 * (1 - out(q)), rot: -120 * (1 - out(q)), a: cl(q * 2) }), pull: q => ({ sy: Math.max(.001, out(q)), dy: .5 * (1 - q), a: q }),
   liquid: q => ({ sx: 1 + .4 * (1 - q) * Math.sin(q * 10), sy: 1 - .3 * (1 - q) * Math.sin(q * 10), blur: .2 * (1 - q), a: q }),
-  lowres: q => ({ blur: .8 * (1 - Math.floor(q * 5) / 5), a: cl(q * 2) }), race: q => ({ dx: -5 * (1 - out(q)), skx: -.6 * (1 - q), blur: .4 * (1 - q), a: 1 }),
+  lowres: q => ({ blur: q >= .8 ? 0 : .8 * (1 - Math.floor(q * 5) / 5), a: cl(q * 2) }), race: q => ({ dx: -5 * (1 - out(q)), skx: -.6 * (1 - q), blur: .4 * (1 - q), a: 1 }),
   quirky: (q, u) => ({ rot: (hash(u.i, 3) - .5) * 240 * (1 - out(q)), s: Math.max(.001, back(q)), a: cl(q * 3) }), springy: q => ({ sy: Math.max(.001, elastic(q)), a: cl(q * 4) }),
   flyUp: q => ({ dy: 3 * (1 - out(q)), s: .5 + .5 * out(q), a: q }), optic: q => ({ s: 1.8 - .8 * out(q), blur: .5 * (1 - q), bright: .3 * (1 - q), a: q }),
   spiral: q => ({ rot: 540 * (1 - out(q)), dx: 1.5 * Math.cos(q * 6) * (1 - q), dy: 1.5 * Math.sin(q * 6) * (1 - q), a: q }), acid: (q, u) => ({ dy: 1.2 * (1 - out(q)), glow: .5 * (1 - q), skx: .3 * Math.sin(u.i + q * 6) * (1 - q), a: q }),
-  aurora: (q, u) => ({ glow: .9 * Math.sin(Math.PI * q), dy: -.3 * Math.sin(TAU * q + u.i), a: q }), stellar: q => ({ dx: -2 * (1 - out(q)), dy: -1 * (1 - out(q)), glow: .9 * (1 - q), a: cl(q * 2) }),
+  aurora: (q, u) => ({ glow: .9 * Math.sin(Math.PI * cl(q / .8)), dy: -.3 * Math.sin(TAU * q + u.i) * (1 - q), a: q }), stellar: q => ({ dx: -2 * (1 - out(q)), dy: -1 * (1 - out(q)), glow: .9 * (1 - q), a: cl(q * 2) }),
   cursor: q => ({ a: q > 1e-3 ? 1 : 0, bright: q < .9 ? .2 : 0 }), bubble: q => ({ s: Math.max(.001, elastic(q)) * (q < 1 ? 1 : 1), dy: .4 * (1 - q), a: cl(q * 3) }),
   floatDown: q => ({ dy: -1 * (1 - out(q)), rot: 10 * Math.sin(q * 8) * (1 - q), a: q }), matrix: (q, u) => ({ dy: -3 * (1 - out(cl(q * 1.3 - hash(u.i, 8) * .3))), a: q > .05 ? 1 : 0, glow: .4 * (1 - q) }),
   beatUp: q => ({ s: 1 + .4 * Math.sin(Math.PI * q) * (1 - q), dy: .8 * (1 - out(q)), a: cl(q * 3) }), wavy: (q, u) => ({ dy: .5 * Math.sin(u.i * .8 + q * 8) * (1 - q), a: q }),
@@ -213,9 +213,9 @@ const T_IN = [
   { id: 'gemConfetti', name: 'Gem Confetti', out: 'Gem Scatter', unit: 'char', stagger: .8, f: (q, u) => ({ dy: -1.6 * (1 - out(q)), rot: 180 * (1 - out(q)) * (hash(u.i, 1) - .5), bright: .4 * (1 - q), a: cl(q * 3) }) },
   { id: 'starShower', name: 'Star Shower', out: 'Star Rise', unit: 'char', stagger: .9, f: (q, u) => ({ dy: -2.5 * (1 - out(q)) * (.6 + hash(u.i, 2)), a: cl(q * 2), glow: .3 * (1 - q) }) },
   { id: 'neonComet', name: 'Neon Comet', out: 'Neon Trail', unit: 'block', f: q => ({ dx: -3 * (1 - out(q)), skx: -.4 * (1 - q), glow: .8 * (1 - q), blur: .3 * (1 - q), a: cl(q * 2) }) },
-  { id: 'featherPoof', name: 'Feather Poof', out: 'Feather Away', unit: 'char', stagger: .7, f: (q, u) => ({ dy: -.5 * (1 - out(q)), dx: .4 * Math.sin(TAU * q + u.i), blur: .5 * (1 - q), a: q }) },
+  { id: 'featherPoof', name: 'Feather Poof', out: 'Feather Away', unit: 'char', stagger: .7, f: (q, u) => ({ dy: -.5 * (1 - out(q)), dx: .4 * Math.sin(TAU * q + u.i) * (1 - q), blur: .5 * (1 - q), a: q }) },
   { id: 'blastDown', name: 'Blast Down', out: 'Blast Up', unit: 'block', f: q => ({ s: 2.4 - 1.4 * E.bounce(q), a: cl(q * 3) }) },
-  { id: 'lensFlare', name: 'Lens Flare Path', out: 'Flare Out', unit: 'block', f: q => ({ bright: 1.2 * Math.sin(Math.PI * q), glow: .7 * Math.sin(Math.PI * q), dx: -.8 * (1 - out(q)), a: cl(q * 2) }) },
+  { id: 'lensFlare', name: 'Lens Flare Path', out: 'Flare Out', unit: 'block', f: q => ({ bright: 1.2 * Math.sin(Math.PI * cl(q / .8)), glow: .7 * Math.sin(Math.PI * cl(q / .8)), dx: -.8 * (1 - out(q)), a: cl(q * 2) }) },
   { id: 'smoothSlide', name: 'Smooth Slide-In', out: 'Smooth Slide-Out', unit: 'char', stagger: .5, f: q => ({ dx: 1.5 * (1 - out(q)), a: q }) },
   { id: 'redHues', name: 'Red Hues Emerge', out: 'Red Hues Fade', unit: 'block', f: q => ({ glow: .9 * (1 - q), bright: .3 * (1 - q), s: .9 + .1 * out(q), a: q }) },
   { id: 'petalSwish', name: 'Petal Swish', out: 'Petal Drift', unit: 'char', stagger: .6, f: (q, u) => ({ rot: -90 * (1 - out(q)), dx: -.8 * (1 - out(q)), dy: .6 * (1 - out(q)), a: q }) },
@@ -255,18 +255,18 @@ const T_LOOP = [
   { id: 'colorWave', name: 'Colour wave', unit: 'char', f: (ph, u) => ({ color: `hsl(${(200 + 60 * Math.sin(TAU * (ph - u.i * .06))).toFixed(0)},90%,62%)` }) },
   { id: 'beatZoom', name: 'Beat Zoom', unit: 'block', f: ph => ({ s: 1 + .18 * beat(ph) }) },
   { id: 'heartBeat', name: 'Heart Beat', unit: 'block', f: ph => ({ s: 1 + .12 * beat(ph) + .06 * beat(ph + .3), glow: .3 * beat(ph) }) },
-  { id: 'neonBuzz', name: 'Neon Buzz', unit: 'char', f: (ph, u) => ({ glow: .3 + .5 * hash(u.i, Math.floor(ph * 8)), a: hash(u.i, Math.floor(ph * 8)) > .1 ? 1 : .5 }) },
+  { id: 'neonBuzz', name: 'Neon Buzz', unit: 'char', f: (ph, u) => ({ glow: .3 + .5 * hash(u.i, Math.floor((ph - Math.floor(ph)) * 8)), a: hash(u.i, Math.floor((ph - Math.floor(ph)) * 8)) > .1 ? 1 : .5 }) },
   { id: 'floaty', name: 'Balloon Float', unit: 'char', f: (ph, u) => ({ dy: -.2 * Math.sin(TAU * (ph + u.i * .13)), rot: 6 * Math.sin(TAU * (ph + u.i * .21)) }) },
   { id: 'jellyLoop', name: 'Jelly Wobble', unit: 'block', f: ph => ({ sx: 1 + .08 * Math.sin(TAU * 2 * ph), sy: 1 - .08 * Math.sin(TAU * 2 * ph) }) },
-  { id: 'sparkleLoop', name: 'Gem Sparkle', unit: 'char', f: (ph, u) => ({ bright: .6 * Math.max(0, Math.sin(TAU * (ph * 2 + hash(u.i, 5)))) }) },
+  { id: 'sparkleLoop', name: 'Gem Sparkle', unit: 'char', f: (ph, u) => ({ bright: .3 + .3 * Math.sin(TAU * (ph * 2 + hash(u.i, 5))), s: 1 + .05 * Math.sin(TAU * ph) }) },
   { id: 'flameDance', name: 'Flame Dance', unit: 'char', f: (ph, u) => ({ dy: -.12 * Math.abs(Math.sin(TAU * (ph * 2 + u.i * .17))), glow: .4 + .3 * Math.sin(TAU * (ph * 3 + u.i * .3)) }) },
-  { id: 'glitchLoop', name: 'Glitch Loop', unit: 'char', f: (ph, u) => { const k = Math.floor(ph * 12); return hash(k, 9) > .8 ? { dx: .4 * (hash(u.i, k) - .5), skx: .2 } : {}; } },
+  { id: 'glitchLoop', name: 'Glitch Loop', unit: 'char', f: (ph, u) => { const k = Math.floor((ph - Math.floor(ph)) * 12); return hash(k, 9) > .4 ? { dx: .4 * (hash(u.i, k) - .5), skx: .2 } : { dx: .03 * Math.sin(TAU * ph) }; } },
   { id: 'swing', name: 'Swing', unit: 'block', f: ph => ({ rot: 8 * Math.sin(TAU * ph) }) },
   { id: 'cometOrbit', name: 'Neon Comet Orbit', unit: 'block', f: ph => ({ dx: .08 * Math.cos(TAU * ph), dy: .08 * Math.sin(TAU * ph), glow: .5 * wave(ph) }) },
 ];
 const T_ALL = [...T_IN, ...GEN];
-const GEN_LOOP = [['aurora', 'Aurora Shimmer'], ['ember', 'Ember Flicker'], ['wobble', 'Wobble Loop'], ['liquid', 'Liquid Wobble'], ['glitter', 'Glitter Twinkle'], ['hop', 'Bunny Bounce'], ['waveB', 'Wave Bounce Loop'], ['pixel', 'Pixel Jitter'], ['smoke', 'Smoky Haze'], ['ghost', 'Ghost Fade'], ['springy', 'Spring Loop'], ['optic', 'Lens Breathe'], ['acid', 'Acid Drift'], ['wavy', 'Wavy Loop'], ['quirky', 'Quirky Shake'], ['stellar', 'Star Glint'], ['popup', 'Pop Pulse'], ['leap', 'Leap Loop'], ['spin', 'Slow Spin'], ['drain', 'Colour Breathe']]
-  .map(([r, name]) => ({ id: 'gl_' + r, name, unit: 'char', f: (ph, u) => R[r](.78 + .22 * wave(ph + (u?.i || 0) * .07), u) }));
+const GEN_LOOP = [['aurora', 'Aurora Shimmer'], ['ember', 'Ember Flicker'], ['wobble', 'Wobble Loop'], ['liquid', 'Liquid Wobble'], ['glitter', 'Glitter Twinkle'], ['hop', 'Bunny Bounce'], ['waveB', 'Wave Bounce Loop'], ['pixel', 'Pixel Jitter'], ['smoke', 'Smoky Haze'], ['ghost', 'Ghost Fade'], ['optic', 'Lens Breathe'], ['acid', 'Acid Drift'], ['wavy', 'Wavy Loop'], ['quirky', 'Quirky Shake'], ['stellar', 'Star Glint'], ['popup', 'Pop Pulse'], ['leap', 'Leap Loop'], ['spin', 'Slow Spin']]
+  .map(([r, name]) => ({ id: 'gl_' + r, name, unit: 'char', f: (ph, u) => R[r](.45 + .55 * wave(ph + (u?.i || 0) * .07), u) }));
 export const TEXT_ANIMS = { in: T_ALL.map(a => ({ id: a.id, name: a.name, unit: a.unit, stagger: a.stagger, f: a.f })), out: mirror(T_ALL), loop: [...T_LOOP, ...GEN_LOOP] };
 
 /* which registry / tab names a clip uses */
