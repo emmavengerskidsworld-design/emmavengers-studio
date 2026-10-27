@@ -207,6 +207,16 @@ const T_IN = [
   { id: 'blurZoom', name: 'Blur zoom', out: 'Blur zoom', unit: 'block', f: q => ({ blur: .5 * (1 - q), s: 1.5 - .5 * out(q), a: q }) },
   { id: 'spiralLetters', name: 'Spiral letters', out: 'Spiral letters', unit: 'char', stagger: .5, f: q => { const k = 1 - out(q), a = q * TAU; return { dx: 2 * k * Math.cos(a), dy: 2 * k * Math.sin(a), rot: -120 * k, a: q }; } },
   // B21 cinematic (smooth, never bouncy)
+  { id: 'focusPull', name: 'Focus Pull', out: 'Defocus', unit: 'block', f: q => ({ a: inOut(q), blur: .6 * (1 - inOut(q)) }) },
+  { id: 'driftIn', name: 'Drift Left', out: 'Drift Away', unit: 'block', f: q => ({ dx: .45 * (1 - inOut(q)), a: inOut(q) }) },
+  { id: 'driftInR', name: 'Drift Right', out: 'Drift Off', unit: 'block', f: q => ({ dx: -.45 * (1 - inOut(q)), a: inOut(q) }) },
+  { id: 'scaleDown', name: 'Settle', out: 'Lift Away', unit: 'block', f: q => ({ s: 1.22 - .22 * inOut(q), a: inOut(q), blur: .1 * (1 - q) }) },
+  { id: 'trackOut', name: 'Track Open', out: 'Track Close', unit: 'char', stagger: 0, f: (q, u) => ({ dx: -(u.i - (u.n - 1) / 2) * .12 * (1 - inOut(q)), a: inOut(q) }) },
+  { id: 'riseLetters', name: 'Letter Rise', out: 'Letter Sink', unit: 'char', stagger: .7, f: q => ({ dy: .3 * (1 - inOut(q)), a: inOut(q) }) },
+  { id: 'wordFadeUp', name: 'Word Reveal', out: 'Word Fade', unit: 'word', stagger: .7, f: q => ({ dy: .18 * (1 - inOut(q)), a: inOut(q) }) },
+  { id: 'lineSlide', name: 'Line Glide', out: 'Line Exit', unit: 'line', stagger: .6, f: q => ({ dx: -.3 * (1 - inOut(q)), a: inOut(q) }) },
+  { id: 'glowReveal', name: 'Glow Reveal', out: 'Glow Fade', unit: 'block', f: q => ({ a: inOut(q), glow: .5 * (1 - inOut(q)) }) },
+  { id: 'wideIn', name: 'Widescreen', out: 'Widescreen Out', unit: 'block', f: q => ({ sx: 1.25 - .25 * inOut(q), a: inOut(q), blur: .15 * (1 - q) }) },
   { id: 'cineFade', name: 'Cinematic Fade', out: 'Cinematic Fade', unit: 'block', f: q => ({ a: inOut(q), blur: .25 * (1 - inOut(q)), s: 1.06 - .06 * out(q) }) },
   { id: 'trackIn', name: 'Track In', out: 'Track Out', unit: 'char', stagger: 0, f: (q, u) => ({ dx: (u.i - (u.n - 1) / 2) * .28 * (1 - inOut(q)), a: inOut(q) }) },
   { id: 'wipeIn', name: 'Wipe Reveal', out: 'Wipe Hide', unit: 'block', f: q => ({ reveal: inOut(q) }) },
@@ -259,6 +269,9 @@ const T_LOOP = [
   { id: 'squash', name: 'Squash', unit: 'char', f: (ph, u) => { const v = Math.abs(Math.sin(PI * (ph - u.i * .07))); return { sx: 1 + .15 * v, sy: 1 - .15 * v }; } },
   { id: 'orbit', name: 'Orbit letters', unit: 'char', f: (ph, u) => ({ dx: .12 * Math.cos(TAU * ph + u.i * .7), dy: .12 * Math.sin(TAU * ph + u.i * .7) }) },
   { id: 'colorWave', name: 'Colour wave', unit: 'char', f: (ph, u) => ({ color: `hsl(${(200 + 60 * Math.sin(TAU * (ph - u.i * .06))).toFixed(0)},90%,62%)` }) },
+  { id: 'driftLoop', name: 'Slow Drift', unit: 'block', f: ph => ({ dx: .03 * wave(ph) }) },
+  { id: 'shimmerLoop', name: 'Shimmer', unit: 'char', stagger: .9, f: (ph, u) => ({ glow: .45 * Math.max(0, Math.sin((ph - u.i / Math.max(1, u.n)) * Math.PI * 2)) }) },
+  { id: 'floatSoft', name: 'Float Soft', unit: 'block', f: ph => ({ dy: .025 * wave(ph) }) },
   { id: 'slowZoom', name: 'Slow Zoom', unit: 'block', f: ph => ({ s: 1 + .035 * wave(ph) }) },
   { id: 'softGlow', name: 'Soft Glow', unit: 'block', f: ph => ({ glow: .18 * wave(ph) }) },
   { id: 'beatZoom', name: 'Beat Zoom', unit: 'block', f: ph => ({ s: 1 + .18 * beat(ph) }) },
@@ -330,3 +343,10 @@ export function textAnimPlan(c, t, D) {
   }
   return { block, units };
 }
+
+/* Pro picks shown first under Trending in the Text panel (smooth, cinematic, never bouncy). */
+export const PRO_TEXT_ANIMS = {
+  in: ['cineFade', 'focusPull', 'trackIn', 'trackOut', 'wipeIn', 'riseSoft', 'letterFade', 'riseLetters', 'wordFadeUp', 'lineSlide', 'glowReveal', 'wideIn', 'driftIn', 'driftInR', 'scaleDown', 'typewriter', 'fadeWords', 'riseWords', 'blur', 'reveal', 'zoom', 'slide', 'riseLines', 'glowIn', 'stretchIn', 'blurZoom', 'smoothSlide', 'lensFlare', 'underline', 'g_cursorType', 'g_aurora', 'g_ghost', 'g_floatDown', 'g_optic', 'g_smoke'],
+  loop: ['slowZoom', 'softGlow', 'breathe', 'driftLoop', 'shimmerLoop', 'floatSoft', 'glowPulse', 'goldShimmer', 'float', 'sway', 'glowWave', 'gl_aurora', 'gl_ghost', 'gl_optic']
+};
+PRO_TEXT_ANIMS.out = PRO_TEXT_ANIMS.in;

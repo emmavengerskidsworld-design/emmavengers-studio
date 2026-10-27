@@ -42,7 +42,7 @@ import { FILTERS, FONTS, COLORS, BG_COLORS, SPEED_PRESETS, KEYFRAME_PROPS, DEFAU
 import { exportVideo, exportAudio, exportStill, exportGif, GIF_MAX, AUDIO_BR, outputSize, pickCodecs, recorderMime, planBitrate, qualityFloor, QUALITY, RESOLUTIONS, supportedResolutions, estimateBytes, bitrateFor } from './export.js';
 import { ADJUST, DEFAULT_STRENGTH, enhanceOn, glAvailable } from './enhance.js';
 import { renderFrame, drawVisual, drawText } from './render.js';
-import { CLIP_ANIMS, TEXT_ANIMS, animSetFor, animById, animSpans, DEFAULT_ANIM_DUR, DEFAULT_LOOP_DUR, MIN_ANIM, MAX_ANIM, MIN_LOOP, MAX_LOOP, loopKind } from './animations.js';
+import { CLIP_ANIMS, TEXT_ANIMS, animSetFor, animById, animSpans, DEFAULT_ANIM_DUR, DEFAULT_LOOP_DUR, MIN_ANIM, MAX_ANIM, MIN_LOOP, MAX_LOOP, loopKind, PRO_TEXT_ANIMS } from './animations.js';
 import { hitTest, handleAt } from './render.js';
 import { initAudioPanels, enhanceVoiceSheet, voiceFxSheet, recordSheet, speechSheet } from './audiopanels.js';
 import { soundsSheet } from './library.js';
@@ -287,8 +287,20 @@ function animSheet(startKind, mount) {
     const setSlider = () => { const c = clipNow(), a = cur(kind), loop = kind === lk, max = loop ? MAX_LOOP : Math.max(MIN_ANIM, Math.min(MAX_ANIM, Math.floor(clipDur(c) * 10) / 10));
       const inp = sl.querySelector('input'); inp.min = loop ? MIN_LOOP : MIN_ANIM; inp.max = max; sl.querySelector('.cl').textContent = loop ? 'Speed' : 'Duration';
       sl.set(Math.min(max, a?.dur || (loop ? DEFAULT_LOOP_DUR : Math.min(DEFAULT_ANIM_DUR, max)))); sl.hidden = !a?.id; };
+    const pro = !!(mount && isText), AK = 'emma.animFav'; let acat = 'trending', aq = '';
+    const abar = document.createElement('div'); abar.className = 'fontbar anbar';
+    if (pro) { const sbt = document.createElement('button'); sbt.className = 'iconbtn'; sbt.id = 'anSearchBtn'; sbt.textContent = '🔍';
+      const si = document.createElement('input'); si.type = 'search'; si.id = 'anSearch'; si.placeholder = 'Search animations'; si.hidden = true;
+      sbt.onclick = () => { si.hidden = !si.hidden; if (!si.hidden) si.focus(); else { aq = ''; si.value = ''; fill(); } }; si.oninput = () => { aq = si.value.trim().toLowerCase(); fill(); };
+      abar.append(sbt, chips([['trending', 'Trending'], ['fav', '🔖 Saved'], ['all', 'All']].map(([value, label]) => ({ value, label })), acat, v => { acat = v; fill(); }, 'tabs ancats'), si); }
     const fill = () => {
-      grid.innerHTML = ''; const list = reg[kind] || [];
+      grid.innerHTML = ''; let list = reg[kind] || [];
+      if (pro) { const favs = new Set(lsGet(AK, [])), P = PRO_TEXT_ANIMS[kind] || [];
+        if (aq) list = list.filter(t => t.name.toLowerCase().includes(aq));
+        else if (acat === 'trending') list = P.map(i => list.find(t => t.id === i)).filter(Boolean);
+        else if (acat === 'fav') list = list.filter(t => favs.has(kind + ':' + t.id));
+        else list = [...P.map(i => list.find(t => t.id === i)).filter(Boolean), ...list.filter(t => !P.includes(t.id))];
+        if (acat === 'fav' && !aq && !list.length) { grid.innerHTML = '<p class="hint">Press and hold an animation to save it here.</p>'; setSlider(); info(); markTabs(); return; } }
       for (const t of [{ id: null, name: 'None' }, ...list]) {
         const b = document.createElement('button'); b.className = 'trtile' + ((cur(kind)?.id || null) === t.id ? ' on' : ''); b.dataset.an = t.id || 'none';
         b.innerHTML = `<canvas width="${TW}" height="${TH}"></canvas><span>${t.name}</span>`;
@@ -297,13 +309,17 @@ function animSheet(startKind, mount) {
             if (t.id) c.anim[k] = { id: t.id, dur: c.anim[k]?.dur || (k === lk ? DEFAULT_LOOP_DUR : Math.min(DEFAULT_ANIM_DUR, clipDur(c))) }; else delete c.anim[k];
             if (!Object.keys(c.anim).length) delete c.anim; });
           grid.querySelectorAll('.trtile').forEach(x => x.classList.toggle('on', x === b)); setSlider(); info(); markTabs(); timeline.render(); if (t.id) preview(k); };
+        if (pro && t.id) { const key = kind + ':' + t.id; if (lsGet(AK, []).includes(key)) b.classList.add('fav'); let ht = 0;
+          b.addEventListener('pointerdown', () => { ht = setTimeout(() => { ht = -1; const L = lsGet(AK, []), i = L.indexOf(key); if (i >= 0) L.splice(i, 1); else L.unshift(key); lsSet(AK, L); b.classList.toggle('fav', i < 0); toast(i < 0 ? 'Saved' : 'Removed from Saved'); }, 550); });
+          for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, () => { if (ht > 0) clearTimeout(ht); });
+          b.addEventListener('click', e => { if (ht === -1) { ht = 0; e.stopImmediatePropagation(); } }, true); }
         grid.appendChild(b);
       }
       setSlider(); info(); markTabs();
     };
-    body.append(tabEl, grid, sl, note); fill();
+    if (pro) body.append(tabEl, abar, sl, grid, note); else body.append(tabEl, grid, sl, note); fill();
     // animated tiles: the real renderer draws every tile (same code as preview + export)
-    const tc = { id: 'tile', type: isText ? 'text' : 'image', fit: 'contain', transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, start: 0, dur: 1, text: { ...(f0.clip.text || {}), content: mount ? 'ABC123' : 'Abc', size: 300, align: 'center', box: false, bubble: null, curve: 0 } };
+    const tc = { id: 'tile', type: isText ? 'text' : 'image', fit: 'contain', transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, start: 0, dur: 1, text: mount ? { ...applyStyle({ ...(f0.clip.text || {}) }, null), font: 'montserrat', color: '#ffffff', content: 'ABC123', size: 190, align: 'center', curve: 0, bold: true, italic: false, under: false, caseMode: null, lineH: 1 } : { ...(f0.clip.text || {}), content: 'Abc', size: 300, align: 'center', box: false, bubble: null, curve: 0 } };
     const src = { img: art, w: art.width, h: art.height };
     cancelAnimationFrame(animLoop); let vis = null, visIO = null;
     const loop = now => { if (!document.body.contains(grid)) return;
