@@ -6,7 +6,7 @@
   "file": "luckiestguy.woff2",
   "licence": "Apache License 2.0",
   "source": "https://github.com/google/fonts/tree/main/apache/luckiestguy",
-  "bytes": 27008
+  "bytes": 16976
  },
  {
   "family": "Fredoka",
@@ -15,7 +15,7 @@
   "file": "fredoka.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/fredoka",
-  "bytes": 22240
+  "bytes": 15928
  },
  {
   "family": "Baloo 2",
@@ -24,7 +24,7 @@
   "file": "baloo2.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/baloo2",
-  "bytes": 96160
+  "bytes": 17116
  },
  {
   "family": "Bubblegum Sans",
@@ -33,7 +33,7 @@
   "file": "bubblegumsans.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/bubblegumsans",
-  "bytes": 15972
+  "bytes": 14124
  },
  {
   "family": "Chewy",
@@ -42,7 +42,7 @@
   "file": "chewy.woff2",
   "licence": "Apache License 2.0",
   "source": "https://github.com/google/fonts/tree/main/apache/chewy",
-  "bytes": 21116
+  "bytes": 16940
  },
  {
   "family": "Lilita One",
@@ -60,7 +60,7 @@
   "file": "titanone.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/titanone",
-  "bytes": 18188
+  "bytes": 10736
  },
  {
   "family": "Bangers",
@@ -69,7 +69,7 @@
   "file": "bangers.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/bangers",
-  "bytes": 37024
+  "bytes": 15912
  },
  {
   "family": "Sniglet",
@@ -78,7 +78,7 @@
   "file": "sniglet.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/sniglet",
-  "bytes": 27776
+  "bytes": 17756
  },
  {
   "family": "Boogaloo",
@@ -87,7 +87,7 @@
   "file": "boogaloo.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/boogaloo",
-  "bytes": 13472
+  "bytes": 10232
  },
  {
   "family": "Carter One",
@@ -96,7 +96,7 @@
   "file": "carterone.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/carterone",
-  "bytes": 31568
+  "bytes": 27396
  },
  {
   "family": "Bowlby One",
@@ -105,7 +105,7 @@
   "file": "bowlbyone.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/bowlbyone",
-  "bytes": 28736
+  "bytes": 22656
  },
  {
   "family": "Paytone One",
@@ -114,7 +114,7 @@
   "file": "paytoneone.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/paytoneone",
-  "bytes": 38424
+  "bytes": 13892
  },
  {
   "family": "Passion One",
@@ -132,7 +132,7 @@
   "file": "modak.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/modak",
-  "bytes": 189084
+  "bytes": 22704
  },
  {
   "family": "Londrina Solid",
@@ -141,7 +141,7 @@
   "file": "londrinasolid.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/londrinasolid",
-  "bytes": 36820
+  "bytes": 21220
  },
  {
   "family": "Grandstander",
@@ -150,7 +150,7 @@
   "file": "grandstander.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/grandstander",
-  "bytes": 45940
+  "bytes": 26816
  },
  {
   "family": "Mochiy Pop One",
@@ -159,7 +159,7 @@
   "file": "mochiypopone.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/mochiypopone",
-  "bytes": 2240032
+  "bytes": 14904
  },
  {
   "family": "DynaPuff",
@@ -168,7 +168,7 @@
   "file": "dynapuff.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/dynapuff",
-  "bytes": 36684
+  "bytes": 20016
  },
  {
   "family": "Gluten",
@@ -177,7 +177,7 @@
   "file": "gluten.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/gluten",
-  "bytes": 41420
+  "bytes": 22088
  },
  {
   "family": "Kavoon",
@@ -186,7 +186,7 @@
   "file": "kavoon.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/kavoon",
-  "bytes": 30212
+  "bytes": 16688
  },
  {
   "family": "Concert One",
@@ -195,7 +195,7 @@
   "file": "concertone.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/concertone",
-  "bytes": 26096
+  "bytes": 14096
  },
  {
   "family": "Coiny",
@@ -204,7 +204,7 @@
   "file": "coiny.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/coiny",
-  "bytes": 50568
+  "bytes": 15828
  },
  {
   "family": "Rammetto One",
@@ -213,7 +213,7 @@
   "file": "rammettoone.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/rammettoone",
-  "bytes": 27296
+  "bytes": 11928
  },
  {
   "family": "Sigmar One",
@@ -222,7 +222,7 @@
   "file": "sigmarone.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/sigmarone",
-  "bytes": 70040
+  "bytes": 28992
  },
  {
   "family": "Galindo",
@@ -231,7 +231,7 @@
   "file": "galindo.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/galindo",
-  "bytes": 26536
+  "bytes": 19656
  },
  {
   "family": "Rubik Bubbles",
@@ -240,7 +240,7 @@
   "file": "rubikbubbles.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/rubikbubbles",
-  "bytes": 93124
+  "bytes": 37480
  },
  {
   "family": "Comic Neue",
@@ -249,7 +249,7 @@
   "file": "comicneue.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/comicneue",
-  "bytes": 23608
+  "bytes": 11920
  },
  {
   "family": "Patrick Hand",
@@ -258,7 +258,7 @@
   "file": "patrickhand.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/patrickhand",
-  "bytes": 62720
+  "bytes": 14108
  },
  {
   "family": "Gochi Hand",
@@ -267,7 +267,7 @@
   "file": "gochihand.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/gochihand",
-  "bytes": 21388
+  "bytes": 19488
  },
  {
   "family": "Permanent Marker",
@@ -276,7 +276,7 @@
   "file": "permanentmarker.woff2",
   "licence": "Apache License 2.0",
   "source": "https://github.com/google/fonts/tree/main/apache/permanentmarker",
-  "bytes": 30856
+  "bytes": 29092
  },
  {
   "family": "Caveat",
@@ -285,7 +285,7 @@
   "file": "caveat.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/caveat",
-  "bytes": 108572
+  "bytes": 49580
  },
  {
   "family": "Pacifico",
@@ -294,7 +294,7 @@
   "file": "pacifico.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/pacifico",
-  "bytes": 105096
+  "bytes": 24736
  },
  {
   "family": "Lobster",
@@ -303,7 +303,7 @@
   "file": "lobster.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/lobster",
-  "bytes": 103016
+  "bytes": 16456
  },
  {
   "family": "Dancing Script",
@@ -312,7 +312,7 @@
   "file": "dancingscript.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/dancingscript",
-  "bytes": 36568
+  "bytes": 26588
  },
  {
   "family": "Poppins",
@@ -321,7 +321,7 @@
   "file": "poppins.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/poppins",
-  "bytes": 49724
+  "bytes": 7648
  },
  {
   "family": "Montserrat",
@@ -330,7 +330,7 @@
   "file": "montserrat.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/montserrat",
-  "bytes": 107108
+  "bytes": 13140
  },
  {
   "family": "Nunito",
@@ -339,7 +339,7 @@
   "file": "nunito.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/nunito",
-  "bytes": 45380
+  "bytes": 14252
  },
  {
   "family": "Quicksand",
@@ -348,7 +348,7 @@
   "file": "quicksand.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/quicksand",
-  "bytes": 29612
+  "bytes": 13116
  },
  {
   "family": "Anton",
@@ -357,7 +357,7 @@
   "file": "anton.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/anton",
-  "bytes": 57468
+  "bytes": 9552
  },
  {
   "family": "Bebas Neue",
@@ -366,7 +366,7 @@
   "file": "bebasneue.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/bebasneue",
-  "bytes": 21592
+  "bytes": 7052
  },
  {
   "family": "Oswald",
@@ -375,7 +375,7 @@
   "file": "oswald.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/oswald",
-  "bytes": 34116
+  "bytes": 11688
  },
  {
   "family": "Righteous",
@@ -384,7 +384,7 @@
   "file": "righteous.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/righteous",
-  "bytes": 16804
+  "bytes": 11924
  },
  {
   "family": "Bungee",
@@ -393,7 +393,7 @@
   "file": "bungee.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/bungee",
-  "bytes": 40632
+  "bytes": 12892
  },
  {
   "family": "Press Start 2P",
@@ -402,7 +402,7 @@
   "file": "pressstart2p.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/pressstart2p",
-  "bytes": 29716
+  "bytes": 4348
  },
  {
   "family": "Abril Fatface",
@@ -411,7 +411,7 @@
   "file": "abrilfatface.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/abrilfatface",
-  "bytes": 20788
+  "bytes": 13452
  },
  {
   "family": "Playfair Display",
@@ -420,7 +420,7 @@
   "file": "playfairdisplay.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/playfairdisplay",
-  "bytes": 66556
+  "bytes": 20396
  },
  {
   "family": "Amatic SC",
@@ -429,7 +429,7 @@
   "file": "amaticsc.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/amaticsc",
-  "bytes": 67988
+  "bytes": 17384
  },
  {
   "family": "Cormorant Garamond",
@@ -438,7 +438,7 @@
   "file": "cormorantgaramond.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/cormorantgaramond",
-  "bytes": 129068
+  "bytes": 19088
  },
  {
   "family": "Cinzel",
@@ -447,7 +447,7 @@
   "file": "cinzel.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/cinzel",
-  "bytes": 29148
+  "bytes": 15240
  },
  {
   "family": "Bodoni Moda",
@@ -456,7 +456,7 @@
   "file": "bodonimoda.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/bodonimoda",
-  "bytes": 26052
+  "bytes": 14236
  },
  {
   "family": "DM Serif Display",
@@ -465,7 +465,7 @@
   "file": "dmserifdisplay.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/dmserifdisplay",
-  "bytes": 31972
+  "bytes": 17544
  },
  {
   "family": "Libre Baskerville",
@@ -474,7 +474,7 @@
   "file": "librebaskerville.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/librebaskerville",
-  "bytes": 39492
+  "bytes": 19612
  },
  {
   "family": "Lora",
@@ -483,7 +483,7 @@
   "file": "lora.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/lora",
-  "bytes": 50996
+  "bytes": 20004
  },
  {
   "family": "Marcellus",
@@ -492,7 +492,7 @@
   "file": "marcellus.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/marcellus",
-  "bytes": 19344
+  "bytes": 14236
  },
  {
   "family": "Prata",
@@ -501,7 +501,7 @@
   "file": "prata.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/prata",
-  "bytes": 38112
+  "bytes": 10632
  },
  {
   "family": "Italiana",
@@ -519,7 +519,7 @@
   "file": "greatvibes.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/greatvibes",
-  "bytes": 162168
+  "bytes": 33680
  },
  {
   "family": "Allura",
@@ -528,7 +528,7 @@
   "file": "allura.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/allura",
-  "bytes": 87236
+  "bytes": 43668
  },
  {
   "family": "Parisienne",
@@ -537,7 +537,7 @@
   "file": "parisienne.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/parisienne",
-  "bytes": 28068
+  "bytes": 22192
  },
  {
   "family": "Sacramento",
@@ -546,7 +546,7 @@
   "file": "sacramento.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/sacramento",
-  "bytes": 32160
+  "bytes": 23332
  },
  {
   "family": "Satisfy",
@@ -555,7 +555,7 @@
   "file": "satisfy.woff2",
   "licence": "Apache License 2.0",
   "source": "https://github.com/google/fonts/tree/main/apache/satisfy",
-  "bytes": 23852
+  "bytes": 22168
  },
  {
   "family": "Kaushan Script",
@@ -564,7 +564,7 @@
   "file": "kaushanscript.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/kaushanscript",
-  "bytes": 57976
+  "bytes": 23776
  },
  {
   "family": "Yellowtail",
@@ -573,7 +573,7 @@
   "file": "yellowtail.woff2",
   "licence": "Apache License 2.0",
   "source": "https://github.com/google/fonts/tree/main/apache/yellowtail",
-  "bytes": 23804
+  "bytes": 18528
  },
  {
   "family": "Inter",
@@ -582,7 +582,7 @@
   "file": "inter.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/inter",
-  "bytes": 117332
+  "bytes": 19680
  },
  {
   "family": "Raleway",
@@ -591,7 +591,7 @@
   "file": "raleway.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/raleway",
-  "bytes": 63868
+  "bytes": 15796
  },
  {
   "family": "Work Sans",
@@ -600,7 +600,7 @@
   "file": "worksans.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/worksans",
-  "bytes": 61976
+  "bytes": 19196
  },
  {
   "family": "Archivo Black",
@@ -609,7 +609,7 @@
   "file": "archivoblack.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/archivoblack",
-  "bytes": 31148
+  "bytes": 9616
  },
  {
   "family": "Teko",
@@ -618,7 +618,7 @@
   "file": "teko.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/teko",
-  "bytes": 46076
+  "bytes": 7532
  },
  {
   "family": "Unbounded",
@@ -627,7 +627,7 @@
   "file": "unbounded.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/unbounded",
-  "bytes": 112772
+  "bytes": 18068
  },
  {
   "family": "Syne",
@@ -636,7 +636,7 @@
   "file": "syne.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/syne",
-  "bytes": 27376
+  "bytes": 11476
  },
  {
   "family": "Space Grotesk",
@@ -645,7 +645,7 @@
   "file": "spacegrotesk.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/spacegrotesk",
-  "bytes": 31464
+  "bytes": 11168
  },
  {
   "family": "Josefin Sans",
@@ -654,7 +654,7 @@
   "file": "josefinsans.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/josefinsans",
-  "bytes": 22208
+  "bytes": 10984
  },
  {
   "family": "League Spartan",
@@ -663,7 +663,7 @@
   "file": "leaguespartan.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/leaguespartan",
-  "bytes": 23388
+  "bytes": 11152
  },
  {
   "family": "Outfit",
@@ -672,7 +672,7 @@
   "file": "outfit.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/outfit",
-  "bytes": 20832
+  "bytes": 13936
  },
  {
   "family": "Black Ops One",
@@ -681,7 +681,7 @@
   "file": "blackopsone.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/blackopsone",
-  "bytes": 55932
+  "bytes": 22836
  },
  {
   "family": "Monoton",
@@ -690,7 +690,7 @@
   "file": "monoton.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/monoton",
-  "bytes": 20180
+  "bytes": 16540
  },
  {
   "family": "Bungee Shade",
@@ -699,7 +699,7 @@
   "file": "bungeeshade.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/bungeeshade",
-  "bytes": 81612
+  "bytes": 27744
  },
  {
   "family": "Mountains of Christmas",
@@ -708,7 +708,7 @@
   "file": "mountainsofchristmas.woff2",
   "licence": "Apache License 2.0",
   "source": "https://github.com/google/fonts/tree/main/apache/mountainsofchristmas",
-  "bytes": 58528
+  "bytes": 55784
  },
  {
   "family": "Berkshire Swash",
@@ -717,7 +717,7 @@
   "file": "berkshireswash.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/berkshireswash",
-  "bytes": 23620
+  "bytes": 16904
  },
  {
   "family": "Creepster",
@@ -726,7 +726,7 @@
   "file": "creepster.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/creepster",
-  "bytes": 29852
+  "bytes": 28140
  },
  {
   "family": "Shadows Into Light",
@@ -735,7 +735,7 @@
   "file": "shadowsintolight.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/shadowsintolight",
-  "bytes": 23452
+  "bytes": 16020
  },
  {
   "family": "Rock Salt",
@@ -744,7 +744,7 @@
   "file": "rocksalt.woff2",
   "licence": "Apache License 2.0",
   "source": "https://github.com/google/fonts/tree/main/apache/rocksalt",
-  "bytes": 61252
+  "bytes": 51516
  },
  {
   "family": "Fjalla One",
@@ -753,7 +753,7 @@
   "file": "fjallaone.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/fjallaone",
-  "bytes": 84832
+  "bytes": 31036
  },
  {
   "family": "Alfa Slab One",
@@ -762,6 +762,6 @@
   "file": "alfaslabone.woff2",
   "licence": "SIL Open Font License 1.1",
   "source": "https://github.com/google/fonts/tree/main/ofl/alfaslabone",
-  "bytes": 34672
+  "bytes": 9616
  }
 ]
