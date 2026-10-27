@@ -11,12 +11,40 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const fmtD = d => { const m = Math.floor(d / 60), s = Math.round(d - m * 60); return d ? `${m}:${String(s).padStart(2, '0')}` : 'empty'; };
 const thumbUrls = new Map();
+/* Home themes: colour gradients + photo themes (photos load only when chosen; lib/ is cached on first use) */
+export const THEMES = [
+  { id: 'peach', name: 'Peach', bg: 'linear-gradient(180deg,#ffcb8a 0%,#ffb889 45%,#ff9a7e 75%,#ff7f7a 100%)', ink: '#4a3426', logo: '#5a3a28', label: '#6a4a36', tabs: 'rgba(255,248,240,.92)' },
+  { id: 'sky', name: 'Sky Blue', bg: 'linear-gradient(180deg,#bfe6ff 0%,#8fd0ff 50%,#5aa8ff 100%)', ink: '#12324f', logo: '#0f3a66', label: '#1d4a75', tabs: 'rgba(240,248,255,.92)' },
+  { id: 'mint', name: 'Mint', bg: 'linear-gradient(180deg,#d4fbe8 0%,#9df0c9 50%,#4fd6a0 100%)', ink: '#0f3d2c', logo: '#0d4a33', label: '#1b5a42', tabs: 'rgba(240,255,248,.92)' },
+  { id: 'lavender', name: 'Lavender', bg: 'linear-gradient(180deg,#eadcff 0%,#cdb5ff 50%,#a98bff 100%)', ink: '#2e1a55', logo: '#3a1f70', label: '#4a2f80', tabs: 'rgba(248,244,255,.92)' },
+  { id: 'sunset', name: 'Sunset Pink', bg: 'linear-gradient(180deg,#ffd1e3 0%,#ff9cc4 45%,#ff6f9a 80%,#ff5a7a 100%)', ink: '#4f1530', logo: '#5f1438', label: '#6a2443', tabs: 'rgba(255,244,248,.92)' },
+  { id: 'night', name: 'Night', bg: 'linear-gradient(180deg,#1b1d3a 0%,#121327 60%,#0b0b14 100%)', ink: '#e8e8f4', logo: '#ffffff', label: '#c8c8e0', tabs: 'rgba(18,18,30,.94)', dark: true },
+  { id: 'unicorn', name: 'Unicorn Sky', img: 'lib/themes/unicorn.webp', thumb: 'lib/themes/unicorn-t.webp', fade: '#8fc4ff', bg: 'linear-gradient(180deg,#8fc4ff 0%,#b9a6ff 60%,#ff9fd2 100%)', ink: '#24204f', logo: '#ffffff', label: '#ffffff', tabs: 'rgba(248,244,255,.92)', photo: true },
+  { id: 'heroes', name: 'Heroes', img: 'lib/themes/heroes.webp', thumb: 'lib/themes/heroes-t.webp', fade: '#1f2a55', bg: 'linear-gradient(180deg,#1f2a55 0%,#2c3f86 55%,#ff8a3d 100%)', ink: '#ffffff', logo: '#ffffff', label: '#ffffff', tabs: 'rgba(18,22,44,.92)', photo: true, dark: true },
+  { id: 'sword', name: 'Golden Sword', img: 'lib/themes/sword.webp', thumb: 'lib/themes/sword-t.webp', fade: '#2a1a08', bg: 'linear-gradient(180deg,#2a1a08 0%,#5a3a10 55%,#c98a1c 100%)', ink: '#fff4d6', logo: '#ffd86b', label: '#ffe6a0', tabs: 'rgba(30,20,8,.92)', photo: true, dark: true },
+];
+export const themeId = () => localStorage.getItem('studio.homeTheme') || 'peach';
+export function applyTheme(id = themeId()) {
+  const t = THEMES.find(x => x.id === id) || THEMES[0], h = $('#home'); if (!h) return;
+  h.dataset.theme = t.id; h.classList.toggle('hm-photo', !!t.photo); h.classList.toggle('hm-dark', !!t.dark);
+  const st = h.style; st.setProperty('--hm-bg', t.bg); st.setProperty('--hm-ink', t.ink); st.setProperty('--hm-logo', t.logo); st.setProperty('--hm-label', t.label); st.setProperty('--hm-tabs', t.tabs);
+  st.setProperty("--hm-img", t.img ? `url("${new URL(t.img, location.href).href}")` : "none"); st.setProperty('--hm-fade', t.fade || 'transparent');
+}
+export function themeSheet() {
+  openSheet('Home theme', body => {
+    const g = document.createElement('div'); g.className = 'thgrid'; g.id = 'themeGrid';
+    for (const t of THEMES) { const b = document.createElement('button'); b.className = 'thsw' + (t.id === themeId() ? ' on' : ''); b.dataset.v = t.id;
+      b.innerHTML = `<span class="thprev" style="background:${t.thumb ? `url('${t.thumb}') center/cover, ` : ''}${t.bg}"><i class="thlogo" style="color:${t.logo}">Aa</i><em class="thcheck">✓</em></span><span class="thname">${t.name}</span>`;
+      b.onclick = () => { localStorage.setItem('studio.homeTheme', t.id); applyTheme(t.id); g.querySelectorAll('.thsw').forEach(x => x.classList.toggle('on', x === b)); }; g.append(b); }
+    body.append(g);
+  }, { gesture: false, className: 'themesheet' });
+}
 export const homeOpen = () => !$('#home').hidden;
 
 export function initHome(ctx) {
   X = ctx; const h = $('#home');
   const CLK = '<svg viewBox="0 0 24 24" width="15" height="15"><circle cx="12" cy="12" r="10" fill="#fff"/><path d="M12 6v6l3 2" stroke="#2b1a10" stroke-width="2.4" fill="none" stroke-linecap="round"/></svg>';
-  h.innerHTML = `<header class="hm-top"><div class="brand hm-logo" aria-label="Emmavengers">Emmavengers</div><button class="ib" id="homeMenu" aria-label="Settings">${icon('gear')}</button></header>
+  h.innerHTML = `<header class="hm-top"><div class="brand hm-logo" aria-label="Emmavengers">Emmavengers</div><span class="hm-ic"><button class="ib" id="homeThemeBtn" aria-label="Home theme"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.5-.8 1.5-1.5 0-1.2-1-1.3-1-2.5 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.1-4-7.5-9-7.5z"/><circle cx="7.5" cy="11" r="1.2" fill="currentColor"/><circle cx="10" cy="7" r="1.2" fill="currentColor"/><circle cx="15" cy="7" r="1.2" fill="currentColor"/></svg></button><button class="ib" id="homeMenu" aria-label="Settings">${icon('gear')}</button></span></header>
   <div class="hm-body" id="hvHome">
     <div class="hm-space"></div>
     <h4 class="hm-label">CREATE NEW</h4>
@@ -48,7 +76,7 @@ export function initHome(ctx) {
   </div>
   <nav class="hm-tabs" id="homeTabs"><button id="tabHome" class="on">${icon('home', 22)}<span>Home</span></button><button id="homeTemplates">${icon('templates', 22)}<span>Templates</span></button><button id="tabProjects">${icon('media', 22)}<span>Projects</span></button></nav>
   <input type="file" id="homeFile" accept="${BACKUP_EXT},application/zip,application/octet-stream" hidden>`;
-  $('#homeMenu').onclick = () => X.menuSheet();
+  $('#homeMenu').onclick = () => X.menuSheet(); $('#homeThemeBtn').onclick = themeSheet; applyTheme();
   $('#newProjBtn').onclick = newSheet;
   $('#homeTemplates').onclick = () => X.templatesSheet();
   $('#homeAd').onclick = () => X.adSheet();

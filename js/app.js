@@ -18,7 +18,7 @@ import { ELEMENTS, ELEMENT_CATS } from './elements.js';
 import * as templates from './templates.js';
 import * as projects from './projects.js';
 import * as backupApi from './backup.js';
-import { initHome, showHome, hideHome, homeOpen, render as renderHome } from './home.js';
+import { initHome, showHome, hideHome, homeOpen, render as renderHome, themeSheet } from './home.js';
 import * as fx from './effects.js';
 import { FILTER_CATS } from './registry.js';
 import { ensureFont, ensureProjectFonts, onFontLoad } from './fonts.js';
@@ -1098,11 +1098,13 @@ function menuSheet() {
   openSheet('Emmavengers Studio', async body => {
     body.innerHTML = `<div class="menu">
       <button class="btn" id="newProj">${icon('home', 18)} My projects</button>
+      <button class="btn ghost" id="homeTheme">Home theme</button>
       <button class="btn ghost" id="checkUpd">Check for update</button>
       <p class="hint">Your projects save automatically on this phone, even offline. <span id="storeInfo"></span></p>
       <p class="hint">Tips: tap a clip to edit it · drag its white edges to trim · press and hold a clip, then drag, to move it · pinch the timeline to zoom.</p>
       <p class="hint ver">Version <span id="buildId">…</span></p></div>`;
     $('#newProj').onclick = () => { closeSheet(); showHome(); };
+    $('#homeTheme').onclick = () => themeSheet();
     $('#checkUpd').onclick = async () => { const r = await navigator.serviceWorker?.getRegistration(); if (r) { await r.update().catch(() => {}); toast(r.installing || r.waiting ? 'Downloading the new version…' : 'You have the latest version'); } };
     try { const e = await navigator.storage.estimate(); $('#storeInfo').textContent = `Using ${(e.usage / 1e6).toFixed(0)} MB of storage.`; } catch (e) {}
     $('#buildId').textContent = window.STUDIO_BUILD || 'dev';
