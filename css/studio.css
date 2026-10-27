@@ -632,4 +632,4 @@ body.has-sel #transport .time .sep,body.has-sel #ttot{display:none}body.has-sel 
 .wmgrid button i{width:14px;height:14px;border-radius:4px;border:1.5px solid #ffffff55}
 .wmgrid button.on i{background:#d4af37;border-color:#d4af37;box-shadow:0 0 0 3px #d4af3733}
 .wmsheet .btn{margin:8px auto 0;display:block}
-body.has-sel #transport .ib.tb{display:none}
+body.has-sel #transport #cmpBtn{display:none}body.has-sel #transport .hist .ib{width:30px}
