@@ -303,9 +303,10 @@ function animSheet(startKind, mount) {
     // animated tiles: the real renderer draws every tile (same code as preview + export)
     const tc = { id: 'tile', type: isText ? 'text' : 'image', fit: 'contain', transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, start: 0, dur: 1, text: { ...(f0.clip.text || {}), content: mount ? 'ABC123' : 'Abc', size: 300, align: 'center', box: false, bubble: null, curve: 0 } };
     const src = { img: art, w: art.width, h: art.height };
-    cancelAnimationFrame(animLoop);
+    cancelAnimationFrame(animLoop); let vis = null, visIO = null;
     const loop = now => { if (!document.body.contains(grid)) return;
-      grid.querySelectorAll('.trtile').forEach(b => { const aid = b.dataset.an; if (aid === 'none') return; const x = b.querySelector('canvas').getContext('2d');
+      if (!vis) { vis = new Set(); visIO = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => e.isIntersecting ? vis.add(e.target) : vis.delete(e.target)), { root: grid }) : null; }
+      grid.querySelectorAll('.trtile').forEach(b => { if (visIO && !b._obs) { b._obs = 1; visIO.observe(b); } if (visIO && !vis.has(b)) return; const aid = b.dataset.an; if (aid === 'none') return; const x = b.querySelector('canvas').getContext('2d');
         let t, D; if (kind === lk) { D = 99; t = now / 1000; tc.anim = { [kind]: { id: aid, dur: 1.2 } }; } else { D = 1; const cyc = (now % 1700) / 1000; t = kind === 'in' ? Math.min(1, cyc) : Math.min(1, Math.max(0, cyc - .3)); tc.anim = { [kind]: { id: aid, dur: .9 } }; }
         tc.dur = D; x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.filter = 'none'; x.fillStyle = '#1b1b24'; x.fillRect(0, 0, TW, TH);
         if (isText) drawText(x, TW, TH, tc, DEFAULT_TRANSFORM, t); else drawVisual(x, TW, TH, src, tc, { ...DEFAULT_TRANSFORM, scale: .62 }, t, { plain: true });
@@ -708,6 +709,48 @@ const EXTRA_FX = [
   ...FX_GRADS.map(([n, cs]) => ({ id: 'xgrad-' + n.toLowerCase(), name: n, s: { color: cs[0], fill: { colors: cs, dir: 'v' }, outline: true, outlineColor: '#1b1b2f', outlineW: 0.07, shadow: { color: 'rgba(0,0,0,.45)', dx: 0, dy: 0.05, blur: 0.05 } } })),
   ...FX_HUES.map(([n, c]) => ({ id: 'xline-' + n.toLowerCase(), name: 'Outline ' + n, s: { color: 'rgba(0,0,0,0)', outline: true, outlineColor: c, outlineW: 0.07 } })),
 ];
+
+const FX_MORE = [
+  ['xhw-pumpkin', 'Pumpkin', 'halloween', { color: '#ff8a00', outline: true, outlineColor: '#2b0a00', outlineW: 0.1, extrude: { color: '#5a1f00', depth: 0.1, angle: 60 } }],
+  ['xhw-slime', 'Slime', 'halloween', { color: '#9dff3d', fill: { colors: ['#d4ff7a', '#38c400'], dir: 'v' }, outline: true, outlineColor: '#1a3300', outlineW: 0.1, glow: { color: '#9dff3d', blur: 0.35 } }],
+  ['xhw-spooky', 'Spooky', 'halloween', { color: '#ffffff', outline: true, outlineColor: '#6a00ff', outlineW: 0.08, glow: { color: '#a259ff', blur: 0.7 } }],
+  ['xhw-blood', 'Vampire', 'halloween', { color: '#c4001a', fill: { colors: ['#ff4d4d', '#5a0010'], dir: 'v' }, outline: true, outlineColor: '#000000', outlineW: 0.08, shadow: { color: 'rgba(0,0,0,.7)', dx: 0, dy: 0.06, blur: 0.06 } }],
+  ['xmt-chrome', 'Chrome', 'metallic', { color: '#e8e8e8', fill: { colors: ['#ffffff', '#9aa3ad', '#ffffff', '#5b636b'], dir: 'v' }, outline: true, outlineColor: '#1b1b2f', outlineW: 0.07, gloss: true }],
+  ['xmt-silver', 'Silver', 'metallic', { color: '#cfd6dd', fill: { colors: ['#f4f7fa', '#8c96a0'], dir: 'v' }, outline: true, outlineColor: '#33393f', outlineW: 0.07 }],
+  ['xmt-bronze', 'Bronze', 'metallic', { color: '#cd7f32', fill: { colors: ['#ffd1a1', '#8a4b14'], dir: 'v' }, outline: true, outlineColor: '#3b1d05', outlineW: 0.07, gloss: true }],
+  ['xmt-rosegold', 'Rose gold', 'metallic', { color: '#f4b6a6', fill: { colors: ['#ffe3da', '#c9776b'], dir: 'v' }, outline: true, outlineColor: '#5c2a25', outlineW: 0.07, gloss: true }],
+  ['xfr-fire', 'Fire', 'fire', { color: '#ffcc00', fill: { colors: ['#fff200', '#ff7a00', '#ff1f1f'], dir: 'v' }, glow: { color: '#ff5a00', blur: 0.6 } }],
+  ['xfr-blue', 'Blue flame', 'fire', { color: '#9be7ff', fill: { colors: ['#ffffff', '#00b3ff', '#1f3bff'], dir: 'v' }, glow: { color: '#00b3ff', blur: 0.6 } }],
+  ['xfr-lava', 'Lava', 'fire', { color: '#ff4d00', fill: { colors: ['#ffd000', '#ff3d00', '#7a0000'], dir: 'v' }, outline: true, outlineColor: '#2b0000', outlineW: 0.08, extrude: { color: '#4d0000', depth: 0.08, angle: 90 } }],
+  ['xgl-rgb', 'Glitch RGB', 'glitch', { color: '#ffffff', shadow: { color: '#ff0055', dx: -0.05, dy: 0, blur: 0 }, glow: { color: '#00e5ff', blur: 0.15 } }],
+  ['xgl-cyan', 'Glitch cyan', 'glitch', { color: '#00e5ff', shadow: { color: '#ff2d55', dx: 0.05, dy: 0.02, blur: 0 }, outline: true, outlineColor: '#000000', outlineW: 0.05 }],
+  ['xgl-vhs', 'VHS', 'glitch', { color: '#fffb00', shadow: { color: '#0047ff', dx: 0.04, dy: 0.03, blur: 0.02 }, outline: true, outlineColor: '#000000', outlineW: 0.06 }],
+  ['xht-hearts', 'Lovey', 'hearts', { color: '#ff5fa2', outline: true, outlineColor: '#ffffff', outlineW: 0.12, stroke2: { color: '#ff2d7a', w: 0.08 }, glow: { color: '#ff9de2', blur: 0.4 } }],
+  ['xht-candy', 'Bubblegum', 'hearts', { color: '#ffffff', fill: { colors: ['#ffd1ec', '#ff5fa2'], dir: 'v' }, outline: true, outlineColor: '#b3005e', outlineW: 0.1, gloss: true }],
+  ['xbl-balloon', 'Balloon', 'balloon', { color: '#ff3b5c', fill: { colors: ['#ff9aa9', '#ff1f45'], dir: 'd' }, gloss: true, outline: true, outlineColor: '#8a0018', outlineW: 0.05 }],
+  ['xbl-blue', 'Balloon blue', 'balloon', { color: '#1f7bff', fill: { colors: ['#9fd0ff', '#1f5bff'], dir: 'd' }, gloss: true, outline: true, outlineColor: '#00227a', outlineW: 0.05 }],
+  ['xsp-splash', 'Splash', 'splash', { color: '#00e5ff', fill: { colors: ['#e0fbff', '#00b3ff'], dir: 'v' }, outline: true, outlineColor: '#003a66', outlineW: 0.1, stroke2: { color: '#ffffff', w: 0.1 } }],
+  ['xtp-torn', 'Torn paper', 'paper', { color: '#1b1b2f', box: true, bubble: 'label', boxColor: '#f7f1e3' }],
+];
+EXTRA_FX.push(...FX_MORE.map(([id, name, cat, s]) => ({ id, name, cat, s })));
+const fxCat = st => st.cat || (/neon/i.test(st.id + st.name) ? 'neon' : /3d/i.test(st.id + st.name) ? '3d' : /grad|sunset|ocean|candy|mint|ice|rainbow|peach/i.test(st.id + st.name) ? 'gradient' : /line/i.test(st.id) ? 'outline' : /stick/i.test(st.id + st.name) ? 'sticker' : /gold|metal/i.test(st.id + st.name) ? 'metallic' : /fire|flame/i.test(st.id + st.name) ? 'fire' : 'trending');
+const FX_CATS = [['all', 'Trending'], ['fav', '★ Saved'], ['halloween', 'Halloween'], ['neon', 'Neon'], ['3d', '3D'], ['gradient', 'Gradient'], ['sticker', 'Sticker'], ['outline', 'Outline'], ['metallic', 'Metallic'], ['fire', 'Fire'], ['glitch', 'Glitch'], ['hearts', 'Hearts'], ['balloon', 'Balloon'], ['splash', 'Splash'], ['paper', 'Paper']];
+const lsGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } }, lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+// bubble designs: shape x colour x border x type combos, all drawn by the shared drawText bubble renderer
+const BUB_DESIGNS = (() => { const L = [], add = (cat, name, word, t) => L.push({ id: 'bd' + L.length, cat, name, word, t });
+  for (const [n, bc, tc, br] of [['Comic white', '#ffffff', '#1b1b2f', '#000000'], ['Comic yellow', '#ffe600', '#1b1b2f', '#000000'], ['Comic pink', '#ff9de2', '#1b1b2f', '#000000'], ['Comic blue', '#9fd0ff', '#1b1b2f', '#000000'], ['Comic black', '#1b1b2f', '#ffffff', '#ffffff'], ['Comic mint', '#b8ffde', '#1b1b2f', '#000000']]) add('comic', n, 'Hey!', { bubble: 'speech', boxColor: bc, color: tc, bubbleBorder: { color: br, w: 0.07 } });
+  for (const [n, bc, tc] of [['Cloud white', '#ffffff', '#1b1b2f'], ['Cloud sky', '#cfeaff', '#1f3bff'], ['Cloud lilac', '#e6d4ff', '#5a00b3'], ['Dream', '#fff4c2', '#7a4b00']]) { add('cloud', n, 'Hmm...', { bubble: 'thought', boxColor: bc, color: tc, bubbleBorder: { color: '#1b1b2f', w: 0.05 } }); add('cloud', n + ' puff', 'Dreamy', { bubble: 'cloud', boxColor: bc, color: tc, bubbleBorder: null }); }
+  for (const [n, w, bc, tc] of [['BAM yellow', 'BAM!', '#ffe600', '#e01e37'], ['POW red', 'POW!', '#ff2d2d', '#ffe600'], ['WOW blue', 'WOW!', '#1fb6ff', '#ffffff'], ['ZAP purple', 'ZAP!', '#a259ff', '#ffe600'], ['BOOM orange', 'BOOM', '#ff8a00', '#ffffff'], ['YAY green', 'YAY!', '#3ddc84', '#1b1b2f']]) add('burst', n, w, { bubble: 'burst', boxColor: bc, color: tc, bubbleBorder: { color: '#000000', w: 0.07 }, outline: true, outlineColor: '#000000', outlineW: 0.1 });
+  for (const [n, w, c] of [['Neon HELLO', 'HELLO', '#ff5fa2'], ['Neon OOPS', 'OOPS', '#00e5ff'], ['Neon WHAT', 'WHAT?', '#9dff3d'], ['Neon OMG', 'OMG', '#ffe600'], ['Neon LOL', 'LOL', '#a259ff'], ['Neon YES', 'YES!', '#ff8a00']]) add('neon', n, w, { bubble: 'speech', boxColor: 'rgba(0,0,0,0)', color: '#ffffff', bubbleBorder: { color: c, w: 0.06 }, glow: { color: c, blur: 0.6 } });
+  for (const [n, bc, tc] of [['Price red', '#e01e37', '#ffffff'], ['Price yellow', '#ffe600', '#1b1b2f'], ['Price green', '#00b37e', '#ffffff'], ['Sale black', '#1b1b2f', '#ffe600']]) { add('ticket', n, '$9.99', { bubble: 'tag', boxColor: bc, color: tc, bubbleBorder: null }); add('ticket', n + ' ticket', 'SALE', { bubble: 'label', boxColor: bc, color: tc, bubbleBorder: { color: '#ffffff', w: 0.05 } }); }
+  for (const [n, bc, tc] of [['Ribbon red', '#e01e37', '#ffffff'], ['Ribbon blue', '#1f7bff', '#ffffff'], ['Ribbon gold', '#ffcc33', '#5a3a00'], ['Ribbon pink', '#ff5fa2', '#ffffff'], ['Ribbon green', '#00b37e', '#ffffff']]) add('ribbon', n, 'NEW', { bubble: 'banner', boxColor: bc, color: tc, bubbleBorder: null });
+  for (const [n, bc, tc] of [['Note yellow', '#fff27a', '#1b1b2f'], ['Note pink', '#ffc2dd', '#1b1b2f'], ['Note blue', '#c2e4ff', '#1b1b2f'], ['Tape beige', 'rgba(240,226,190,.9)', '#3b2a10'], ['Tape grey', 'rgba(220,220,220,.85)', '#1b1b2f'], ['Paper torn', '#f7f1e3', '#1b1b2f']]) add('note', n, 'Note', { bubble: 'box', boxColor: bc, color: tc, bubbleBorder: null, shadow: { color: 'rgba(0,0,0,.35)', dx: 0.02, dy: 0.04, blur: 0.05 } });
+  for (const [n, c] of [['Chalk white', '#ffffff'], ['Chalk yellow', '#fff27a'], ['Chalk pink', '#ffb3d9'], ['Chalk blue', '#a6dcff']]) add('chalk', n, 'Hello', { bubble: 'box', boxColor: 'rgba(0,0,0,0)', color: c, bubbleBorder: { color: c, w: 0.04 } });
+  for (const [n, bc] of [['Brush HAPPY', '#ff5fa2'], ['Brush yellow', '#ffcc33'], ['Brush teal', '#00c2b8'], ['Brush black', '#1b1b2f']]) add('brush', n, 'HAPPY', { bubble: 'label', boxColor: bc, color: '#ffffff', bubbleBorder: null, outline: true, outlineColor: '#1b1b2f', outlineW: 0.06 });
+  for (const [n, bc, sh] of [['Kawaii pink', '#ffd1ec', 'pill'], ['Kawaii heart', '#ff9de2', 'cloud'], ['Kawaii peach', '#ffe0c2', 'speech'], ['Kawaii lilac', '#e6d4ff', 'pill'], ['Kawaii mint', '#c8ffe8', 'cloud']]) add('kawaii', n, 'Cute~', { bubble: sh, boxColor: bc, color: '#ff2d7a', bubbleBorder: { color: '#ff5fa2', w: 0.05 } });
+  for (const [n, bc, tc] of [['Sticker white', '#ffffff', '#1b1b2f'], ['Sticker black', '#1b1b2f', '#ffffff'], ['Sticker red', '#e01e37', '#ffffff'], ['Label slate', '#2b2b3a', '#ffcc33']]) add('label', n, 'LABEL', { bubble: 'sticker', boxColor: bc, color: tc, bubbleBorder: null });
+  return L; })();
+const BUB_CATS = [['all', 'All'], ['comic', 'Comic'], ['cloud', 'Cloud'], ['burst', 'Burst'], ['neon', 'Neon'], ['ticket', 'Ticket'], ['ribbon', 'Ribbon'], ['note', 'Notes & tape'], ['chalk', 'Chalk'], ['brush', 'Brush'], ['kawaii', 'Kawaii'], ['label', 'Label']];
 const fxStyle = (t, fid) => { const x = EXTRA_FX.find(e => e.id === fid); if (!x) return applyStyle(t, fid); applyStyle(t, null); Object.assign(t, JSON.parse(JSON.stringify(x.s))); t.styleId = fid; return t; };
 const FONT_CATS = [['trending', 'Trending'], ['classic', 'Classic'], ['new', 'NEW'], ['brand', 'Brand fonts'], ...FONT_GROUPS];
 const fontCat = (k, cat) => { const f = FONTS[k], g = f.group || 'system', i = Object.keys(FONTS).indexOf(k);
@@ -721,7 +764,7 @@ const lazyDraw = (root, draw) => { if (!('IntersectionObserver' in window)) { se
   root.querySelectorAll('[data-lazy]').forEach(b => io.observe(b)); return io; };
 function textSheet(startTab) {
   const f0 = selected(); if (!f0) return; const id = f0.clip.id;
-  textTab = { font: 'font', style: 'style', bubble: 'bubble', title: 'title', anim: 'anim', edit: 'edit' }[startTab || textTab] || 'edit';
+  textTab = { font: 'font', style: 'style', bubble: 'bubble', title: 'title', anim: 'anim', edit: 'edit', preset: 'preset' }[startTab || textTab] || 'edit';
   const clipNow = () => find(S.project, id)?.clip;
   openSheet('Text', body => {
     const T = clipNow().text;
@@ -732,7 +775,7 @@ function textSheet(startTab) {
     ex.onclick = () => { const big = ta.rows === 1; ta.rows = big ? 4 : 1; ex.classList.toggle('on', big); ta.focus(); };
     head.append(ta, ex); body.append(head);
     const pane = document.createElement('div'); pane.className = 'textpane';
-    const TABS = [['title', 'Templates'], ['font', 'Fonts'], ['edit', 'Styles'], ['style', 'Effects'], ['anim', 'Animations'], ['bubble', 'Bubbles']];
+    const TABS = [['title', 'Templates'], ['font', 'Fonts'], ['edit', 'Styles'], ['style', 'Effects'], ['anim', 'Animations'], ['bubble', 'Bubbles'], ['preset', 'Presets']];
     const tabEl = chips(TABS.map(([value, label]) => ({ value, label })), textTab, v => { textTab = v; show(); }, 'tabs texttabs');
     body.append(tabEl, pane);
     const dpr = Math.min(2, devicePixelRatio || 1), TW = Math.round(76 * dpr), TH = Math.round(64 * dpr);
@@ -813,24 +856,47 @@ function textSheet(startTab) {
           fio && fio.disconnect(); fio = lazyDraw(grid, b => { ensureFont(b.dataset.v); b.style.font = FONTS[b.dataset.v].css.replace('SIZE', '15'); }); }
         fill();
       } else if (textTab === 'style') {
-        ensureFont(T.font);
-        const items = [{ id: null, name: 'None', none: true }, ...TEXT_STYLES, ...EXTRA_FX];
-        pane.append(tileGrid(items, T.styleId || null, st => ({ ...clipNow(), anim: null, text: fxStyle({ ...clipNow().text, content: 'ART', curve: 0, size: 160, box: false, bubble: null }, st.id) }),
-          st => editSel(cl => { const keep = { box: cl.text.box, bubble: cl.text.bubble, boxColor: cl.text.boxColor }; fxStyle(cl.text, st.id); if (!cl.text.bubble && keep.bubble) Object.assign(cl.text, keep); }), 'stylegrid'));
+        ensureFont(T.font); let cat = 'all', q = ''; const favs = new Set(lsGet('emma.fxFav', []));
+        const all = [{ id: null, name: 'None', none: true }, ...TEXT_STYLES, ...EXTRA_FX];
+        const bar = document.createElement('div'); bar.className = 'fontbar';
+        const sb = document.createElement('button'); sb.className = 'iconbtn'; sb.id = 'fxSearchBtn'; sb.textContent = '🔍';
+        const bm = document.createElement('button'); bm.className = 'iconbtn'; bm.id = 'fxFavBtn'; bm.title = 'Save the current effect'; bm.textContent = '🔖';
+        const si = document.createElement('input'); si.type = 'search'; si.id = 'fxSearch'; si.placeholder = 'Search effects'; si.hidden = true;
+        sb.onclick = () => { si.hidden = !si.hidden; if (!si.hidden) si.focus(); else { q = ''; si.value = ''; fill(); } }; si.oninput = () => { q = si.value.trim().toLowerCase(); fill(); };
+        bm.onclick = () => { const cur = clipNow().text.styleId; if (!cur) { toast('Pick an effect first'); return; } favs.has(cur) ? favs.delete(cur) : favs.add(cur); lsSet('emma.fxFav', [...favs]); toast(favs.has(cur) ? 'Effect saved' : 'Removed from saved'); if (cat === 'fav') fill(); };
+        bar.append(sb, bm, chips(FX_CATS.map(([value, label]) => ({ value, label })), cat, v => { cat = v; fill(); }, 'tabs fxcats')); const holder = document.createElement('div'); pane.append(bar, si, holder);
+        function fill() { holder.innerHTML = ''; const list = all.filter(st => st.none || (q ? st.name.toLowerCase().includes(q) : cat === 'all' || (cat === 'fav' ? favs.has(st.id) : fxCat(st) === cat)));
+          holder.append(tileGrid(list, clipNow().text.styleId || null, st => ({ ...clipNow(), anim: null, text: fxStyle({ ...clipNow().text, content: 'ART', curve: 0, size: 160, box: false, bubble: null }, st.id) }),
+            st => editSel(cl => { const keep = { box: cl.text.box, bubble: cl.text.bubble, boxColor: cl.text.boxColor }; fxStyle(cl.text, st.id); if (!cl.text.bubble && keep.bubble) Object.assign(cl.text, keep); }), 'stylegrid')); }
+        fill();
       } else if (textTab === 'anim') {
         animSheet('in', pane);
       } else if (textTab === 'bubble') {
-        const g = document.createElement('div'); g.className = 'bubblechips bubgrid';
-        const curB = T.bubble || (T.box ? 'box' : null);
-        BUBBLES.forEach((bb, i) => { const b = document.createElement('button'); b.className = 'chipbtn bubtile' + ((bb.id ?? null) === curB ? ' on' : ''); b.dataset.v = bb.id ?? 'null'; b.dataset.lazy = 1; b.dataset.i = i; b.innerHTML = `<canvas width="${TW}" height="${TH}"></canvas><span>${bb.name}</span>`;
-          b.onclick = () => { editSel(cl => { cl.text.bubble = bb.id; cl.text.box = !!bb.id; if (bb.id && !cl.text.boxColor) cl.text.boxColor = '#ffffff'; }); g.querySelectorAll('.bubtile').forEach(x => x.classList.toggle('on', x === b)); }; g.append(b); });
-        requestAnimationFrame(() => lazyDraw(g, b => { const bb = BUBBLES[+b.dataset.i]; textTile(b.querySelector('canvas').getContext('2d'), TW, TH, { ...clipNow(), anim: null, text: { ...clipNow().text, content: 'Hi!', curve: 0, size: 140, bubble: bb.id, box: !!bb.id, boxColor: clipNow().text.boxColor || '#ffffff', color: bb.id ? (clipNow().text.color === '#ffffff' && (!clipNow().text.boxColor || clipNow().text.boxColor === '#ffffff') ? '#1b1b2f' : clipNow().text.color) : clipNow().text.color } }); }));
-        pane.append(g);
+        let bc = 'all'; const holder = document.createElement('div');
+        pane.append(chips(BUB_CATS.map(([value, label]) => ({ value, label })), bc, v => { bc = v; fillB(); }, 'tabs bubcats'), holder);
+        function fillB() { holder.innerHTML = ''; const g = document.createElement('div'); g.className = 'bubblechips bubgrid'; const curB = clipNow().text.bubbleId || null;
+          const list = [{ id: null, name: 'None', word: '', t: { bubble: null } }, ...BUBBLES.filter(x => x.id).map(x => ({ id: x.id, name: x.name, word: 'Hi!', t: { bubble: x.id }, basic: true })), ...BUB_DESIGNS.filter(d => bc === 'all' || d.cat === bc)];
+          const shown = bc === 'all' ? list : [list[0], ...list.filter(x => !x.basic && x.id)];
+          shown.forEach((bb, i) => { const b = document.createElement('button'); b.className = 'chipbtn bubtile' + ((bb.id ?? null) === curB ? ' on' : ''); b.dataset.v = bb.id ?? 'null'; b.dataset.lazy = 1; b.dataset.i = i; b.innerHTML = `<canvas width="${TW}" height="${TH}"></canvas><span>${bb.name}</span>`;
+            b.onclick = () => { editSel(cl => { const t = cl.text; if (bb.basic || !bb.id) { t.bubble = bb.id; t.box = !!bb.id; if (bb.id && !t.boxColor) t.boxColor = '#ffffff'; } else { const font = t.font; applyStyle(t, null); Object.assign(t, JSON.parse(JSON.stringify(bb.t))); t.font = font; t.box = true; } t.bubbleId = bb.id; }); g.querySelectorAll('.bubtile').forEach(x => x.classList.toggle('on', x === b)); }; g.append(b); });
+          requestAnimationFrame(() => lazyDraw(g, b => { const bb = shown[+b.dataset.i], c = clipNow(), t = { ...c.text, content: bb.word || 'Hi!', curve: 0, size: 130 };
+            if (bb.basic || !bb.id) Object.assign(t, { bubble: bb.id, box: !!bb.id, boxColor: c.text.boxColor || '#ffffff', color: bb.id && (c.text.color === '#ffffff' && (!c.text.boxColor || c.text.boxColor === '#ffffff')) ? '#1b1b2f' : c.text.color }); else Object.assign(t, JSON.parse(JSON.stringify(bb.t)), { box: true, outline: bb.t.outline || false, glow: bb.t.glow || null, fill: null });
+            textTile(b.querySelector('canvas').getContext('2d'), TW, TH, { ...c, anim: null, text: t }); }));
+          holder.append(g); }
+        fillB();
         const sub = document.createElement('div'); sub.className = 'sub'; sub.innerHTML = '<span class="cl">Bubble colour</span>';
         sub.append(swatches(['#ffffff', '#000000', '#ffcc33', '#ffe600', '#ff4d4d', '#1fb6ff', '#3ddc84', '#ff5fa2', '#a259ff', '#1b1b2f'], T.boxColor, v => editSel(cl => { cl.text.boxColor = v; if (!cl.text.bubble && !cl.text.box) { cl.text.box = true; cl.text.bubble = 'box'; } })));
         const sub2 = document.createElement('div'); sub2.className = 'sub'; sub2.innerHTML = '<span class="cl">Border</span>';
         sub2.append(swatches(['none', '#000000', '#ffffff', '#1b1b2f', '#e01e37', '#1f7bff'], T.bubbleBorder ? T.bubbleBorder.color : 'none', v => editSel(cl => { cl.text.bubbleBorder = v === 'none' ? null : { color: v, w: 0.07 }; })));
         pane.append(sub, sub2);
+      } else if (textTab === 'preset') {
+        const PK = 'emma.textPresets', save = document.createElement('button'); save.className = 'chipbtn presetsave'; save.id = 'presetSave'; save.textContent = '+ Save as preset';
+        const holder = document.createElement('div'); pane.append(save, holder);
+        save.onclick = () => { const c = clipNow(), t = JSON.parse(JSON.stringify(c.text)); delete t.content; const L = lsGet(PK, []); L.unshift({ id: 'p' + Date.now().toString(36), name: 'Preset ' + (L.length + 1), text: t, anim: c.anim ? JSON.parse(JSON.stringify(c.anim)) : null }); lsSet(PK, L); toast('Preset saved'); fillP(); };
+        function fillP() { holder.innerHTML = ''; const L = lsGet(PK, []);
+          if (!L.length) { holder.append(Object.assign(document.createElement('p'), { className: 'hint presetempty', textContent: 'Add text presets to your space to quickly use them when editing videos.' })); return; }
+          holder.append(tileGrid(L, null, pr => ({ ...clipNow(), anim: null, text: { ...pr.text, content: 'Aa', curve: 0, size: 160 } }), pr => { ensureFont(pr.text.font); editSel(cl => { Object.assign(cl.text, JSON.parse(JSON.stringify(pr.text))); if (pr.anim) cl.anim = JSON.parse(JSON.stringify(pr.anim)); else delete cl.anim; }); timeline.render(); }, 'presetgrid')); }
+        fillP();
       } else if (textTab === 'title') {
         const tcat = t => t.cat || FONTS[t.font]?.group || 'system', TCATS = [['all', 'Trending'], ...FONT_GROUPS.filter(([g]) => TITLES.some(t => tcat(t) === g))];
         let tc = 'all'; const holder = document.createElement('div');

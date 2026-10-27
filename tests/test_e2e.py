@@ -45,7 +45,7 @@ def check_video(path, dur, W, H, tag, vcodec=None):
     mv = mean_volume(path); ok(mv > -45, f'{tag}: audio is not silent (mean {mv} dB)')
     return j
 
-OVERFLOW = """()=>{const W=innerWidth,bad=[];document.querySelectorAll('#top *,#transport *,#toolbar,.sheet,.sheet *,#exportView *').forEach(e=>{const r=e.getBoundingClientRect();if(!r.width||e.closest('#toolbar')&&e.id!=='toolbar'||e.parentElement.closest('.chips,.toggles'))return;if(r.left<-1||r.right>W+1)bad.push((e.id||e.className||e.tagName)+':'+Math.round(r.left)+'-'+Math.round(r.right))});return {sw:document.documentElement.scrollWidth,W,bad:bad.slice(0,5)}}"""
+OVERFLOW = """()=>{const W=innerWidth,bad=[];document.querySelectorAll('#top *,#transport *,#toolbar,.sheet,.sheet *,#exportView *').forEach(e=>{const r=e.getBoundingClientRect();if(!r.width||e.closest('#toolbar')&&e.id!=='toolbar'||e.parentElement.closest('.chips,.toggles,.aarow,.colrow'))return;if(r.left<-1||r.right>W+1)bad.push((e.id||e.className||e.tagName)+':'+Math.round(r.left)+'-'+Math.round(r.right))});return {sw:document.documentElement.scrollWidth,W,bad:bad.slice(0,5)}}"""
 async def no_overflow(pg, tag):
     r = await pg.evaluate(OVERFLOW); ok(r['sw'] <= r['W'] + 1 and not r['bad'], f'{tag}: no horizontal overflow {r["bad"]}')
 

@@ -521,3 +521,8 @@ body.has-sel #transport .time .sep,body.has-sel #ttot{display:none}body.has-sel 
 .bubgrid .bubtile canvas{width:100%;aspect-ratio:76/64;border-radius:8px}.bubgrid .bubtile span{font-size:11px}
 .textpane[data-tab=anim] .trgrid.angrid{max-height:min(40vh,320px)}
 .textsheet .chips.texttabs{gap:4px!important}.textsheet .chips.texttabs .chipbtn{padding:6px 7px!important;font-size:12.5px!important;min-width:0!important}
+/* CapCut-like underline tabs */
+.textsheet .chips.texttabs{gap:2px!important;border-bottom:1px solid #2a2a33;padding-bottom:0}
+.textsheet .chips.texttabs .chipbtn{background:none!important;border:0!important;border-radius:0!important;color:#9a9aa6;padding:8px 3px 9px!important;font-size:12.5px!important;font-weight:600;border-bottom:2px solid transparent!important}
+.textsheet .chips.texttabs .chipbtn.on{color:#fff;border-bottom-color:#00d4e6!important}
+.presetsave{margin:6px 0 10px}.presetempty{text-align:center;padding:30px 16px;color:#9a9aa6}
