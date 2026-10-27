@@ -32,7 +32,7 @@ async def run():
     subprocess.run(['ffmpeg', '-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=s=360x640:r=30:d=60', '-f', 'lavfi', '-i', 'sine=f=440:d=60', '-shortest', '-c:v', 'libx264', '-g', '60', '-pix_fmt', 'yuv420p', '-c:a', 'aac', str(OUT / 'long.mp4')], check=True)
     async with async_playwright() as p:
         b = await p.chromium.launch(channel='chrome', headless=True, args=['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=no-user-gesture-required'])
-        ctx = await b.new_context(viewport={'width': 390, 'height': 844}, device_scale_factor=2, is_mobile=True, has_touch=True)
+        ctx = await b.new_context(viewport={'width': int(os.environ.get('VIEW_W', 390)), 'height': int(os.environ.get('VIEW_H', 844))}, device_scale_factor=2, is_mobile=True, has_touch=True)
         pg = await ctx.new_page(); errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.goto(f'http://127.0.0.1:{PORT}/'); await pg.wait_for_function('window.studio && studio.ready', timeout=30000)

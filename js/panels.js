@@ -7,7 +7,7 @@ let onClose = null;
 export const sheetOpen = () => !sheet().classList.contains('hidden');
 export function openSheet(title, build, { gesture = true, className = '', onClose: extraClose = null } = {}) {
   closeSheet();
-  const el = sheet(); el.className = 'sheet ' + className;
+  const el = sheet(); el.className = 'sheet ' + className; el.style.opacity = ''; el.style.pointerEvents = '';
   el.innerHTML = `<div class="sh-head"><b>${title}</b><button class="ib sh-done" aria-label="Done">${icon('check')}</button></div><div class="sh-body"></div>`;
   if (gesture) begin();
   onClose = () => { try { extraClose && extraClose(); } finally { if (gesture) end(); } };
@@ -48,6 +48,10 @@ export function swatches(colors, active, onPick) {
 }
 
 // First sheet open used to cost ~130 ms (cold style/layout of the sheet subtree). Warm it once while idle, invisibly.
-(window.requestIdleCallback || (f => setTimeout(f, 2000)))(() => { const el = sheet(); if (!el || !el.classList.contains('hidden')) return;
-  el.style.opacity = '0.01'; el.style.pointerEvents = 'none'; el.className = 'sheet tall'; el.innerHTML = `<div class="sh-head"><b>.</b><button class="ib sh-done">${icon('check')}</button></div><div class="sh-body"><div class="chips tabs"><button class="chipbtn">a</button></div><div class="stkgrid"><button class="stk"></button></div></div>`;
-  document.body.classList.add('sheet-open'); el.getBoundingClientRect(); document.querySelector('#stage, canvas')?.getBoundingClientRect(); document.body.classList.remove('sheet-open'); document.body.getBoundingClientRect(); requestAnimationFrame(() => requestAnimationFrame(() => { if (el.style.opacity === '0.01' && el.querySelector('.sh-head b')?.textContent === '.') { el.className = 'sheet hidden'; el.innerHTML = ''; } el.style.opacity = ''; el.style.pointerEvents = ''; })); }, { timeout: 3000 });
+let warmed = 0;
+// The first sheet open on a slow phone paid a one-off ~70 ms (first paint of the sheet layer). Open + close one invisible sheet once the editor shows.
+export function warmSheet() { const el = sheet(); if (warmed || !el || !el.classList.contains('hidden') || document.body.classList.contains('sheet-open')) return; warmed = 1;
+  openSheet('', b => { b.innerHTML = '<div class="chips tabs"><button class="chipbtn">a</button></div><div class="stkgrid"><button class="stk"></button></div>'; }, { gesture: false, className: 'tall warm' }); el.style.opacity = '0.01'; el.style.pointerEvents = 'none';
+  const done = () => { el.style.opacity = ''; el.style.pointerEvents = ''; };
+  requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => { if (el.classList.contains('warm')) closeSheet(); done(); })));
+}

@@ -801,11 +801,23 @@ const BUB_DESIGNS = (() => { const L = [], add = (cat, name, word, t, trend) => 
   return L; })();
 const BUB_CATS = [['trending', 'Trending'], ['speech', 'Speech'], ['ribbons', 'Ribbons'], ['frames', 'Frames'], ['labels', 'Labels'], ['paper', 'Tape & Paper'], ['brush', 'Brush'], ['social', 'Social'], ['minimal', 'Minimal'], ['kids', 'Kids']];
 const fxStyle = (t, fid) => { const x = EXTRA_FX.find(e => e.id === fid); if (!x) return applyStyle(t, fid); applyStyle(t, null); Object.assign(t, JSON.parse(JSON.stringify(x.s))); t.styleId = fid; return t; };
-const FONT_CATS = [['trending', 'Trending'], ['classic', 'Classic'], ['new', 'NEW'], ['brand', 'Brand fonts'], ...FONT_GROUPS];
-const fontCat = (k, cat) => { const f = FONTS[k], g = f.group || 'system', i = Object.keys(FONTS).indexOf(k);
-  if (cat === 'trending') return f.bundled && (g === 'kids' || g === 'display') && i % 2 === 0 || g === 'script' && i % 3 === 0;
-  if (cat === 'classic') return g === 'clean' || g === 'system'; if (cat === 'new') return f.bundled && i >= Object.keys(FONTS).length - 24;
-  if (cat === 'brand') return g === 'display' || g === 'kids' && i % 3 === 1; return g === cat; };
+const FONT_CATS = [['trending', 'Trending'], ['classic', 'Classic'], ['new', 'New'], ['headings', 'Headings'], ['elegant', 'Elegant'], ['bold', 'Bold'], ['handwriting', 'Handwriting'], ['basic', 'Basic'], ['creative', 'Creative'], ['festive', 'Festive'], ['kids', 'Kids']];
+const FONT_SETS = {
+  trending: ['montserrat', 'playfairdisplay', 'bebasneue', 'cormorantgaramond', 'cinzel', 'inter', 'dmserifdisplay', 'oswald', 'greatvibes', 'poppins', 'anton', 'italiana', 'raleway', 'bodonimoda', 'dancingscript', 'spacegrotesk', 'unbounded', 'leaguespartan'],
+  classic: ['classic', 'playfairdisplay', 'librebaskerville', 'lora', 'cormorantgaramond', 'prata', 'marcellus', 'bodonimoda', 'abrilfatface', 'cinzel'],
+  headings: ['bebasneue', 'anton', 'oswald', 'archivoblack', 'leaguespartan', 'fjallaone', 'teko', 'dmserifdisplay', 'abrilfatface', 'alfaslabone', 'unbounded', 'montserrat'],
+  basic: ['bold', 'clean', 'mono', 'inter', 'montserrat', 'poppins', 'raleway', 'worksans', 'outfit', 'nunito', 'quicksand', 'josefinsans', 'spacegrotesk'],
+};
+const NEW_FONTS = new Set(['cormorantgaramond', 'cinzel', 'bodonimoda', 'dmserifdisplay', 'librebaskerville', 'lora', 'marcellus', 'prata', 'italiana', 'greatvibes', 'allura', 'parisienne', 'sacramento', 'satisfy', 'kaushanscript', 'yellowtail', 'inter', 'raleway', 'worksans', 'archivoblack', 'teko', 'unbounded', 'syne', 'spacegrotesk', 'josefinsans', 'leaguespartan', 'outfit', 'blackopsone', 'monoton', 'bungeeshade', 'mountainsofchristmas', 'berkshireswash', 'creepster', 'shadowsintolight', 'rocksalt', 'fjallaone', 'alfaslabone']);
+const fontCat = (k, cat) => { const f = FONTS[k], g = f.group || 'system';
+  if (FONT_SETS[cat]) return FONT_SETS[cat].includes(k); if (cat === 'new') return NEW_FONTS.has(k);
+  if (cat === 'elegant') return g === 'elegant' || ['playfairdisplay', 'italiana', 'greatvibes', 'allura', 'parisienne'].includes(k);
+  if (cat === 'bold') return g === 'bold' || ['anton', 'bebasneue', 'oswald', 'abrilfatface', 'bungee'].includes(k);
+  if (cat === 'handwriting') return g === 'hand' || g === 'script';
+  if (cat === 'creative') return g === 'creative' || g === 'display' && !['playfairdisplay', 'abrilfatface'].includes(k) || k === 'righteous';
+  if (cat === 'festive') return g === 'festive' || ['lobster', 'pacifico', 'greatvibes', 'berkshireswash'].includes(k);
+  if (cat === 'kids') return g === 'kids'; return false; };
+const fontOrder = cat => FONT_SETS[cat] ? FONT_SETS[cat].filter(k => FONTS[k]) : null;
 // draw thumbnails only when they scroll into view (panel opens instantly)
 const lazyDraw = (root, draw) => { if (!('IntersectionObserver' in window)) { setTimeout(() => root.querySelectorAll('[data-lazy]').forEach(draw), 0); return; }
   const q = [], pump = () => { const t0 = performance.now(); while (q.length && performance.now() - t0 < 8) { const b = q.shift(); document.body.contains(b) && draw(b); } if (q.length) setTimeout(pump, 0); };
@@ -944,7 +956,7 @@ function textSheet(startTab) {
         const grid = document.createElement('div'); grid.className = 'fontgrid'; pane.append(grid);
         let fio = null;
         function fill() { grid.innerHTML = ''; const curF = clipNow().text.font;
-          const ids = Object.keys(FONTS).filter(k => q ? FONTS[k].name.toLowerCase().includes(q) : fontCat(k, cat));
+          const ids = q ? Object.keys(FONTS).filter(k => FONTS[k].name.toLowerCase().includes(q)) : fontOrder(cat) || Object.keys(FONTS).filter(k => fontCat(k, cat));
           for (const k of ids) { const b = document.createElement('button'); b.className = 'fontpill' + (k === curF ? ' on' : ''); b.dataset.v = k; b.dataset.lazy = 1; b.textContent = FONTS[k].name;
             b.onclick = () => { ensureFont(k); editSel(cl => { cl.text.font = k; }); grid.querySelectorAll('.fontpill').forEach(x => x.classList.toggle('on', x === b)); }; grid.append(b); }
           fio && fio.disconnect(); fio = lazyDraw(grid, b => { ensureFont(b.dataset.v); b.style.font = FONTS[b.dataset.v].css.replace('SIZE', '15'); }); }

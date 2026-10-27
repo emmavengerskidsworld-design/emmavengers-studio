@@ -19,6 +19,15 @@ FONTS = [
  ('Poppins', 'clean', 800), ('Montserrat', 'clean', 800), ('Nunito', 'clean', 900), ('Quicksand', 'clean', 700), ('Anton', 'clean', 400),
  ('Bebas Neue', 'clean', 400), ('Oswald', 'clean', 700), ('Righteous', 'clean', 400), ('Bungee', 'display', 400), ('Press Start 2P', 'display', 400),
  ('Abril Fatface', 'display', 400), ('Playfair Display', 'display', 800), ('Amatic SC', 'hand', 700),
+ # B22: professional / elegant / creative / festive additions
+ ('Cormorant Garamond', 'elegant', 600), ('Cinzel', 'elegant', 600), ('Bodoni Moda', 'elegant', 600), ('DM Serif Display', 'elegant', 400), ('Libre Baskerville', 'elegant', 700),
+ ('Lora', 'elegant', 600), ('Marcellus', 'elegant', 400), ('Prata', 'elegant', 400), ('Italiana', 'elegant', 400), ('Great Vibes', 'script', 400),
+ ('Allura', 'script', 400), ('Parisienne', 'script', 400), ('Sacramento', 'script', 400), ('Satisfy', 'script', 400), ('Kaushan Script', 'script', 400),
+ ('Yellowtail', 'script', 400), ('Inter', 'clean', 700), ('Raleway', 'clean', 700), ('Work Sans', 'clean', 600), ('Archivo Black', 'bold', 400),
+ ('Teko', 'bold', 600), ('Unbounded', 'creative', 700), ('Syne', 'creative', 700), ('Space Grotesk', 'clean', 700), ('Josefin Sans', 'clean', 600),
+ ('League Spartan', 'bold', 800), ('Outfit', 'clean', 700), ('Black Ops One', 'creative', 400), ('Monoton', 'creative', 400), ('Bungee Shade', 'creative', 400),
+ ('Mountains of Christmas', 'festive', 700), ('Berkshire Swash', 'festive', 400), ('Creepster', 'festive', 400), ('Shadows Into Light', 'hand', 400), ('Rock Salt', 'hand', 400),
+ ('Fjalla One', 'bold', 400), ('Alfa Slab One', 'bold', 400), ('Bodoni Moda', 'elegant', 600),
 ]
 def get(url, tries=4):
     for i in range(tries):

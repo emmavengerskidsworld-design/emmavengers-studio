@@ -105,7 +105,7 @@ export async function showHome() {
   if (S.project) await X.leaveProject();
   document.body.classList.add('home-open'); $('#home').hidden = false; $('#homeDrafts').hidden = true; tab('home'); closeSheet(); await render();
 }
-export function hideHome() { $('#home').hidden = true; document.body.classList.remove('home-open'); }
+export function hideHome() { $('#home').hidden = true; document.body.classList.remove('home-open'); setTimeout(() => import('./panels.js').then(m => m.warmSheet && m.warmSheet()), 300); }
 async function open(id) { X.busy(true, 'Opening…'); try { await P.openById(id); hideHome(); X.afterSwitch(); } catch (e) { console.warn(e); X.toast('Could not open this project'); } finally { X.busy(false); } }
 export async function render() {
   const list = P.sortProjects(await P.listProjects(), sort, q), g = $('#homeGrid'), info = await P.storageInfo();
