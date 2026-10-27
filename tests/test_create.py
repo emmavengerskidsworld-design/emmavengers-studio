@@ -99,7 +99,7 @@ async def test_text(b):
     await pg.click('.texttabs .chipbtn[data-v="font"]'); await pg.wait_for_selector('.fontpill'); await pg.wait_for_timeout(600); await shot(pg, 'b6-fonts-390.png')
     await pg.click('#fontSearchBtn'); await pg.fill('#fontSearch', 'titan'); await pg.click('.fontpill[data-v="titanone"]'); c = await P(pg, 'studio.S.project.tracks.find(t=>t.kind==="text").clips[0].text.font'); ok(c == 'titanone', 'font picker sets the font')
     await pg.click('.texttabs .chipbtn[data-v="bubble"]'); await pg.click('.bubcats .chipbtn[data-v="speech"]'); await pg.wait_for_timeout(150); await pg.click('.bubgrid .bubtile:has-text("Speech round")'); c = await P(pg, 'studio.S.project.tracks.find(t=>t.kind==="text").clips[0].text'); ok(c['bubble'] == 'speech' and c['box'], 'bubble picker sets a speech bubble')
-    await pg.click('.texttabs .chipbtn[data-v="edit"]'); await pg.fill('#textCurve', '-0.5'); await pg.dispatch_event('#textCurve', 'input')
+    await pg.click('.texttabs .chipbtn[data-v="edit"]'); await pg.click('.stsub .chipbtn[data-v="curve"]'); await pg.fill('#textCurve', '-0.5'); await pg.dispatch_event('#textCurve', 'input')
     c = await P(pg, 'studio.S.project.tracks.find(t=>t.kind==="text").clips[0].text.curve'); ok(abs(c + 0.5) < 0.01, 'curve slider bends the text')
     await pg.click('.sh-done'); await pg.wait_for_timeout(200)
     await pg.click('#undoBtn'); await pg.wait_for_timeout(200); u = await P(pg, 'studio.S.project.tracks.find(t=>t.kind==="text")?.clips[0]?.text.curve ?? null')

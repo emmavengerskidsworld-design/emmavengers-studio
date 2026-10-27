@@ -881,9 +881,25 @@ function textSheet(startTab) {
             size: { label: 'Size', min: 0, max: 0.4, step: 0.01, id: 'textShadowSize', get: t => t.shadow?.blur ?? 0, fmt: v => Math.round(v * 100), set: (cl, v) => { cl.text.shadow = { dx: 0.03, dy: 0.06, color: 'rgba(0,0,0,.7)', ...(cl.text.shadow || {}), blur: v }; } },
             op: { get: () => alphaOf(clipNow().text.shadow?.color), set: (cl, v) => { if (cl.text.shadow) cl.text.shadow.color = rgbaOf(cl.text.shadow.color, v); } } },
         };
-        const subEl = chips([['text', 'Text'], ['stroke', 'Stroke'], ['glow', 'Glow'], ['bg', 'Background'], ['shadow', 'Shadow']].map(([value, label]) => ({ value, label })), st, v => { st = textSub = v; sub(); }, 'tabs subtabs stsub');
+        const subEl = chips([['text', 'Text'], ['brand', 'Brand colors'], ['stroke', 'Stroke'], ['glow', 'Glow'], ['bg', 'Background'], ['shadow', 'Shadow'], ['curve', 'Curve'], ['spacing', 'Spacing'], ['format', 'B I U'], ['case', 'Aa']].map(([value, label]) => ({ value, label })), st, v => { st = textSub = v; sub(); }, 'tabs subtabs stsub');
         const box = document.createElement('div'); box.className = 'stbox'; pane.append(subEl, box);
-        function sub() { box.innerHTML = ''; const d = SUBS[st], t = clipNow().text, cur = d.color(t);
+        const BK = 'emma.brandColors', togg = (opts, cur, on) => { const g = document.createElement('div'); g.className = 'toggles fmtrow'; for (const [v, html, lab] of opts) { const b = document.createElement('button'); b.className = 'chipbtn fmt' + ((typeof cur === 'function' ? cur(v) : cur === v) ? ' on' : ''); b.dataset.v = v; b.innerHTML = html; b.title = lab; b.onclick = () => { on(v); sub(); }; g.append(b); } return g; };
+        function extra(t) {
+          if (st === 'brand') { const L = lsGet(BK, ['#ffffff', '#16161c', '#d4af37', '#f5efe6', '#9e1b32', '#1d2b53']); const row = document.createElement('div'); row.className = 'colrow brandrow';
+            const add = document.createElement('label'); add.className = 'rainbow'; add.title = 'Add a brand colour'; const ci = document.createElement('input'); ci.type = 'color'; ci.id = 'brandAdd'; ci.value = hexOf(t.color);
+            ci.onchange = () => { const v = ci.value; if (!L.includes(v)) { L.unshift(v); lsSet(BK, L.slice(0, 16)); } sub(); }; add.append(ci);
+            row.append(add, swatches(L, hexOf(t.color), v => editSel(cl => { cl.text.color = v; cl.text.fill = null; cl.text.tex = null; })));
+            box.append(row, Object.assign(document.createElement('p'), { className: 'hint', textContent: 'Tap + to save your brand colours. Tap a colour to apply it to the text.' })); return true; }
+          if (st === 'curve') { box.append(slider('Curve', { min: -1, max: 1, step: 0.01, value: t.curve || 0, fmt: v => Math.round(v * 100) + '%', id: 'textCurve', onInput: v => editSel(cl => { cl.text.curve = Math.abs(v) < 0.02 ? 0 : v; }) })); return true; }
+          if (st === 'spacing') {
+            box.append(slider('Character', { min: -0.1, max: 0.8, step: 0.01, value: t.track || 0, fmt: v => Math.round(v * 100), id: 'textTrack', onInput: v => editSel(cl => { cl.text.track = Math.abs(v) < .005 ? 0 : v; }) }));
+            box.append(slider('Line', { min: 0.7, max: 2, step: 0.01, value: t.lineH || 1, fmt: v => v.toFixed(2), id: 'textLineH', onInput: v => editSel(cl => { cl.text.lineH = v; }) }));
+            const A = [['left', '<svg width="20" height="20" viewBox="0 0 20 20"><path d="M3 5h14M3 9h9M3 13h14M3 17h9" stroke="currentColor" stroke-width="2"/></svg>', 'Left'], ['center', '<svg width="20" height="20" viewBox="0 0 20 20"><path d="M3 5h14M6 9h8M3 13h14M6 17h8" stroke="currentColor" stroke-width="2"/></svg>', 'Center'], ['right', '<svg width="20" height="20" viewBox="0 0 20 20"><path d="M3 5h14M8 9h9M3 13h14M8 17h9" stroke="currentColor" stroke-width="2"/></svg>', 'Right'], ['justify', '<svg width="20" height="20" viewBox="0 0 20 20"><path d="M3 5h14M3 9h14M3 13h14M3 17h14" stroke="currentColor" stroke-width="2"/></svg>', 'Justify']];
+            box.append(togg(A, t.align || 'center', v => editSel(cl => { cl.text.align = v; }))); return true; }
+          if (st === 'format') { box.append(togg([['bold', '<b>B</b>', 'Bold'], ['italic', '<i>I</i>', 'Italic'], ['under', '<u>U</u>', 'Underline']], v => !!t[v], v => editSel(cl => { cl.text[v] = !cl.text[v]; }))); return true; }
+          if (st === 'case') { box.append(togg([['title', 'Aa', 'Title case'], ['upper', 'AA', 'Upper case'], ['lower', 'aa', 'Lower case']], t.caseMode || null, v => editSel(cl => { cl.text.caseMode = cl.text.caseMode === v ? null : v; }))); return true; }
+          return false; }
+        function sub() { box.innerHTML = ''; if (extra(clipNow().text)) return; const d = SUBS[st], t = clipNow().text, cur = d.color(t);
           const row = document.createElement('div'); row.className = 'colrow';
           const eye = document.createElement('button'); eye.className = 'iconbtn eyedrop'; eye.title = 'Pick colour from the video'; eye.textContent = '💧';
           eye.onclick = async () => { if (!window.EyeDropper) { toast('Colour picker not supported here'); return; } try { const r = await new EyeDropper().open(); editSel(cl => d.set(cl, r.sRGBHex)); sub(); } catch (e) {} };
@@ -894,7 +910,7 @@ function textSheet(startTab) {
           if (d.size) box.append(slider(d.size.label, { min: d.size.min, max: d.size.max, step: d.size.step, value: d.size.get(t), fmt: d.size.fmt, id: d.size.id, onInput: v => editSel(cl => d.size.set(cl, v)) }));
           box.append(slider('Opacity', { min: 0, max: 1, step: 0.01, value: d.op.get(), fmt: v => Math.round(v * 100) + '%', id: 'textOp', onInput: v => editSel(cl => d.op.set(cl, v)) }));
           if (st === 'text') {
-            box.append(slider('Curve', { min: -1, max: 1, step: 0.01, value: t.curve || 0, fmt: v => Math.round(v * 100) + '%', id: 'textCurve', onInput: v => editSel(cl => { cl.text.curve = Math.abs(v) < 0.02 ? 0 : v; }) }));
+            /* curve moved to its own sub-tab */
             const al = document.createElement('div'); al.className = 'toggles';
             for (const a of ['left', 'center', 'right']) { const b = document.createElement('button'); b.className = 'chipbtn al' + (t.align === a ? ' on' : ''); b.textContent = a[0].toUpperCase() + a.slice(1); b.onclick = () => { editSel(cl => { cl.text.align = a; }); al.querySelectorAll('.al').forEach(x => x.classList.toggle('on', x === b)); }; al.append(b); }
             box.append(al); }

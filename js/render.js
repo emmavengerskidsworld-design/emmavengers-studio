@@ -209,7 +209,7 @@ function drawCropUI(ctx, b, rotation, c, u) {
   ctx.stroke(); ctx.restore();
 }
 
-export function fontCss(text, px) { return (FONTS[text.font] || FONTS.bold).css.replace('SIZE', px.toFixed(1)); }
+export function fontCss(text, px) { let c = (FONTS[text.font] || FONTS.bold).css.replace('SIZE', px.toFixed(1)); if (text.bold) c = c.replace(/^\d{3} /, '900 '); if (text.italic) c = 'italic ' + c; return c; }
 /* per-letter layout cache: positions of every visible character, with its word / line index */
 const layoutCache = new Map();
 function textLayout(ctx, lines, align, key) {
@@ -217,9 +217,10 @@ function textLayout(ctx, lines, align, key) {
   const chars = []; let ci = 0, wi = 0;
   const widths = lines.map(l => ctx.measureText(l).width), w = Math.max(1, ...widths);
   lines.forEach((l, li) => {
-    const lw = widths[li], x0 = align === 'left' ? -w / 2 : align === 'right' ? w / 2 - lw : -lw / 2; let prev = 0, inWord = false;
-    for (let j = 0; j < l.length; j++) { const ch = l[j], nx = ctx.measureText(l.slice(0, j + 1)).width;
-      if (ch.trim()) { if (!inWord) { inWord = true; } chars.push({ ch, x: x0 + (prev + nx) / 2, li, ci: ci++, wi }); } else if (inWord) { inWord = false; wi++; }
+    const lw = widths[li], J = align === 'justify' && li < lines.length - 1, gaps = J ? (l.match(/ /g) || []).length : 0, gx = gaps ? (w - lw) / gaps : 0;
+    const x0 = align === 'left' || gaps ? -w / 2 : align === 'right' ? w / 2 - lw : -lw / 2; let prev = 0, inWord = false, sp = 0;
+    for (let j = 0; j < l.length; j++) { const ch = l[j], nx = ctx.measureText(l.slice(0, j + 1)).width; if (ch === ' ') sp++;
+      if (ch.trim()) { if (!inWord) { inWord = true; } chars.push({ ch, x: x0 + (prev + nx) / 2 + sp * gx, li, ci: ci++, wi }); } else if (inWord) { inWord = false; wi++; }
       prev = nx; }
     if (inWord) wi++;
   });
@@ -315,13 +316,13 @@ function textPasses(ctx, T, px, w, h, sc, lh) {
 }
 /** Draw a text clip (exported for the animation picker tiles). local = clip-local time (drives text animations). */
 export function drawText(ctx, W, H, clip, tr, local = 0) {
-  const T = clip.text, unit = Math.min(W, H) / 1080, px = T.size * unit;
+  let T = clip.text; const unit = Math.min(W, H) / 1080, px = T.size * unit;
   ensureFont(T.font);
-  const lines = String(T.content || '').split('\n');
+  const cm = T.caseMode, raw = String(T.content || ''), lines = (cm === 'upper' ? raw.toUpperCase() : cm === 'lower' ? raw.toLowerCase() : cm === 'title' ? raw.toLowerCase().replace(/(^|\s)(\S)/g, (m, a, b) => a + b.toUpperCase()) : raw).split('\n');
   const plan = clip.anim ? textAnimPlan(clip, local, clipDur(clip)) : null, B = plan ? plan.block : null;
   ctx.save();
   ctx.font = fontCss(T, px); ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; if ('letterSpacing' in ctx) ctx.letterSpacing = (T.track ? T.track * px : 0).toFixed(2) + 'px';
-  const lh = px * 1.18, widths = lines.map(l => ctx.measureText(l).width), w = Math.max(1, ...widths), h0 = lh * lines.length;
+  const lh = px * 1.18 * (T.lineH || 1), widths = lines.map(l => ctx.measureText(l).width), w = Math.max(1, ...widths), h0 = lh * lines.length;
   const curve = Math.max(-1, Math.min(1, T.curve || 0)), curved = Math.abs(curve) > 0.01;
   const R = curved ? w / (Math.abs(curve) * Math.PI) : 0, sag = curved ? R * (1 - Math.cos(w / 2 / R)) : 0, h = h0 + sag;
   const shape = bubbleOf(T), sc = tr.scale * (B ? B.s : 1);
@@ -340,14 +341,15 @@ export function drawText(ctx, W, H, clip, tr, local = 0) {
   if (shape) drawBubble(ctx, T, shape, bw, bh, px, sc);
   if (T.deco) drawDeco(ctx, T.deco, w, h + 2 * sext, px, T);
   const ax = T.align === 'left' ? -w / 2 : T.align === 'right' ? w / 2 : 0;
-  const passes = textPasses(ctx, T, px, w, h, sc, lh), perChar = curved || (plan && plan.units.length) || (T.fill && T.fill.dir === 'letters');
+  if (T.align === 'justify') T = { ...T, align: lines.length > 1 ? 'justify' : 'center' };
+  const passes = textPasses(ctx, T, px, w, h, sc, lh), perChar = (T.align === 'justify' && lines.length > 1) || curved || (plan && plan.units.length) || (T.fill && T.fill.dir === 'letters');
   if (!perChar) {
-    ctx.textAlign = T.align || 'center';
+    ctx.textAlign = T.align === 'justify' ? 'center' : T.align || 'center';
     const gs = lines.map((l, i) => ({ s: l, y: -h0 / 2 + lh * (i + 0.5), glow: B ? B.glow : 0, ox: 0, oy: 0, i }));
     for (const P of passes) for (const g of gs) P(g, ax, g.y);
   } else {
     // per-letter engine: every animation picks its own unit (letter / word / line) and stagger; curved text bends the letters onto an arc
-    const Lo = textLayout(ctx, lines, T.align || 'center', ctx.font + '|' + (T.track || 0) + '|' + (T.align || 'center') + '|' + T.content + '|' + fontsVersion);
+    const Lo = textLayout(ctx, lines, T.align || 'center', ctx.font + '|' + (T.track || 0) + '|' + (T.align || 'center') + '|' + lines.join('\n') + '|' + fontsVersion);
     const units = plan ? plan.units : [];
     const gs = Lo.chars.map(c => { const s = { dx: 0, dy: 0, s: 1, sx: 1, sy: 1, rot: 0, a: 1, glow: B ? B.glow : 0, color: null };
       for (const U of units) { const i = U.unit === 'word' ? c.wi : U.unit === 'line' ? c.li : c.ci, n = U.unit === 'word' ? Lo.nWords : U.unit === 'line' ? Lo.nLines : Lo.nChars;
@@ -364,6 +366,7 @@ export function drawText(ctx, W, H, clip, tr, local = 0) {
   }
   if (SB) { ctx.save(); ctx.shadowBlur = 0; ctx.filter = 'none'; ctx.font = fontCss({ font: SB.font || T.font }, spx); if ('letterSpacing' in ctx) ctx.letterSpacing = ((SB.track ?? .25) * spx).toFixed(2) + 'px'; ctx.textAlign = T.align || 'center';
     ctx.fillStyle = SB.color || T.color; if (SB.glow) { ctx.shadowColor = SB.glow; ctx.shadowBlur = spx * .8 * sc; } const sy = SB.pos === 'above' ? -h0 / 2 - sgap - spx / 2 : h0 / 2 + sgap + spx / 2; ctx.fillText(SB.text, ax, sy); ctx.restore(); }
+  if (T.under) { ctx.save(); ctx.shadowBlur = 0; ctx.filter = 'none'; ctx.fillStyle = T.color; widths.forEach((lw, i) => { const L = T.align === 'justify' && i < lines.length - 1 ? w : lw, x0 = T.align === 'left' || (T.align === 'justify' && i < lines.length - 1) ? -w / 2 : T.align === 'right' ? w / 2 - L : -L / 2; ctx.fillRect(x0, -h0 / 2 + lh * (i + 0.5) + px * .56, L, Math.max(1, px * .06)); }); ctx.restore(); }
   if (B && B.underline && B.underline[1] - B.underline[0] > 1e-4) {
     ctx.shadowBlur = 0; ctx.fillStyle = T.color;
     widths.forEach((lw, i) => { const x0 = T.align === 'left' ? -w / 2 : T.align === 'right' ? w / 2 - lw : -lw / 2, y = -h0 / 2 + lh * (i + 0.5) + px * .62;

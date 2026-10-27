@@ -604,3 +604,9 @@ body.has-sel #transport .time .sep,body.has-sel #ttot{display:none}body.has-sel 
 .artbrowser .trtile.fav::after{content:"🔖";position:absolute;top:2px;right:3px;font-size:10px}
 .artbrowser .trtile{position:relative;-webkit-touch-callout:none;user-select:none}
 .artsearch{width:100%;margin:6px 0;padding:8px 12px;border-radius:10px;background:#2a2a33;color:#fff;border:1px solid #3a3a46}
+/* B22 styles: format / align / case toggles */
+.textsheet .fmtrow { display: flex; gap: 10px; padding: 10px 4px; }
+.textsheet .fmtrow .chipbtn.fmt { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; font-size: 18px; padding: 0; background: #2a2a33; color: #ddd; }
+.textsheet .fmtrow .chipbtn.fmt.on { background: #fff; color: #111; }
+.textsheet .stsub { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+.textsheet .stsub .chipbtn { flex: none; }
