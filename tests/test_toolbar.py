@@ -18,7 +18,7 @@ class Q(http.server.SimpleHTTPRequestHandler):
         try: super().handle()
         except Exception: pass
 P = lambda pg, js: pg.evaluate(js)
-MAIN = ['text', 'stickers', 'audio', 'sounds', 'effects', 'rootfilter', 'bg', 'overlay', 'elements', 'captions', 'record', 'speech', 'adjlayer', 'mix', 'media']
+MAIN = ['text', 'stickers', 'audio', 'sounds', 'effects', 'rootfilter', 'bg', 'watermark', 'overlay', 'elements', 'captions', 'record', 'speech', 'adjlayer', 'mix', 'media']
 VIDEO = ['split', 'delete', 'speed', 'volume', 'anim', 'transition', 'crop', 'hd', 'filters', 'adjust', 'enhvoice', 'voicefx', 'cutout', 'mask', 'opacity', 'blend', 'replace', 'duplicate', 'rotate', 'freeze', 'capture', 'reverse', 'stab', 'keyframe', 'clipbg', 'extract']
 async def row(pg): return await P(pg, '[...document.querySelectorAll("#toolbar .tool")].map(b=>b.dataset.tool)')
 async def shot(pg, name, wait=500): await pg.wait_for_timeout(wait); await pg.screenshot(path=str(SHOTS / name)); log('  shot', name)

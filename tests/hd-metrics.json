@@ -17,27 +17,27 @@
    "clipped": 0.1077
   },
   "hd_upscaler": {
-   "lapvar": 118.2,
-   "ssim": 0.9342,
-   "psnr": 26.75,
-   "overshoot999": 3.0,
-   "overshoot_mean": 0.016,
+   "lapvar": 144.1,
+   "ssim": 0.9247,
+   "psnr": 24.01,
+   "overshoot999": 38.0,
+   "overshoot_mean": 0.12,
    "clipped": 0.1104
   },
   "enhance": {
-   "lapvar": 154.1,
-   "ssim": 0.9362,
-   "psnr": 26.91,
-   "overshoot999": 9.0,
-   "overshoot_mean": 0.343,
+   "lapvar": 179.5,
+   "ssim": 0.9267,
+   "psnr": 24.11,
+   "overshoot999": 37.0,
+   "overshoot_mean": 0.446,
    "clipped": 0.1142
   },
   "enhance100": {
-   "lapvar": 197.6,
-   "ssim": 0.9338,
-   "psnr": 26.78,
-   "overshoot999": 15.0,
-   "overshoot_mean": 0.604,
+   "lapvar": 222.3,
+   "ssim": 0.9244,
+   "psnr": 24.05,
+   "overshoot999": 37.0,
+   "overshoot_mean": 0.706,
    "clipped": 0.1166
   },
   "reference": {
@@ -63,28 +63,28 @@
    "clipped": 0.0311
   },
   "hd_upscaler": {
-   "lapvar": 130.3,
-   "ssim": 0.8712,
-   "psnr": 26.26,
-   "overshoot999": 13.0,
-   "overshoot_mean": 1.482,
-   "clipped": 0.047
+   "lapvar": 156.0,
+   "ssim": 0.8618,
+   "psnr": 23.74,
+   "overshoot999": 38.0,
+   "overshoot_mean": 1.585,
+   "clipped": 0.0468
   },
   "enhance": {
-   "lapvar": 163.7,
-   "ssim": 0.8947,
-   "psnr": 26.54,
-   "overshoot999": 13.0,
-   "overshoot_mean": 1.274,
-   "clipped": 0.0269
+   "lapvar": 189.0,
+   "ssim": 0.8852,
+   "psnr": 23.91,
+   "overshoot999": 38.0,
+   "overshoot_mean": 1.377,
+   "clipped": 0.0267
   },
   "enhance100": {
-   "lapvar": 204.9,
-   "ssim": 0.9106,
-   "psnr": 26.52,
-   "overshoot999": 16.0,
-   "overshoot_mean": 1.242,
-   "clipped": 0.0207
+   "lapvar": 229.4,
+   "ssim": 0.9012,
+   "psnr": 23.9,
+   "overshoot999": 37.0,
+   "overshoot_mean": 1.344,
+   "clipped": 0.0204
   },
   "reference": {
    "lapvar": 1165.3,
@@ -98,10 +98,10 @@
   }
  },
  "preview_ms": {
-  "w": 500,
-  "h": 888,
-  "full": 0.22999999970197677,
-  "fast": 0.25
+  "w": 486,
+  "h": 864,
+  "full": 0.2199999988079071,
+  "fast": 0.17000000029802323
  },
  "supported": {
   "720": true,
@@ -153,15 +153,15 @@
  },
  "export1080": {
   "bitrate": 14307840,
-  "size": 632088,
+  "size": 951978,
   "est": 9193024,
-  "seconds": 42.71290000000596,
+  "seconds": 35.21170000000298,
   "codec": "avc1.640028 + opus"
  },
  "export4k": {
   "bitrate": 40468683,
-  "size": 412938,
-  "seconds": 29.71990000000596,
+  "size": 682307,
+  "seconds": 23.03129999999702,
   "codec": "avc1.640033 + opus"
  }
 }

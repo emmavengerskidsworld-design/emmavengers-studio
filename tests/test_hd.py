@@ -34,7 +34,7 @@ async def new_page(b, init=None):
     if init: await ctx.add_init_script(init)
     pg = await ctx.new_page(); pg.errs = []
     pg.on('pageerror', lambda e: pg.errs.append(str(e))); pg.on('console', lambda m: m.type == 'error' and pg.errs.append(m.text))
-    await pg.goto('http://127.0.0.1:8752/'); await pg.wait_for_function('window.studio && studio.ready', timeout=20000); return ctx, pg
+    await pg.goto('http://127.0.0.1:8752/'); await pg.wait_for_function('window.studio && studio.ready', timeout=20000); await pg.evaluate('localStorage.setItem("emma.watermark", JSON.stringify({on:false}))'); return ctx, pg  # enhance quality is measured on the bare picture
 async def still(pg, t=0.5, W=1080, H=1920, plain=False):
     d = await P(pg, f'studio.renderStill({{t:{t},W:{W},H:{H},plain:{str(plain).lower()}}})'); return Image.open(io.BytesIO(base64.b64decode(d))).convert('RGB')
 async def import_files(pg, files, n):
