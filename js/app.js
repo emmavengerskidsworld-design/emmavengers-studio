@@ -41,7 +41,7 @@ import { exportVideo, exportAudio, exportStill, exportGif, GIF_MAX, AUDIO_BR, ou
 import { ADJUST, DEFAULT_STRENGTH, enhanceOn, glAvailable } from './enhance.js';
 import { renderFrame, drawVisual, drawText } from './render.js';
 import { CLIP_ANIMS, TEXT_ANIMS, animSetFor, animById, animSpans, DEFAULT_ANIM_DUR, DEFAULT_LOOP_DUR, MIN_ANIM, MAX_ANIM, MIN_LOOP, MAX_LOOP, loopKind } from './animations.js';
-import { hitTest } from './render.js';
+import { hitTest, handleAt } from './render.js';
 import { initAudioPanels, enhanceVoiceSheet, voiceFxSheet, recordSheet, speechSheet } from './audiopanels.js';
 import { soundsSheet } from './library.js';
 import { extractAudio, MAX_FADE, fadeAt } from './project.js';
@@ -167,6 +167,9 @@ function previewGestures() {
     if (pts.size === 1) {
       const pos = toCanvas(e); if (pro.previewTap(pos)) { pts.delete(e.pointerId); return; }
       if (pro.cropDragStart(pos)) { g = { crop: true }; tap = null; return; }
+      const sb = S.sel && player.boxes.find(b => b.id === S.sel), hd = sb && handleAt(sb, pos.x, pos.y, Math.min(cv.width, cv.height) / 400);
+      if (hd === 'del') { pts.delete(e.pointerId); const id = S.sel; select(null); act(p => remove(p, id)); player.gc(); closeSheet(); return; }
+      if (hd === 'rot') { const ff = find(S.project, S.sel); g = { id: S.sel, rot: true, cx: sb.cx, cy: sb.cy, d0: Math.hypot(pos.x - sb.cx, pos.y - sb.cy), a0: Math.atan2(pos.y - sb.cy, pos.x - sb.cx), tr: trAt(ff.clip), x0: e.clientX, y0: e.clientY, started: false }; tap = null; return; }
       const hit = hitTest(player.boxes, pos.x, pos.y);
       tap = { x: e.clientX, y: e.clientY, hit: hit && hit.id };
       const f = S.sel && find(S.project, S.sel);
@@ -183,7 +186,10 @@ function previewGestures() {
     if (!g.started && Math.hypot(e.clientX - g.x0, e.clientY - g.y0) < 4 && pts.size < 2) return;
     if (!g.started) { g.started = true; begin(); if (S.sel !== g.id) select(g.id); }
     live(p => { const c = find(p, g.id)?.clip; if (!c) return;
-      if (pts.size >= 2 && g.pinch) { const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y), ang = Math.atan2(b.y - a.y, b.x - a.x);
+      if (g.rot) { const pos = toCanvas(e), d = Math.hypot(pos.x - g.cx, pos.y - g.cy), ang = Math.atan2(pos.y - g.cy, pos.x - g.cx), L = player.t - c.start;
+        setProp(c, 'scale', Math.max(0.05, Math.min(8, g.tr.scale * d / Math.max(1, g.d0))), L);
+        let rot = g.tr.rotation + (ang - g.a0) * 180 / Math.PI; for (const s of [-180, -90, 0, 90, 180]) if (Math.abs(rot - s) < 3) rot = s; setProp(c, 'rotation', Math.round(rot * 10) / 10, L);
+      } else if (pts.size >= 2 && g.pinch) { const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y), ang = Math.atan2(b.y - a.y, b.x - a.x);
         const L = player.t - c.start;
         setProp(c, 'scale', Math.max(0.05, Math.min(8, g.pinch.tr.scale * d / g.pinch.d)), L);
         let rot = g.pinch.tr.rotation + (ang - g.pinch.ang) * 180 / Math.PI; for (const s of [-180, -90, 0, 90, 180]) if (Math.abs(rot - s) < 3) rot = s; setProp(c, 'rotation', Math.round(rot * 10) / 10, L);
@@ -254,7 +260,7 @@ function kenBurnsSheet() {
 
 /* ---------------- clip + text animations ---------------- */
 let animLoop = 0;
-function animSheet(startKind) {
+function animSheet(startKind, mount) {
   const f0 = selected(); if (!f0) return; const id = f0.clip.id, isText = f0.clip.type === 'text', { reg, tabs } = animSetFor(f0.clip), lk = loopKind(f0.clip);
   let kind = startKind || 'in';
   const clipNow = () => find(S.project, id)?.clip;
@@ -263,7 +269,7 @@ function animSheet(startKind) {
   const preview = k => { const c = clipNow(); if (!c) return; const e = clipEnd(c), { di, dO } = animSpans(c, clipDur(c)), back = Math.max(c.start, Math.min(e - 1e-3, player.playing ? c.start : player.t));
     if (k === 'in') player.playRange(c.start, Math.min(e, c.start + di + 0.4), back); else if (k === 'out') player.playRange(Math.max(c.start, e - dO - 0.4), e, back);
     else player.playRange(c.start, Math.min(e, c.start + Math.max(2.4, 2 * (c.anim[k]?.dur || DEFAULT_LOOP_DUR))), back); };
-  openSheet('Animation', body => {
+  (mount ? (t, b) => b(mount) : openSheet)('Animation', body => {
     const tabEl = chips(tabs.map(([v, l]) => ({ value: v, label: l })), kind, v => { kind = v; fill(); }, 'tabs animtabs');
     const markTabs = () => tabEl.querySelectorAll('.chipbtn').forEach(b => b.classList.toggle('set', !!cur(b.dataset.v)?.id));
     const grid = document.createElement('div'); grid.className = 'trgrid angrid';
@@ -295,7 +301,7 @@ function animSheet(startKind) {
     };
     body.append(tabEl, grid, sl, note); fill();
     // animated tiles: the real renderer draws every tile (same code as preview + export)
-    const tc = { id: 'tile', type: isText ? 'text' : 'image', fit: 'contain', transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, start: 0, dur: 1, text: { ...(f0.clip.text || {}), content: 'Abc', size: 300, align: 'center', box: false } };
+    const tc = { id: 'tile', type: isText ? 'text' : 'image', fit: 'contain', transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, start: 0, dur: 1, text: { ...(f0.clip.text || {}), content: mount ? 'ABC123' : 'Abc', size: 300, align: 'center', box: false } };
     const src = { img: art, w: art.width, h: art.height };
     cancelAnimationFrame(animLoop);
     const loop = now => { if (!document.body.contains(grid)) return;
@@ -670,74 +676,175 @@ async function renderStill({ t = 0, W, H, plain = false, fast = false, type = 'i
   return btoa(s);
 }
 /* text sheet: Edit / Font / Styles / Bubble / Titles. Tiles are drawn by the real drawText (same as preview + export). */
-let textTab = 'edit';
+let textTab = 'edit', textSub = 'text';
 function textTile(x, TW, TH, clip, t = clip.anim ? (clip.dur || 3) / 2 : 0) {
   x.save(); x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.filter = 'none'; x.fillStyle = '#23232d'; x.fillRect(0, 0, TW, TH);
   const b = drawText(x, TW, TH, clip, { ...DEFAULT_TRANSFORM, opacity: 0 }, 99), k = Math.min(0.86 * TW / Math.max(1, b.w), 0.8 * TH / Math.max(1, b.h), 3);
   drawText(x, TW, TH, clip, { ...DEFAULT_TRANSFORM, scale: k }, t); x.restore();
 }
+const rgbaOf = (c, a) => { const m = /^#([0-9a-f]{6})$/i.exec(c || ''); if (m) { const n = parseInt(m[1], 16); return a >= 0.999 ? c : `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${+a.toFixed(2)})`; }
+  const r = /rgba?\(([^)]+)\)/.exec(c || ''); if (r) { const [R, G, B] = r[1].split(',').map(Number); return `rgba(${R},${G},${B},${+a.toFixed(2)})`; } return c; };
+const alphaOf = c => { const r = /rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)/.exec(c || ''); return r ? +r[1] : 1; };
+const hexOf = c => { const r = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c || ''); return r ? '#' + [r[1], r[2], r[3]].map(v => (+v).toString(16).padStart(2, '0')).join('') : (c || '#ffffff'); };
+// 'Aa' presets on the Styles tab (quick looks, CapCut style)
+const AA_PRESETS = [
+  { id: 'none', s: {} }, { id: 'white-black', s: { color: '#ffffff', outline: true, outlineColor: '#000000', outlineW: 0.12 } },
+  { id: 'black-white', s: { color: '#000000', outline: true, outlineColor: '#ffffff', outlineW: 0.12 } },
+  { id: 'shadow', s: { color: '#ffffff', shadow: { color: 'rgba(0,0,0,.7)', dx: 0.03, dy: 0.06, blur: 0.08 } } },
+  { id: 'yellow', s: { color: '#ffe600', outline: true, outlineColor: '#000000', outlineW: 0.12 } },
+  { id: 'red', s: { color: '#ff3b3b', outline: true, outlineColor: '#ffffff', outlineW: 0.12 } },
+  { id: 'blue-box', s: { color: '#ffffff', box: true, bubble: 'box', boxColor: '#1f7bff' } },
+  { id: 'black-box', s: { color: '#ffffff', box: true, bubble: 'box', boxColor: 'rgba(0,0,0,.75)' } },
+  { id: 'yellow-box', s: { color: '#000000', box: true, bubble: 'pill', boxColor: '#ffe600' } },
+  { id: 'pink-glow', s: { color: '#ffffff', glow: { color: '#ff5fa2', blur: 0.5 } } },
+  { id: 'green', s: { color: '#3ddc84', outline: true, outlineColor: '#0b3d1f', outlineW: 0.12 } },
+];
+// extra generated 'ART' effects so the Effects tab has a big CapCut-like grid (all use the shared drawText)
+const FX_HUES = [['Pink', '#ff5fa2'], ['Cyan', '#00e5ff'], ['Lime', '#9dff3d'], ['Violet', '#a259ff'], ['Orange', '#ff8a00'], ['Red', '#ff2d55'], ['Gold', '#ffd23f'], ['Blue', '#1f7bff']];
+const FX_GRADS = [['Sunset', ['#ffcc33', '#ff5f6d']], ['Ocean', ['#00e5ff', '#1f3bff']], ['Candy', ['#ff9de2', '#a259ff']], ['Mint', ['#b8ffde', '#00b37e']], ['Fire', ['#fff200', '#ff7a00', '#ff1f1f']], ['Ice', ['#ffffff', '#9be7ff', '#3d7bff']], ['Rainbow', ['#ff4d4d', '#ffcc33', '#3ddc84', '#1fb6ff', '#a259ff']], ['Peach', ['#ffe0c2', '#ff8a65']]];
+const EXTRA_FX = [
+  ...FX_HUES.map(([n, c]) => ({ id: 'xneon-' + n.toLowerCase(), name: 'Neon ' + n, s: { color: '#ffffff', outline: true, outlineColor: c, outlineW: 0.05, glow: { color: c, blur: 0.6 } } })),
+  ...FX_HUES.map(([n, c]) => ({ id: 'x3d-' + n.toLowerCase(), name: '3D ' + n, s: { color: c, outline: true, outlineColor: '#1b1b2f', outlineW: 0.08, extrude: { color: '#1b1b2f', depth: 0.12, angle: 45 } } })),
+  ...FX_GRADS.map(([n, cs]) => ({ id: 'xgrad-' + n.toLowerCase(), name: n, s: { color: cs[0], fill: { colors: cs, dir: 'v' }, outline: true, outlineColor: '#1b1b2f', outlineW: 0.07, shadow: { color: 'rgba(0,0,0,.45)', dx: 0, dy: 0.05, blur: 0.05 } } })),
+  ...FX_HUES.map(([n, c]) => ({ id: 'xline-' + n.toLowerCase(), name: 'Outline ' + n, s: { color: 'rgba(0,0,0,0)', outline: true, outlineColor: c, outlineW: 0.07 } })),
+];
+const fxStyle = (t, fid) => { const x = EXTRA_FX.find(e => e.id === fid); if (!x) return applyStyle(t, fid); applyStyle(t, null); Object.assign(t, JSON.parse(JSON.stringify(x.s))); t.styleId = fid; return t; };
+const FONT_CATS = [['trending', 'Trending'], ['classic', 'Classic'], ['new', 'NEW'], ['brand', 'Brand fonts'], ...FONT_GROUPS];
+const fontCat = (k, cat) => { const f = FONTS[k], g = f.group || 'system', i = Object.keys(FONTS).indexOf(k);
+  if (cat === 'trending') return f.bundled && (g === 'kids' || g === 'display') && i % 2 === 0 || g === 'script' && i % 3 === 0;
+  if (cat === 'classic') return g === 'clean' || g === 'system'; if (cat === 'new') return f.bundled && i >= Object.keys(FONTS).length - 24;
+  if (cat === 'brand') return g === 'display' || g === 'kids' && i % 3 === 1; return g === cat; };
+// draw thumbnails only when they scroll into view (panel opens instantly)
+const lazyDraw = (root, draw) => { if (!('IntersectionObserver' in window)) { setTimeout(() => root.querySelectorAll('[data-lazy]').forEach(draw), 0); return; }
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { io.unobserve(e.target); draw(e.target); } }), { root: null, rootMargin: '120px' });
+  root.querySelectorAll('[data-lazy]').forEach(b => io.observe(b)); return io; };
 function textSheet(startTab) {
-  const f0 = selected(); if (!f0) return; const id = f0.clip.id; textTab = startTab || textTab || 'edit';
+  const f0 = selected(); if (!f0) return; const id = f0.clip.id;
+  textTab = { font: 'font', style: 'style', bubble: 'bubble', title: 'title', anim: 'anim', edit: 'edit' }[startTab || textTab] || 'edit';
   const clipNow = () => find(S.project, id)?.clip;
   openSheet('Text', body => {
     const T = clipNow().text;
-    const ta = document.createElement('textarea'); ta.id = 'textInput'; ta.rows = 2; ta.value = T.content === 'Your text' ? '' : T.content; ta.placeholder = 'Type your text';
-    ta.oninput = () => { editSel(cl => { cl.text.content = ta.value || ' '; delete cl.placeholder; }); }; body.append(ta);
+    const head = document.createElement('div'); head.className = 'txhead';
+    const ta = document.createElement('textarea'); ta.id = 'textInput'; ta.rows = 1; ta.value = T.content === 'Your text' ? '' : T.content; ta.placeholder = 'Enter text';
+    ta.oninput = () => { editSel(cl => { cl.text.content = ta.value || ' '; delete cl.placeholder; }); };
+    const ex = document.createElement('button'); ex.id = 'textExpand'; ex.className = 'iconbtn'; ex.title = 'Expand'; ex.textContent = '⤢';
+    ex.onclick = () => { const big = ta.rows === 1; ta.rows = big ? 4 : 1; ex.classList.toggle('on', big); ta.focus(); };
+    head.append(ta, ex); body.append(head);
     const pane = document.createElement('div'); pane.className = 'textpane';
-    const tabEl = chips([['edit', 'Edit'], ['font', 'Font'], ['style', 'Styles'], ['bubble', 'Bubble'], ['title', 'Titles']].map(([value, label]) => ({ value, label })), textTab, v => { textTab = v; show(); }, 'tabs texttabs');
+    const TABS = [['title', 'Templates'], ['font', 'Fonts'], ['edit', 'Styles'], ['style', 'Effects'], ['anim', 'Animations'], ['bubble', 'Bubbles']];
+    const tabEl = chips(TABS.map(([value, label]) => ({ value, label })), textTab, v => { textTab = v; show(); }, 'tabs texttabs');
     body.append(tabEl, pane);
-    const dpr = Math.min(2, devicePixelRatio || 1), TW = Math.round(76 * dpr), TH = Math.round(54 * dpr);
-    let unsub = null;
+    const dpr = Math.min(2, devicePixelRatio || 1), TW = Math.round(76 * dpr), TH = Math.round(64 * dpr);
+    let unsub = null, io = null;
     const tileGrid = (items, cur, mk, onPick, cls) => {
-      const g = document.createElement('div'); g.className = 'trgrid txgrid ' + cls;
-      const draw = () => g.querySelectorAll('.trtile').forEach((b, i) => textTile(b.querySelector('canvas').getContext('2d'), TW, TH, mk(items[i])));
-      items.forEach(it => { const b = document.createElement('button'); b.className = 'trtile' + (it.id === cur ? ' on' : ''); b.dataset.v = it.id; b.innerHTML = `<canvas width="${TW}" height="${TH}"></canvas><span>${it.name}</span>`;
+      const g = document.createElement('div'); g.className = 'trgrid txgrid g4 ' + cls;
+      const draw = b => { const it = items[+b.dataset.i]; if (it.none) { const x = b.querySelector('canvas').getContext('2d'); x.fillStyle = '#23232d'; x.fillRect(0, 0, TW, TH); x.strokeStyle = '#888'; x.lineWidth = 3 * dpr; x.beginPath(); x.arc(TW / 2, TH / 2, TH * .22, 0, 7); x.moveTo(TW / 2 - TH * .16, TH / 2 + TH * .16); x.lineTo(TW / 2 + TH * .16, TH / 2 - TH * .16); x.stroke(); return; }
+        textTile(b.querySelector('canvas').getContext('2d'), TW, TH, mk(it)); b.dataset.drawn = 1; };
+      items.forEach((it, i) => { const b = document.createElement('button'); b.className = 'trtile' + ((it.id ?? null) === (cur ?? null) ? ' on' : ''); b.dataset.v = it.id ?? 'none'; b.dataset.i = i; b.dataset.lazy = 1; b.innerHTML = `<canvas width="${TW}" height="${TH}"></canvas><span>${it.name}</span>`;
         b.onclick = () => { g.querySelectorAll('.trtile').forEach(x => x.classList.toggle('on', x === b)); onPick(it); }; g.append(b); });
-      setTimeout(draw, 0); unsub && unsub(); unsub = onFontLoad(() => document.body.contains(g) && draw());
+      io && io.disconnect(); requestAnimationFrame(() => { io = lazyDraw(g, draw); });
+      unsub && unsub(); unsub = onFontLoad(() => document.body.contains(g) && g.querySelectorAll('[data-drawn]').forEach(draw));
       return g;
     };
     const show = () => {
-      pane.innerHTML = ''; const T = clipNow().text;
+      pane.innerHTML = ''; const T = clipNow().text; pane.dataset.tab = textTab;
       if (textTab === 'edit') {
-        pane.append(swatches(COLORS, T.color, v => editSel(cl => { cl.text.color = v; cl.text.fill = null; })));
-        pane.append(slider('Size', { min: 24, max: 300, step: 1, value: T.size, fmt: v => Math.round(v), id: 'textSize', onInput: v => editSel(cl => { cl.text.size = v; }) }));
-        pane.append(slider('Curve', { min: -1, max: 1, step: 0.01, value: T.curve || 0, fmt: v => Math.round(v * 100) + '%', id: 'textCurve', onInput: v => editSel(cl => { cl.text.curve = Math.abs(v) < 0.02 ? 0 : v; }) }));
-        const row = document.createElement('div'); row.className = 'toggles';
-        const tog = (label, key) => { const b = document.createElement('button'); b.className = 'chipbtn' + (T[key] ? ' on' : ''); b.textContent = label; b.onclick = () => { editSel(cl => { cl.text[key] = !cl.text[key]; if (key === 'box' && !cl.text.box) cl.text.bubble = null; }); b.classList.toggle('on', !!clipNow().text[key]); }; return b; };
-        row.append(tog('Outline', 'outline'), tog('Background', 'box'));
-        for (const a of ['left', 'center', 'right']) { const b = document.createElement('button'); b.className = 'chipbtn al' + (T.align === a ? ' on' : ''); b.textContent = a[0].toUpperCase() + a.slice(1); b.onclick = () => { editSel(cl => { cl.text.align = a; }); row.querySelectorAll('.al').forEach(x => x.classList.toggle('on', x === b)); }; row.append(b); }
-        pane.append(row);
-        pane.append(slider('Outline width', { min: 0.02, max: 0.4, step: 0.01, value: T.outlineW ?? 0.14, fmt: v => Math.round(v * 100) + '%', id: 'textOutlineW', onInput: v => editSel(cl => { cl.text.outlineW = v; }) }));
-        const sub = document.createElement('div'); sub.className = 'sub'; sub.innerHTML = '<span class="cl">Outline / background colour</span>';
-        sub.append(swatches(['#000000', '#ffffff', '#ffcc33', '#1b1b2f', '#ff4d4d', '#1fb6ff', '#3ddc84', '#ff5fa2'], T.outlineColor, v => editSel(cl => { cl.text.outlineColor = v; cl.text.boxColor = v; })));
-        pane.append(sub);
+        // Aa presets
+        const pr = document.createElement('div'); pr.className = 'aarow';
+        for (const p of AA_PRESETS) { const b = document.createElement('button'); b.className = 'aa'; b.dataset.v = p.id; const s = p.s;
+          if (p.id === 'none') b.innerHTML = '<span class="aa-none">⦸</span>'; else { b.textContent = 'Aa'; b.style.color = s.color || '#fff'; if (s.box) b.style.background = s.boxColor;
+            const sh = []; if (s.outline) for (const [dx, dy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) sh.push(`${dx * 1.5}px ${dy * 1.5}px 0 ${s.outlineColor}`); if (s.shadow) sh.push('2px 3px 3px rgba(0,0,0,.8)'); if (s.glow) sh.push(`0 0 6px ${s.glow.color}`); b.style.textShadow = sh.join(','); }
+          b.onclick = () => { editSel(cl => { applyStyle(cl.text, null); Object.assign(cl.text, JSON.parse(JSON.stringify(p.s))); if (!p.s.box) { cl.text.box = false; cl.text.bubble = null; } }); pr.querySelectorAll('.aa').forEach(x => x.classList.toggle('on', x === b)); sub(); };
+          pr.append(b); }
+        pane.append(pr);
+        let st = textSub || 'text';
+        const L = c => Math.max(0, player.t - c.start);
+        const SUBS = {
+          text: { color: t => t.color, set: (cl, v) => { cl.text.color = v; cl.text.fill = null; },
+            size: { label: 'Size', min: 24, max: 300, step: 1, id: 'textSize', get: t => t.size, fmt: v => Math.round(v), set: (cl, v) => { cl.text.size = v; } },
+            op: { get: () => propAt(clipNow(), 'opacity', L(clipNow())), set: (cl, v) => setProp(cl, 'opacity', v, L(cl)) } },
+          stroke: { color: t => t.outline ? t.outlineColor : 'none', set: (cl, v) => { if (v === 'none') { cl.text.outline = false; return; } cl.text.outline = true; cl.text.outlineColor = rgbaOf(v, alphaOf(cl.text.outlineColor)); },
+            size: { label: 'Size', min: 0, max: 0.4, step: 0.01, id: 'textOutlineW', get: t => t.outline ? t.outlineW ?? 0.14 : 0, fmt: v => Math.round(v * 100), set: (cl, v) => { cl.text.outline = v > 0.005; cl.text.outlineW = v; } },
+            op: { get: () => alphaOf(clipNow().text.outlineColor), set: (cl, v) => { cl.text.outlineColor = rgbaOf(cl.text.outlineColor, v); } } },
+          glow: { color: t => t.glow ? t.glow.color : 'none', set: (cl, v) => { cl.text.glow = v === 'none' ? null : { blur: cl.text.glow?.blur ?? 0.5, color: rgbaOf(v, alphaOf(cl.text.glow?.color)) }; },
+            size: { label: 'Size', min: 0, max: 1.2, step: 0.01, id: 'textGlowSize', get: t => t.glow?.blur ?? 0, fmt: v => Math.round(v * 100), set: (cl, v) => { cl.text.glow = v < 0.01 ? null : { color: cl.text.glow?.color || '#ff5fa2', blur: v }; } },
+            op: { get: () => alphaOf(clipNow().text.glow?.color), set: (cl, v) => { if (cl.text.glow) cl.text.glow.color = rgbaOf(cl.text.glow.color, v); } } },
+          bg: { color: t => t.box ? t.boxColor : 'none', set: (cl, v) => { if (v === 'none') { cl.text.box = false; cl.text.bubble = null; return; } cl.text.boxColor = rgbaOf(v, alphaOf(cl.text.boxColor)); cl.text.box = true; cl.text.bubble = cl.text.bubble || 'box'; },
+            op: { get: () => alphaOf(clipNow().text.boxColor), set: (cl, v) => { cl.text.boxColor = rgbaOf(cl.text.boxColor || '#000000', v); } } },
+          shadow: { color: t => t.shadow ? t.shadow.color : 'none', set: (cl, v) => { cl.text.shadow = v === 'none' ? null : { dx: 0.03, dy: 0.06, blur: 0.08, ...(cl.text.shadow || {}), color: rgbaOf(v, cl.text.shadow ? alphaOf(cl.text.shadow.color) : 0.7) }; },
+            size: { label: 'Size', min: 0, max: 0.4, step: 0.01, id: 'textShadowSize', get: t => t.shadow?.blur ?? 0, fmt: v => Math.round(v * 100), set: (cl, v) => { cl.text.shadow = { dx: 0.03, dy: 0.06, color: 'rgba(0,0,0,.7)', ...(cl.text.shadow || {}), blur: v }; } },
+            op: { get: () => alphaOf(clipNow().text.shadow?.color), set: (cl, v) => { if (cl.text.shadow) cl.text.shadow.color = rgbaOf(cl.text.shadow.color, v); } } },
+        };
+        const subEl = chips([['text', 'Text'], ['stroke', 'Stroke'], ['glow', 'Glow'], ['bg', 'Background'], ['shadow', 'Shadow']].map(([value, label]) => ({ value, label })), st, v => { st = textSub = v; sub(); }, 'tabs subtabs stsub');
+        const box = document.createElement('div'); box.className = 'stbox'; pane.append(subEl, box);
+        function sub() { box.innerHTML = ''; const d = SUBS[st], t = clipNow().text, cur = d.color(t);
+          const row = document.createElement('div'); row.className = 'colrow';
+          const eye = document.createElement('button'); eye.className = 'iconbtn eyedrop'; eye.title = 'Pick colour from the video'; eye.textContent = '💧';
+          eye.onclick = async () => { if (!window.EyeDropper) { toast('Colour picker not supported here'); return; } try { const r = await new EyeDropper().open(); editSel(cl => d.set(cl, r.sRGBHex)); sub(); } catch (e) {} };
+          const rb = document.createElement('label'); rb.className = 'rainbow'; rb.title = 'Any colour'; const ci = document.createElement('input'); ci.type = 'color'; ci.id = 'textColorAny'; ci.value = hexOf(cur === 'none' ? '#ffffff' : cur);
+          ci.oninput = () => editSel(cl => d.set(cl, ci.value)); rb.append(ci);
+          row.append(eye, rb, swatches([...(st === 'text' ? [] : ['none']), ...COLORS], st === 'text' ? cur : (cur === 'none' ? 'none' : hexOf(cur)), v => { editSel(cl => d.set(cl, v)); }));
+          box.append(row);
+          if (d.size) box.append(slider(d.size.label, { min: d.size.min, max: d.size.max, step: d.size.step, value: d.size.get(t), fmt: d.size.fmt, id: d.size.id, onInput: v => editSel(cl => d.size.set(cl, v)) }));
+          box.append(slider('Opacity', { min: 0, max: 1, step: 0.01, value: d.op.get(), fmt: v => Math.round(v * 100) + '%', id: 'textOp', onInput: v => editSel(cl => d.op.set(cl, v)) }));
+          if (st === 'text') {
+            box.append(slider('Curve', { min: -1, max: 1, step: 0.01, value: t.curve || 0, fmt: v => Math.round(v * 100) + '%', id: 'textCurve', onInput: v => editSel(cl => { cl.text.curve = Math.abs(v) < 0.02 ? 0 : v; }) }));
+            const al = document.createElement('div'); al.className = 'toggles';
+            for (const a of ['left', 'center', 'right']) { const b = document.createElement('button'); b.className = 'chipbtn al' + (t.align === a ? ' on' : ''); b.textContent = a[0].toUpperCase() + a.slice(1); b.onclick = () => { editSel(cl => { cl.text.align = a; }); al.querySelectorAll('.al').forEach(x => x.classList.toggle('on', x === b)); }; al.append(b); }
+            box.append(al); }
+        }
+        sub();
       } else if (textTab === 'font') {
-        let grp = (FONTS[T.font] && FONTS[T.font].group) || (FONTS[T.font] && !FONTS[T.font].bundled ? 'system' : 'kids');
-        const list = document.createElement('div');
-        const fill = () => { const ids = Object.keys(FONTS).filter(k => (FONTS[k].group || 'system') === grp); ids.forEach(ensureFont);
-          list.innerHTML = ''; list.append(chips(ids.map(k => ({ value: k, html: `<span style="font:${FONTS[k].css.replace('SIZE', '17')}">${FONTS[k].name}</span>` })), clipNow().text.font, v => { ensureFont(v); editSel(cl => { cl.text.font = v; }); }, 'fontchips')); };
-        pane.append(chips(FONT_GROUPS.map(([value, label]) => ({ value, label })), grp, v => { grp = v; fill(); }, 'tabs fontgroups'), list); fill();
+        let cat = 'trending', q = '';
+        const bar = document.createElement('div'); bar.className = 'fontbar';
+        const sb = document.createElement('button'); sb.className = 'iconbtn'; sb.id = 'fontSearchBtn'; sb.textContent = '🔍';
+        const si = document.createElement('input'); si.type = 'search'; si.id = 'fontSearch'; si.placeholder = 'Search fonts'; si.hidden = true;
+        sb.onclick = () => { si.hidden = !si.hidden; if (!si.hidden) si.focus(); else { q = ''; si.value = ''; fill(); } };
+        si.oninput = () => { q = si.value.trim().toLowerCase(); fill(); };
+        const cats = chips(FONT_CATS.map(([value, label]) => ({ value, label })), cat, v => { cat = v; fill(); }, 'tabs fontgroups');
+        bar.append(sb, cats); pane.append(bar, si);
+        const grid = document.createElement('div'); grid.className = 'fontgrid'; pane.append(grid);
+        let fio = null;
+        function fill() { grid.innerHTML = ''; const curF = clipNow().text.font;
+          const ids = Object.keys(FONTS).filter(k => q ? FONTS[k].name.toLowerCase().includes(q) : fontCat(k, cat));
+          for (const k of ids) { const b = document.createElement('button'); b.className = 'fontpill' + (k === curF ? ' on' : ''); b.dataset.v = k; b.dataset.lazy = 1; b.textContent = FONTS[k].name;
+            b.onclick = () => { ensureFont(k); editSel(cl => { cl.text.font = k; }); grid.querySelectorAll('.fontpill').forEach(x => x.classList.toggle('on', x === b)); }; grid.append(b); }
+          fio && fio.disconnect(); fio = lazyDraw(grid, b => { ensureFont(b.dataset.v); b.style.font = FONTS[b.dataset.v].css.replace('SIZE', '15'); }); }
+        fill();
       } else if (textTab === 'style') {
         ensureFont(T.font);
-        pane.append(tileGrid(TEXT_STYLES, T.styleId, st => { const c = { ...clipNow(), anim: null, text: applyStyle({ ...clipNow().text, content: 'Abc', curve: 0, size: 160 }, st.id) }; return c; },
-          st => editSel(cl => { const keep = { box: cl.text.box && !st.s.bubble }; applyStyle(cl.text, st.id); if (keep.box && !cl.text.bubble) cl.text.box = false; }), 'stylegrid'));
+        const items = [{ id: null, name: 'None', none: true }, ...TEXT_STYLES, ...EXTRA_FX];
+        pane.append(tileGrid(items, T.styleId || null, st => ({ ...clipNow(), anim: null, text: fxStyle({ ...clipNow().text, content: 'ART', curve: 0, size: 160, box: false, bubble: null }, st.id) }),
+          st => editSel(cl => { const keep = { box: cl.text.box, bubble: cl.text.bubble, boxColor: cl.text.boxColor }; fxStyle(cl.text, st.id); if (!cl.text.bubble && keep.bubble) Object.assign(cl.text, keep); }), 'stylegrid'));
+      } else if (textTab === 'anim') {
+        animSheet('in', pane);
       } else if (textTab === 'bubble') {
-        pane.append(chips(BUBBLES.map(b => ({ value: b.id, label: b.name })), T.bubble || (T.box ? 'box' : null), v => editSel(cl => { cl.text.bubble = v; cl.text.box = !!v; }), 'bubblechips'));
+        const g = document.createElement('div'); g.className = 'bubblechips bubgrid';
+        const curB = T.bubble || (T.box ? 'box' : null);
+        BUBBLES.forEach((bb, i) => { const b = document.createElement('button'); b.className = 'chipbtn bubtile' + ((bb.id ?? null) === curB ? ' on' : ''); b.dataset.v = bb.id ?? 'null'; b.dataset.lazy = 1; b.dataset.i = i; b.innerHTML = `<canvas width="${TW}" height="${TH}"></canvas><span>${bb.name}</span>`;
+          b.onclick = () => { editSel(cl => { cl.text.bubble = bb.id; cl.text.box = !!bb.id; if (bb.id && !cl.text.boxColor) cl.text.boxColor = '#ffffff'; }); g.querySelectorAll('.bubtile').forEach(x => x.classList.toggle('on', x === b)); }; g.append(b); });
+        requestAnimationFrame(() => lazyDraw(g, b => { const bb = BUBBLES[+b.dataset.i]; textTile(b.querySelector('canvas').getContext('2d'), TW, TH, { ...clipNow(), anim: null, text: { ...clipNow().text, content: 'Hi!', curve: 0, size: 140, bubble: bb.id, box: !!bb.id, boxColor: clipNow().text.boxColor || '#ffffff', color: bb.id ? (clipNow().text.color === '#ffffff' && (!clipNow().text.boxColor || clipNow().text.boxColor === '#ffffff') ? '#1b1b2f' : clipNow().text.color) : clipNow().text.color } }); }));
+        pane.append(g);
         const sub = document.createElement('div'); sub.className = 'sub'; sub.innerHTML = '<span class="cl">Bubble colour</span>';
         sub.append(swatches(['#ffffff', '#000000', '#ffcc33', '#ffe600', '#ff4d4d', '#1fb6ff', '#3ddc84', '#ff5fa2', '#a259ff', '#1b1b2f'], T.boxColor, v => editSel(cl => { cl.text.boxColor = v; if (!cl.text.bubble && !cl.text.box) { cl.text.box = true; cl.text.bubble = 'box'; } })));
         const sub2 = document.createElement('div'); sub2.className = 'sub'; sub2.innerHTML = '<span class="cl">Border</span>';
         sub2.append(swatches(['none', '#000000', '#ffffff', '#1b1b2f', '#e01e37', '#1f7bff'], T.bubbleBorder ? T.bubbleBorder.color : 'none', v => editSel(cl => { cl.text.bubbleBorder = v === 'none' ? null : { color: v, w: 0.07 }; })));
         pane.append(sub, sub2);
       } else if (textTab === 'title') {
-        pane.append(Object.assign(document.createElement('p'), { className: 'hint', textContent: 'A title sets the font, the look and the animation in one tap.' }));
-        TITLES.forEach(t => ensureFont(t.font));
-        pane.append(tileGrid(TITLES, clipNow().titleId, t => applyTitle({ id: 'tile', type: 'text', start: 0, dur: 3, transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, text: { ...clipNow().text } }, t.id),
-          t => { ensureFont(t.font); const typed = ta.value.trim() && !TITLES.some(x => x.content === ta.value); editSel(cl => { applyTitle(cl, t.id, typed); }); if (!typed) ta.value = clipNow().text.content; timeline.render(); }, 'titlegrid'));
+        const tcat = t => t.cat || FONTS[t.font]?.group || 'system', TCATS = [['all', 'Trending'], ...FONT_GROUPS.filter(([g]) => TITLES.some(t => tcat(t) === g))];
+        let tc = 'all'; const holder = document.createElement('div');
+        pane.append(chips(TCATS.map(([value, label]) => ({ value, label })), tc, v => { tc = v; fillT(); }, 'tabs tplcats'), holder);
+        function fillT() { holder.innerHTML = ''; const list = [{ id: null, name: 'Default', none: false, dflt: true }, ...TITLES.filter(t => tc === 'all' || tcat(t) === tc)];
+          list.forEach(t => t.font && ensureFont(t.font));
+          holder.append(tileGrid(list, clipNow().titleId || null, t => t.dflt ? { ...clipNow(), anim: null, text: { ...applyStyle({ ...clipNow().text }, null), content: 'Text', curve: 0, size: 160 } } : applyTitle({ id: 'tile', type: 'text', start: 0, dur: 3, transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, text: { ...clipNow().text } }, t.id),
+            t => { if (t.dflt) { editSel(cl => { applyStyle(cl.text, null); cl.text.curve = 0; cl.text.box = false; cl.text.bubble = null; delete cl.titleId; delete cl.anim; }); timeline.render(); return; }
+              ensureFont(t.font); const typed = ta.value.trim() && !TITLES.some(x => x.content === ta.value); editSel(cl => { applyTitle(cl, t.id, typed); }); if (!typed) ta.value = clipNow().text.content; timeline.render(); }, 'titlegrid')); }
+        fillT();
       }
     };
     show();
-    if (textTab === 'edit') setTimeout(() => ta.focus(), 50);
-  }, { className: 'tall' });
+    if (textTab === 'edit' && !startTab) setTimeout(() => ta.focus(), 50);
+  }, { className: 'tall textsheet' });
 }
 function addTitle() { addText(true); textSheet('title'); }
 /* ---------------- effects + filters (WebGL, shared by preview and export) ---------------- */

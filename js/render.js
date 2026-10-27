@@ -56,7 +56,7 @@ export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
     else if (clip.type === 'element') box = drawElementClip(cx, W, H, clip, tr, local, opts);
     else if (clip.type === 'compound') box = drawCompound(cx, W, H, clip, tr, local, t, getSource, opts);
     else { const s = getSource(clip, t); if (s) box = drawVisual(cx, W, H, s, clip, tr, local, opts); }
-    if (box) boxes.push({ id: clip.id, ...box, rotation: tr.rotation });
+    if (box) boxes.push({ id: clip.id, type: clip.type, ...box, rotation: tr.rotation });
   };
   for (const track of visualTracks(p)) {
     const act = activeAt(track, t);
@@ -353,8 +353,15 @@ function drawSelection(ctx, b, u) {
   ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5 * u; ctx.setLineDash([]); ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 3 * u;
   ctx.strokeRect(-b.w / 2, -b.h / 2, b.w, b.h);
   ctx.fillStyle = '#ffcc33'; for (const [x, y] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) { ctx.beginPath(); ctx.arc(x * b.w / 2, y * b.h / 2, 4 * u, 0, 7); ctx.fill(); }
+  if (b.type === 'text') { const r = 9 * u; ctx.shadowBlur = 2 * u;
+    ctx.fillStyle = '#ff3b5c'; ctx.beginPath(); ctx.arc(-b.w / 2, -b.h / 2, r, 0, 7); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.6 * u; ctx.beginPath(); const q = r * .42; ctx.moveTo(-b.w / 2 - q, -b.h / 2 - q); ctx.lineTo(-b.w / 2 + q, -b.h / 2 + q); ctx.moveTo(-b.w / 2 + q, -b.h / 2 - q); ctx.lineTo(-b.w / 2 - q, -b.h / 2 + q); ctx.stroke();
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(b.w / 2, b.h / 2, r, 0, 7); ctx.fill(); ctx.strokeStyle = '#222'; ctx.beginPath(); ctx.arc(b.w / 2, b.h / 2, r * .5, -2.6, 1.2); ctx.stroke(); }
   ctx.restore();
 }
+/** Text-box corner handles: 'del' (top-left ×) or 'rot' (bottom-right rotate/scale). */
+export function handleAt(b, x, y, u) { if (!b || b.type !== 'text') return null; const a = -b.rotation * Math.PI / 180, dx = x - b.cx, dy = y - b.cy;
+  const lx = dx * Math.cos(a) - dy * Math.sin(a), ly = dx * Math.sin(a) + dy * Math.cos(a), R = 22 * u;
+  if (Math.hypot(lx + b.w / 2, ly + b.h / 2) < R) return 'del'; if (Math.hypot(lx - b.w / 2, ly - b.h / 2) < R) return 'rot'; return null; }
 /** Hit test on rendered boxes (top-most first). */
 export function hitTest(boxes, x, y) {
   for (let i = boxes.length - 1; i >= 0; i--) { const b = boxes[i], a = -b.rotation * Math.PI / 180, dx = x - b.cx, dy = y - b.cy;
