@@ -627,3 +627,8 @@ body.has-sel #transport .time .sep,body.has-sel #ttot{display:none}body.has-sel 
 #cmpBtn[hidden]{display:none}
 .tool{font-size:10px;color:#c9c9d2;gap:5px}.tool .ico{width:21px;height:21px;stroke-width:1.5}
 #zoom{opacity:.35;background:none;transition:opacity .2s}#timeline:active #zoom,#zoom:hover,#zoom:focus-within{opacity:.9}
+.wmgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:150px;aspect-ratio:9/12;margin:10px auto 4px;padding:6px;border:1px solid #ffffff22;border-radius:10px;background:#18181d}
+.wmgrid button{border:0;background:none;display:grid;place-items:center;border-radius:6px}
+.wmgrid button i{width:14px;height:14px;border-radius:4px;border:1.5px solid #ffffff55}
+.wmgrid button.on i{background:#d4af37;border-color:#d4af37;box-shadow:0 0 0 3px #d4af3733}
+.wmsheet .btn{margin:8px auto 0;display:block}

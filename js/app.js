@@ -56,6 +56,7 @@ import * as projectApi from './project.js';
 import * as admaker from './admaker.js';
 import * as beats from './beats.js';
 import { adSheet, shuffleAd, make as makeAd } from './adpanel.js';
+import * as wm from './watermark.js';
 
 const $ = s => document.querySelector(s);
 const fmt = t => { const m = Math.floor(t / 60), s = t - m * 60; return String(m).padStart(2, '0') + ':' + s.toFixed(1).padStart(4, '0'); };
@@ -116,7 +117,7 @@ async function makeThumb() {
     // cheap path: the preview already shows this frame (no selection box / guides on it) -> just downscale it (no 100+ ms re-render while the user edits)
     const pv = $('#preview');
     if (pv && pv.width && !selected() && !player.compare && !player.guides && Math.abs(player.t - t) < 1e-3 && player.settled()) x.drawImage(pv, 0, 0, W, H);
-    else renderFrame(x, W, H, p, t, c => frames.get(c.id) || player.source(c), { fast: true });
+    else renderFrame(x, W, H, p, t, c => frames.get(c.id) || player.source(c), { fast: true, noWm: true });
     await projects.setThumb(p.id, await cv.convertToBlob({ type: 'image/jpeg', quality: .78 }));
   } catch (e) { console.warn('thumb', e); }
 }
@@ -174,6 +175,8 @@ function previewGestures() {
     if (player.playing) player.pause();
     if (pts.size === 1) {
       const pos = toCanvas(e); if (pro.previewTap(pos)) { pts.delete(e.pointerId); return; }
+      const R = wm.wmRect; if (!S.sel && R && R.W === cv.width && pos.x >= R.x - 8 && pos.x <= R.x + R.w + 8 && pos.y >= R.y - 8 && pos.y <= R.y + R.h + 8) {
+        const L = wm.wmLayout(cv.width, cv.height, wm.wmOf(S.project), player.t); g = { wm: true, x0: e.clientX, y0: e.clientY, p0: pos, cx: L.cx, cy: L.cy, started: false }; tap = null; return; }
       if (pro.cropDragStart(pos)) { g = { crop: true }; tap = null; return; }
       const sb = S.sel && player.boxes.find(b => b.id === S.sel), hd = sb && handleAt(sb, pos.x, pos.y, Math.min(cv.width, cv.height) / 400);
       if (hd === 'del') { pts.delete(e.pointerId); const id = S.sel; select(null); act(p => remove(p, id)); player.gc(); closeSheet(); return; }
@@ -191,6 +194,9 @@ function previewGestures() {
     if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (!g) return;
     if (g.crop) { pro.cropDragMove(toCanvas(e)); return; }
+    if (g.wm) { if (!g.started && Math.hypot(e.clientX - g.x0, e.clientY - g.y0) < 6) return; if (!g.started) { g.started = true; begin(); }
+      const pos = toCanvas(e), cx = Math.max(.03, Math.min(.97, (g.cx + pos.x - g.p0.x) / cv.width)), cy = Math.max(.03, Math.min(.97, (g.cy + pos.y - g.p0.y) / cv.height));
+      live(p => { p.watermark = { ...wm.wmOf(p), pos: 'custom', cx: Math.round(cx * 1000) / 1000, cy: Math.round(cy * 1000) / 1000 }; }); player.invalidate(); player.requestDraw(); return; }
     if (!g.started && Math.hypot(e.clientX - g.x0, e.clientY - g.y0) < 4 && pts.size < 2) return;
     if (!g.started) { g.started = true; begin(); if (S.sel !== g.id) select(g.id); }
     live(p => { const c = find(p, g.id)?.clip; if (!c) return;
@@ -210,7 +216,8 @@ function previewGestures() {
   const upH = e => {
     pts.delete(e.pointerId);
     if (pts.size === 0) {
-      if (g && g.crop) pro.cropDragEnd();
+      if (g && g.wm) { if (g.started) { end(); wm.setWmGlobal(wm.wmOf(S.project)); } else wmSheet(); }
+      else if (g && g.crop) pro.cropDragEnd();
       else if (g && g.started) end();
       else if (tap && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) < 6) select(tap.hit || null);
       g = null; tap = null;
@@ -453,6 +460,7 @@ const ROOT_TOOLS = [
   { id: 'effects', icon: 'effects', label: 'Effect', run: () => { select(null); effectsSheet('track'); } },
   { id: 'rootfilter', icon: 'filter', label: 'Filter', run: () => clipAtPlayhead(filterSheet) },
   { id: 'bg', icon: 'bg', label: 'Canvas', run: () => canvasSheet() },
+  { id: 'watermark', icon: 'star', label: 'Watermark', run: () => wmSheet() },
   { id: 'overlay', icon: 'overlay', label: 'PIP', run: () => pick('overlay') },
   { id: 'elements', icon: 'elements', label: 'Elements', run: () => { select(null); elempanel.elementsSheet(elCtx()); } },
   { id: 'captions', icon: 'captions', label: 'Captions', run: captionsSheet },
@@ -1116,6 +1124,23 @@ function captionsSheet() {
     body.append(slider('Position', { min: 0.05, max: 0.95, step: 0.01, value: S.project.captionY ?? 0.8, fmt: v => Math.round(v * 100) + '%', id: 'capY', onInput: v => live(p => { p.captionY = v; for (const c of caps.captions(p)) c.transform.y = v; }) }));
     upd();
   }, { className: 'tall' });
+}
+/** Watermark: on/off, 9 positions (or drag it on the video), size, opacity. Saved in the project and as the default for new projects. */
+function wmSheet() {
+  openSheet('Watermark', body => {
+    const cur = () => wm.wmOf(S.project);
+    const setW = ch => { live(p => { p.watermark = { ...wm.wmOf(p), ...ch }; }); wm.setWmGlobal(wm.wmOf(S.project)); player.invalidate(); player.requestDraw(); };
+    const onoff = chips([{ value: 'on', label: 'On' }, { value: 'off', label: 'Off (remove)' }], cur().on ? 'on' : 'off', v => { setW({ on: v === 'on' }); }, 'tabs wmonoff');
+    const grid = document.createElement('div'); grid.className = 'wmgrid';
+    const paint = () => grid.querySelectorAll('button').forEach(b => b.classList.toggle('on', cur().pos === b.dataset.pos));
+    for (const p of wm.WM_POS) { const b = document.createElement('button'); b.dataset.pos = p; b.setAttribute('aria-label', 'Watermark position ' + p); b.innerHTML = '<i></i>'; b.onclick = () => { setW({ pos: p, cx: null, cy: null, on: true }); onoff.setActive && onoff.setActive('on'); paint(); }; grid.append(b); }
+    paint();
+    const hint = Object.assign(document.createElement('p'), { className: 'hint', textContent: 'Tap a spot, or drag the logo on the video to place it anywhere.' });
+    const size = slider('Size', { min: .6, max: 1.8, step: .05, value: cur().size, fmt: v => Math.round(v * 100) + '%', onInput: v => setW({ size: v }), id: 'wmSize' });
+    const op = slider('Opacity', { min: .3, max: 1, step: .05, value: cur().opacity, fmt: v => Math.round(v * 100) + '%', onInput: v => setW({ opacity: v }), id: 'wmOpacity' });
+    const replay = Object.assign(document.createElement('button'), { className: 'btn', textContent: 'Replay intro' }); replay.onclick = () => { player.seek(0); timeline.setTime(0); player.play(); };
+    body.append(onoff, grid, hint, size, op, replay);
+  }, { className: 'wmsheet' });
 }
 function ratioSheet() {
   openSheet('Video shape', body => {

@@ -1,3 +1,4 @@
+import { loadWatermark } from './watermark.js';
 /* Export: renders the project frame by frame with the shared compositor and encodes it.
    Primary path: WebCodecs VideoEncoder (H.264, else VP9/AV1) + AudioEncoder (AAC, else Opus) -> MP4 (mp4-muxer).
    Faster than real time on most phones, frame-exact, no server, no special headers needed (works on GitHub Pages).
@@ -129,6 +130,7 @@ export function rangeOf(p, range) {
   return b - a >= 0.05 ? [a, b] : [0, D];
 }
 export async function exportVideo(p, opt) {
+  await loadWatermark();
   const { short = 1080, fps = 30, onProgress = () => {}, signal = {}, mode, maxBytes, quality = 'high', vbr: forceBr } = opt;
   if (!projectDuration(p)) throw new Error('Nothing to export yet');
   const [t0, t1] = rangeOf(p, opt.range), D = t1 - t0;

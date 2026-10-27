@@ -1,3 +1,4 @@
+import { drawWatermark } from './watermark.js';
 import { texPaint, fxPasses, drawDeco, decoPad } from './textfx.js';
 /* The compositor: draws the project at time t onto a 2D canvas. Used by BOTH the live preview and the exporter,
    so what you see is exactly what you export. getSource(clip, t) supplies the pixels for a video/image clip:
@@ -75,6 +76,7 @@ export function renderFrame(ctx, W, H, p, t, getSource, opts = {}) {
     }
     for (const clip of act) drawClip(ctx, track, clip);
   }
+  if (!opts.plain && !opts.noWm && !p._nested) drawWatermark(ctx, W, H, p, t);
   if (opts.selectedId) { const b = boxes.find(b => b.id === opts.selectedId); if (b) drawSelection(ctx, b, Math.min(W, H) / 400); }
   ctx.restore();
   return boxes;
