@@ -14,7 +14,7 @@ async def main():
         await pg.goto('http://127.0.0.1:8731/'); await pg.wait_for_function('window.studio && studio.ready')
         t0 = time.time(); await pg.set_input_files('#fileMedia', [sys.argv[1]]); await pg.wait_for_function('studio.S.project.tracks.find(t=>t.kind==="main").clips.length===1', timeout=60000)
         print(f'import {time.time()-t0:.1f}s')
-        await pg.click('#toolbar .tool[data-tool="text"]'); await pg.fill('#textInput', 'Speed test'); await pg.click('.sh-done')
+        await pg.click('#toolbar .tool[data-tool="text"]'); await pg.click('#toolbar .tool[data-tool="addtext"]'); await pg.fill('#textInput', 'Speed test'); await pg.click('.sh-done')
         r = await pg.evaluate('''async()=>{const r=await studio.exportVideo(studio.S.project,{short:1080,fps:30});return {sec:r.seconds,mb:r.blob.size/1e6,codec:r.codec,src:r.sources,mem:performance.memory&&performance.memory.usedJSHeapSize/1e6}}''')
         print('export 1080p of 60 s:', json.dumps(r)); print('errors', errs)
         await b.close()

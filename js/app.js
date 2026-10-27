@@ -95,7 +95,7 @@ async function boot() {
   setTimeout(async () => { try { await projects.askPersist(); await projects.cleanUp(); if (!(await projects.getThumb(S.project.id))) makeThumb(); } catch (e) { console.warn('clean-up', e); } }, 2500);
   const qs = new URLSearchParams(location.search);
   if (qs.has('home') || (matchMedia('(display-mode: standalone)').matches && !qs.has('editor'))) showHome();
-  window.studio = { tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async (o = {}) => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project), null, o) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, layout: { apply: (id, o) => applyLayout(id, o), fill: (f, id, o) => fillCells(f, id, o), clear: () => clearLayout(), sheet: () => layoutSheet(), canvas: t => canvasSheet(t) }, motion: { stab: (id, lv) => stabilizeClip(id, lv), track: (id, x, y, o) => trackClip(id, x, y, o), copy: id => copyKeyframes(find(S.project, id).clip), paste: (id, L) => pasteKeyframes(id, L), slowmo: (id, s, bl) => slowmoClip(id, s, bl) }, mix: { sheet: t => mixSheet(t), project: () => projectMixSheet(), addMark: (id, t) => addMark(id, t), fillMarks: (id, b, f) => fillMarks(id, b, f), loudness: () => measureLoudness() }, work: { ...work, ...workflow, store: storeApi }, perf: { ...perfMod, bench: perfBench, sheet: () => perfSheet() }, photo: { ...photomode, sheet: () => photomode.photoSheet(phCtx()), save: () => photomode.savePhoto(phCtx()), blob: () => photomode.photoBlob(phCtx()) }, karaoke: { ...karaoke, sheet: () => karaokeSheet(kCtx()) }, elements: { list: ELEMENTS, cats: ELEMENT_CATS, sheet: () => elempanel.elementsSheet(elCtx()), add: (id, at) => elempanel.addElement(elCtx(), id, at) }, ready: true };
+  window.studio = { setSubRow, tplSheet: pre => templatesSheet(pre), tplUse: id => useTemplate(templates.templateById(id)), projects, backup: backupApi, home: { show: showHome, hide: hideHome, render: renderHome, open: homeOpen }, makeThumb,  templates, importFile, S, player, timeline, media, act, select, find, projectDuration, exportVideo, pickCodecs, recorderMime, save, propAt, kfTimes, transitions: TRANSITIONS, testTransitions, anims: { clip: CLIP_ANIMS, text: TEXT_ANIMS }, renderStill, audio: { fx: audiofx, VOICE_FX, needsBake, bakedFor, mix: async (o = {}) => (await import('./export.js')).mixAudio(S.project, projectDuration(S.project), null, o) }, supportedResolutions, bitrateFor, estimateBytes, outputSize, glAvailable, setCompare, pro, speedcurve, project: projectApi, admaker: { ...admaker, beats, adSheet: pre => adSheet(adCtx(), pre), shuffle: () => shuffleAd(adCtx()), make: st => makeAd(adCtx(), st) }, caps, stickers, fx, color: { sheet: t => colorProSheet(t), addLayer: () => addAdjustmentLayer(), pickWhite }, layout: { apply: (id, o) => applyLayout(id, o), fill: (f, id, o) => fillCells(f, id, o), clear: () => clearLayout(), sheet: () => layoutSheet(), canvas: t => canvasSheet(t) }, motion: { stab: (id, lv) => stabilizeClip(id, lv), track: (id, x, y, o) => trackClip(id, x, y, o), copy: id => copyKeyframes(find(S.project, id).clip), paste: (id, L) => pasteKeyframes(id, L), slowmo: (id, s, bl) => slowmoClip(id, s, bl) }, mix: { sheet: t => mixSheet(t), project: () => projectMixSheet(), addMark: (id, t) => addMark(id, t), fillMarks: (id, b, f) => fillMarks(id, b, f), loudness: () => measureLoudness() }, work: { ...work, ...workflow, store: storeApi }, perf: { ...perfMod, bench: perfBench, sheet: () => perfSheet() }, photo: { ...photomode, sheet: () => photomode.photoSheet(phCtx()), save: () => photomode.savePhoto(phCtx()), blob: () => photomode.photoBlob(phCtx()) }, karaoke: { ...karaoke, sheet: () => karaokeSheet(kCtx()) }, elements: { list: ELEMENTS, cats: ELEMENT_CATS, sheet: () => elempanel.elementsSheet(elCtx()), add: (id, at) => elempanel.addElement(elCtx(), id, at) }, ready: true };
   document.body.classList.add('ready');
 }
 /* ---------------- projects ---------------- */
@@ -422,7 +422,7 @@ const phCtx = () => ({ S, act, toast, busy, importFile, renderStill, downloadBlo
 const elCtx = () => ({ player, timeline, toast, act, find, newClip, addToKind, DEFAULT_TRANSFORM, select });
 const ROOT_TOOLS = [
   work.ROOT_EXTRA.find(t => t.id === 'nestback'),
-  { id: 'text', icon: 'text', label: 'Text', run: addText },
+  { id: 'text', icon: 'text', label: 'Text', run: () => { subRow = 'text'; refreshToolbar(); } },
   { id: 'stickers', icon: 'sticker', label: 'Sticker', run: () => stickers.stickerSheet({ player, toast, media, importFile, act, newClip, addToKind, DEFAULT_TRANSFORM, select }) },
   { id: 'audio', icon: 'music', label: 'Audio', run: () => soundsSheet({ player, timeline, toast, importAudio: () => { closeSheet(); pick('audio'); } }, 'music') },
   { id: 'sounds', icon: 'sounds', label: 'Sounds', run: () => soundsSheet({ player, timeline, toast }) },
@@ -527,15 +527,26 @@ async function captureFrame() {
   try { const b = await renderStill({ t: player.t, blob: true, type: 'image/png' }); downloadBlob(b, `frame-${fmtS(player.t).replace(/[^0-9]/g, '')}.png`); toast('Frame saved as a picture'); }
   catch (e) { toast('Could not capture this frame'); }
 }
+let subRow = null;
+const SUB_ROWS = { text: () => [
+  { id: 'addtext', icon: 'text', label: 'Add text', run: addText },
+  { id: 'captions', icon: 'captions', label: 'Auto captions', run: captionsSheet },
+  ROOT_TOOLS.find(t => t.id === 'stickers'),
+  ...ROOT_TOOLS.filter(t => t.id === 'draw'),
+  { id: 'texttpl', icon: 'titles', label: 'Text template', run: addTitle },
+  { id: 'speech', icon: 'speech', label: 'Text to audio', run: speechSheet },
+  { id: 'karaoke', icon: 'karaoke', label: 'Auto lyrics', run: () => { select(null); karaokeSheet(kCtx()); } },
+].filter(Boolean) };
+function setSubRow(v) { subRow = v; refreshToolbar(); }
 function refreshToolbar() {
   const bar = $('#toolbar'), f = selected();
-  const multi = S.multi.length > 1, tools = multi ? work.MULTI_TOOLS.filter(t => !t.when || t.when()) : f ? CLIP_TOOLS.filter(t => !t.when || t.when(f.clip)) : ROOT_TOOLS.filter(t => !t.when || t.when());
-  const key = (multi ? 'multi' + S.multi.length + ':' : f ? f.clip.id + ':' : 'root:') + tools.map(t => t.id).join(',');
-  if (bar.dataset.key === key) return; bar.dataset.key = key; bar.classList.toggle('cliprow', !!f && !multi); bar.scrollLeft = 0;
-  bar.innerHTML = (multi ? `<span class="multicount" id="multiCount">${S.multi.length} selected</span>` : f ? `<button class="tool back" data-tool="back">${icon('back')}<span>Back</span></button>` : '') +
+  const multi = S.multi.length > 1, tools = multi ? work.MULTI_TOOLS.filter(t => !t.when || t.when()) : f ? CLIP_TOOLS.filter(t => !t.when || t.when(f.clip)) : (subRow ? SUB_ROWS[subRow]() : ROOT_TOOLS.filter(t => !t.when || t.when()));
+  const key = (multi ? 'multi' + S.multi.length + ':' : f ? f.clip.id + ':' : 'root:' + (subRow || '') + ':') + tools.map(t => t.id).join(',');
+  if (bar.dataset.key === key) return; bar.dataset.key = key; bar.classList.toggle('cliprow', !!(f || subRow) && !multi); bar.scrollLeft = 0;
+  bar.innerHTML = (multi ? `<span class="multicount" id="multiCount">${S.multi.length} selected</span>` : f || subRow ? `<button class="tool back" data-tool="back">${icon('back')}<span>Back</span></button>` : '') +
     tools.map(t => `<button class="tool" data-tool="${t.id}">${icon(t.icon)}<span>${t.label}</span></button>`).join('');
   bar.onpointerdown = e => { const b = e.target.closest('.tool'); if (!b) return; b.classList.add('pressed'); setTimeout(() => b.classList.remove('pressed'), 220); };
-  bar.onclick = e => { const b = e.target.closest('.tool'); if (!b) return; if (b.dataset.tool === 'back') { select(null); return; }
+  bar.onclick = e => { const b = e.target.closest('.tool'); if (!b) return; if (b.dataset.tool === 'back') { if (!f && subRow) setSubRow(null); else select(null); return; }
     const t = tools.find(x => x.id === b.dataset.tool); if (player.playing) player.pause(); t && t.run(); };
 }
 function doExtract() {

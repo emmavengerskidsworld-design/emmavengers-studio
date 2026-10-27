@@ -135,7 +135,7 @@ async def run():
         ok(await P(pg, f'studio.find(studio.S.project,"{aud}").clip.volume') == 0.5, 'volume 50% on music')
         # text
         await P(pg, 'studio.select(null)'); await set_time(pg, 1.0); await pg.wait_for_timeout(100)
-        await tap_tool(pg, 'text'); await pg.wait_for_selector('#textInput')
+        await tap_tool(pg, 'text'); await tap_tool(pg, 'addtext'); await pg.wait_for_selector('#textInput')
         await pg.fill('#textInput', 'Jesus loves me!'); await pg.click('.sheet .swatches .chipbtn[data-v="#ffcc33"]')
         await P(pg, "(()=>{const r=document.querySelector('#textSize');r.value=120;r.dispatchEvent(new Event('input'))})()")
         await pg.wait_for_timeout(300); await pg.screenshot(path=str(SHOTS / 'text-editing-390.png')); log('  shot text-editing-390.png')

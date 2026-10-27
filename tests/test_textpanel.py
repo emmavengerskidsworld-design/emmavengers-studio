@@ -43,8 +43,8 @@ async def run():
         await pg.set_input_files('#fileMedia', [str(OUT / 'red.png')]); await pg.wait_for_function('studio.S.project.tracks.flatMap(t=>t.clips).length===1', timeout=60000)
         await P(pg, 'studio.select(null)'); await pg.wait_for_timeout(300)
         TX = 'studio.S.project.tracks.find(t=>t.kind==="text").clips[0]'
-        t = await P(pg, '''(async()=>{const t0=performance.now(); document.querySelector('#toolbar .tool[data-tool="text"]').click(); await new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0))); return performance.now()-t0})()''')
-        ok(t < 100, f'text panel opens (paint) in {t:.0f} ms'); await pg.wait_for_selector('#textInput')
+        t = await P(pg, '''(async()=>{const t0=performance.now(); document.querySelector('#toolbar .tool[data-tool="text"]').click(); await new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0))); const t1=performance.now()-t0; document.querySelector('#toolbar .tool[data-tool="addtext"]').click(); await new Promise(r=>requestAnimationFrame(()=>setTimeout(r,0))); return Math.max(t1, performance.now()-t0-t1)})()''')
+        ok(await P(pg, '[...document.querySelectorAll("#toolbar .tool")].map(b=>b.dataset.tool).join()') .startswith('back,addtext,captions,stickers'), 'text sub-row'); ok(t < 100, f'text row + panel open (paint) in {t:.0f} ms'); await pg.wait_for_selector('#textInput')
         ok(await P(pg, 'document.querySelector("#textInput").placeholder') == 'Enter text', 'header input says Enter text')
         ok(await P(pg, '!!document.querySelector("#textExpand") && !!document.querySelector(".sh-done")'), 'expand + confirm buttons')
         tabs = await P(pg, '[...document.querySelectorAll(".texttabs .chipbtn")].map(b=>b.textContent)')

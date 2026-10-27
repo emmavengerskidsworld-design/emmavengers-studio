@@ -88,6 +88,8 @@ async def run():
         log(f'== tap -> panel visible (budget {BUDGET} ms, CPU {THROTTLE}x)')
         async def measure(group, q, label):
             await close(pg); await P(pg, OBS)
+            if group == 'textrow': await P(pg, 'studio.select(null); studio.setSubRow("text")'); await pg.wait_for_timeout(80); await P(pg, OBS)
+            elif group in ('main', 'sheet', 'row'): await P(pg, 'studio.setSubRow(null)'); await pg.wait_for_timeout(50); await P(pg, OBS)
             if not await P(pg, f'!!document.querySelector({json.dumps(q)})'): metrics['open_ms'][f'{group}:{label}'] = -1; ok(False, f'{group} {label}: missing'); return
             snap0 = await P(pg, 'JSON.stringify(studio.S.project.tracks)'); n0 = len(errs)
             await pg.locator(q).first.click(timeout=5000); await pg.wait_for_timeout(450)
@@ -115,7 +117,18 @@ async def run():
         await P(pg, f'studio.select(null)'); await pg.wait_for_timeout(100)
         await measure('tap', f'.clip[data-id="{vid}"]', 'select clip -> clip row')
         await measure('tap', '.joint', 'cut icon -> transitions')
-        await measure('sheet', '#toolbar .tool[data-tool="text"]', 'add text')
+        await measure('row', '#toolbar .tool[data-tool="text"]', 'text -> text row')
+        await P(pg, 'studio.setSubRow("text")'); await pg.wait_for_timeout(100)
+        for t in await P(pg, '[...document.querySelectorAll("#toolbar .tool")].map(b=>b.dataset.tool)'):
+            if t in ('back', 'addtext'): continue
+            await measure('textrow', f'#toolbar .tool[data-tool="{t}"]', 'text row ' + t)
+        await measure('textrow', '#toolbar .tool[data-tool="addtext"]', 'add text')
+        tx = await P(pg, 'studio.S.sel')
+        await P(pg, f'studio.select("{tx}")'); await pg.wait_for_timeout(80); await pg.click('#toolbar .tool[data-tool="edit"]'); await pg.wait_for_timeout(500)
+        for v in ('title', 'font', 'edit', 'style', 'anim', 'bubble', 'preset'):
+            await P(pg, OBS); await pg.click(f'.texttabs .chipbtn[data-v="{v}"]'); await pg.wait_for_timeout(450); ev = await P(pg, 'window.__ev'); ms = max(ev) if ev else 16
+            metrics['open_ms'][f'texttab:{v}'] = round(ms); ok(ms < BUDGET, f'text tab {v}: {ms:.0f} ms')
+        await close(pg); await P(pg, 'studio.setSubRow(null)')
         tx = await P(pg, 'studio.S.sel')
         for t in ('edit', 'textstyle', 'anim', 'keyframe'):
             await P(pg, f'studio.select("{tx}")'); await pg.wait_for_timeout(80); await measure('text', f'#toolbar .tool[data-tool="{t}"]', t)

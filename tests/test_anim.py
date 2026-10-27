@@ -164,7 +164,7 @@ async def test_anim_editor(b):
     log('== Animation panel (text): In / Out / Loop')
     ctx, pg = await new_page(b)
     await pg.set_input_files('#fileMedia', [str(FX / 'sharp.png')]); await pg.wait_for_function('studio.S.project.tracks.find(t=>t.kind==="main").clips.length===1')
-    await P(pg, 'studio.select(null)'); await pg.click('#toolbar .tool[data-tool="text"]'); await pg.wait_for_timeout(300); await pg.click('.sh-done')
+    await P(pg, 'studio.select(null)'); await pg.click('#toolbar .tool[data-tool="text"]'); await pg.click('#toolbar .tool[data-tool="addtext"]'); await pg.wait_for_timeout(300); await pg.click('.sh-done')
     tid = await P(pg, "studio.S.project.tracks.find(t=>t.kind==='text').clips[0].id")
     await P(pg, f"studio.act(p=>{{const t=studio.find(p,'{tid}').clip;t.start=0;t.text.content='Jesus loves me';t.text.size=130;t.transform.y=.3}})"); await seek_exact(pg, 0.2)
     await P(pg, f'studio.select("{tid}")'); await pg.wait_for_timeout(150)
@@ -185,7 +185,7 @@ async def test_anim_export(b):
     ctx, pg = await new_page(b)
     await pg.set_input_files('#fileMedia', [str(FX / 'low.png'), str(FX / 'image.png')])
     await pg.wait_for_function('studio.S.project.tracks.find(t=>t.kind==="main").clips.length===2', timeout=20000)
-    await P(pg, 'studio.select(null)'); await pg.click('#toolbar .tool[data-tool="text"]'); await pg.wait_for_timeout(300); await pg.click('.sh-done'); await P(pg, 'studio.select(null)')
+    await P(pg, 'studio.select(null)'); await pg.click('#toolbar .tool[data-tool="text"]'); await pg.click('#toolbar .tool[data-tool="addtext"]'); await pg.wait_for_timeout(300); await pg.click('.sh-done'); await P(pg, 'studio.select(null)')
     await P(pg, """studio.act(p=>{const m=p.tracks.find(t=>t.kind==='main'), a=m.clips[0], b=m.clips[1], t=p.tracks.find(t=>t.kind==='text').clips[0];
       a.anim={in:{id:'spin',dur:1},combo:{id:'zoomPulse',dur:1}}; a.enhance={on:true,strength:.6}; a.keyframes={x:[{t:0,v:.4,ease:'linear'},{t:3,v:.6,ease:'linear'}]};
       b.anim={out:{id:'springR',dur:1}}; b.transitionIn={id:'whipL',dur:.6};
