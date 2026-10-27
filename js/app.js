@@ -150,7 +150,7 @@ function layoutPreview() {
   let w = W, h = W * b / a; if (h > H) { h = H; w = H * a / b; }
   cv.style.width = Math.round(w) + 'px'; cv.style.height = Math.round(h) + 'px';
   const o = $('#cmp'); if (o) { o.style.width = cv.style.width; o.style.height = cv.style.height; }
-  const dpr = Math.min(2, devicePixelRatio || 1), k = Math.min(dpr, 1080 / Math.min(w, h));
+  const lowEnd = (navigator.hardwareConcurrency || 8) <= 4 || (navigator.deviceMemory || 8) <= 3, dpr = Math.min(lowEnd ? 1.25 : 1.5, devicePixelRatio || 1), k = Math.min(dpr, 1080 / Math.min(w, h));
   const cw = Math.round(w * k), ch = Math.round(h * k);
   // B16: while a panel is open the preview shrinks above it (InShot style); that is a CSS-only rescale, so opening a panel never re-renders the frame
   const cssOnly = document.body.classList.contains('sheet-open') && cv.width && Math.abs(cv.width / cv.height - cw / ch) < 0.01;

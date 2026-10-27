@@ -48,7 +48,9 @@ export class Timeline {
     const x = Math.round(t * this.pps); if (Math.abs(this.scroll.scrollLeft - x) < 0.5) { this.drawRuler(); return; }
     this._expect = x; this.scroll.scrollLeft = x; this.drawRuler();
   }
-  onScroll() {
+  // scroll events can arrive several times per frame on fast phones: do the ruler + seek work once per animation frame
+  onScroll() { if (this._scrollRaf) return; this._scrollRaf = requestAnimationFrame(() => { this._scrollRaf = 0; this.onScrollFrame(); }); }
+  onScrollFrame() {
     this.drawRuler();
     const x = this.scroll.scrollLeft;
     if (this._expect != null && Math.abs(x - this._expect) <= 1) { this._expect = null; return; }
@@ -218,7 +220,8 @@ export class Timeline {
   /* ---------- gestures ---------- */
   down(e) {
     const add = e.target.closest('[data-add]'); if (add) { this.o.onAdd(add.dataset.add); return; }
-    const jt = e.target.closest('[data-joint]'); if (jt) { e.preventDefault(); if (this.o.isPlaying()) this.o.pause(); this.o.onJoint(jt.dataset.joint); return; }
+    // join button: only a deliberate tap on the small icon (finger lifts within 8 px and 450 ms); drags / scrolls / pinches never open Transitions
+    const jt = e.target.closest('[data-joint] i'); if (jt) { this.jtap = { id: jt.parentElement.dataset.joint, x: e.clientX, y: e.clientY, t: performance.now(), pid: e.pointerId }; return; }
     if (e.button > 0) return;
     const fh = e.target.closest('.fh');
     if (fh) { const ce = fh.closest('.clip'), f0 = find(S.project, ce.dataset.id); if (!f0) return; e.preventDefault(); e.stopPropagation();
@@ -250,6 +253,7 @@ export class Timeline {
     requestAnimationFrame(() => this.autoScroll());
   }
   move(e) {
+    if (this.jtap && e.pointerId === this.jtap.pid && Math.hypot(e.clientX - this.jtap.x, e.clientY - this.jtap.y) > 8) this.jtap = null;
     if (this.box && e.pointerId === this.box.pid) { this.boxMove(e); return; }
     const d = this.drag; if (!d || e.pointerId !== d.pid) return;
     d.x = e.clientX; d.y = e.clientY;
@@ -311,6 +315,8 @@ export class Timeline {
     b.ids = [...new Set([...b.add, ...ids])]; this.tracksEl.querySelectorAll('.clip').forEach(c => c.classList.toggle('multi', b.ids.includes(c.dataset.id)));
   }
   up(e) {
+    const J = this.jtap; if (J && e.pointerId === J.pid) { this.jtap = null;
+      if (Math.hypot(e.clientX - J.x, e.clientY - J.y) <= 8 && performance.now() - J.t < 450 && e.target.closest && e.target.closest(`[data-joint="${J.id}"]`)) { if (this.o.isPlaying()) this.o.pause(); this.o.onJoint(J.id); return; } }
     if (this.box && e.pointerId === this.box.pid) { const b = this.box; this.box = null; const el = document.getElementById('tlBox'); if (el) el.hidden = true;
       if (b.ids && Math.hypot(e.clientX - b.x0, e.clientY - b.y0) > 8) { this.downEmpty = null; setMulti(b.ids); select(b.ids[b.ids.length - 1] || null); this.render(); return; } }
     if (this.downEmpty && !this.drag) { if (Math.hypot(e.clientX - this.downEmpty.x, e.clientY - this.downEmpty.y) < 8 && e.target.closest('#tlScroll')) select(null); this.downEmpty = null; }
@@ -329,7 +335,7 @@ export class Timeline {
     }
     end(); this.render(); this.o.afterEdit && this.o.afterEdit();
   }
-  cancel(e) { const d = this.drag; if (!d || (e && e.pointerId !== d.pid)) return; clearTimeout(d.timer); this.drag = null; if (this._pendingRender) this.render(); this.tip.hidden = true; document.body.classList.remove('tl-dragging'); if (d.active) { end(); this.render(); } }
+  cancel(e) { if (this.jtap && (!e || e.pointerId === this.jtap.pid)) this.jtap = null; const d = this.drag; if (!d || (e && e.pointerId !== d.pid)) return; clearTimeout(d.timer); this.drag = null; if (this._pendingRender) this.render(); this.tip.hidden = true; document.body.classList.remove('tl-dragging'); if (d.active) { end(); this.render(); } }
 }
 function rulerLabel(s, step) { const m = Math.floor(s / 60), sec = s % 60; if (step < 1) return (m ? m + ':' : '') + (m ? sec.toFixed(1).padStart(4, '0') : sec.toFixed(1)) ; return String(m).padStart(2, '0') + ':' + String(Math.round(sec)).padStart(2, '0'); }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

@@ -15,7 +15,7 @@ button:disabled{opacity:.35;cursor:default}
 .primary:active{background:var(--accent2)}
 /* preview */
 #stage{flex:1;min-height:120px;position:relative;display:grid;place-items:center;background:#060608}
-#preview{background:#000;box-shadow:0 2px 20px #0008;touch-action:none;display:block}
+#preview{background:#000;touch-action:none;display:block}
 #empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center;color:var(--mute)}
 #empty p{max-width:280px;margin:0;font-size:13px}
 /* transport */
@@ -138,7 +138,7 @@ body.has-sel #addMainBtn{display:none}
 .link{color:#cfd3ff;font-weight:700;font-size:14px;text-decoration:underline;text-underline-offset:3px;padding:8px 2px}
 .btn.post span{text-align:left}
 /* transitions joint + keyframe diamonds */
-.joint{position:absolute;top:50%;width:24px;height:24px;margin-top:-12px;background:none;color:#222;display:grid;place-items:center;z-index:5;touch-action:none;padding:0}
+.joint{position:absolute;top:50%;width:24px;height:24px;margin-top:-12px;background:none;color:#222;display:grid;place-items:center;z-index:5;touch-action:pan-x;padding:0;pointer-events:none}.joint i{pointer-events:auto}
 .joint i{display:block;width:12px;height:12px;border-radius:3px;background:#f4f4f7cc;box-shadow:0 1px 3px #000a;display:grid;place-items:center}
 .joint.on i{width:16px;height:16px;background:var(--accent);color:#231a00}
 .joint.sel i{width:16px;height:16px;background:#fff}
@@ -610,3 +610,5 @@ body.has-sel #transport .time .sep,body.has-sel #ttot{display:none}body.has-sel 
 .textsheet .fmtrow .chipbtn.fmt.on { background: #fff; color: #111; }
 .textsheet .stsub { overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
 .textsheet .stsub .chipbtn { flex: none; }
+/* B25 perf: skip layout/paint for grid tiles that are off-screen (big sticker / effect / font grids) */
+.trtile,.stk,.fontpill,.bubtile{content-visibility:auto;contain-intrinsic-size:auto 76px}

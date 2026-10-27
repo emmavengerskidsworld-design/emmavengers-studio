@@ -10,7 +10,7 @@ import { drawGuides } from './protools.js';
 import { clipEnd, projectDuration, srcTime, speedAt, hasSource, gainAt, panAt } from './project.js';
 import { needsBake, bakedFor, bakedPos, bakedRate, keepPitch } from './audio.js';
 
-const PRELOAD = 1.5, RESYNC = 0.3, MAX_EL = 10;
+const PRELOAD = 2.5, RESYNC = 0.3, MAX_EL = 10;
 
 export class Player {
   constructor(canvas, o) {
@@ -170,6 +170,13 @@ export class Player {
       if (bm) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'copy'; ctx.drawImage(bm, 0, 0); ctx.restore(); this.boxes = this._bx.get(key) || this.boxes; this.stats.hits++; this.lastDraw = { ms: performance.now() - T0, cached: true }; return; }
     }
     this._miss = false;
+    // gapless cuts: while playing, if a visible video clip's element has no decoded frame yet, keep the last picture on screen
+    // (never flash black at a clip boundary); the next element was pre-seeked PRELOAD seconds earlier, so this lasts at most a frame or two
+    if (this.playing && this._drewOnce && (this._holdN || 0) < 20) { const t = this.t;
+      for (const c of allClips(p)) { if (c.type !== 'video' || !hasSource(c) || c.start > t + 1e-9 || t >= clipEnd(c) - 1e-9) continue;
+        const sl = this.slots.get(c.id); if (!sl || sl.el.readyState < 2 || !sl.el.videoWidth || sl.el.seeking) { this.stats.held = (this.stats.held || 0) + 1; this._holdN = (this._holdN || 0) + 1; return; } } }
+    this._holdN = 0;
+    if (this.playing) this._drewOnce = true; else this._drewOnce = false;
     // lighter HD pass while playing / scrubbing; the full pass is drawn as soon as the picture settles
     const now = performance.now(), fast = this.playing || now - (this._lastSeek || 0) < 220;
     if (fast && !this.playing) { clearTimeout(this._settle); this._settle = setTimeout(() => this.requestDraw(), 240); }
