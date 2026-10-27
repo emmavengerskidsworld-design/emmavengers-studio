@@ -62,10 +62,40 @@ export function fxPasses(ctx, T, px, sc, lh, pos) {
   return P;
 }
 /** Decorative element behind the text: sized to the text block (w x h). */
-export function drawDeco(ctx, D, w, h, px) {
-  if (!D) return; ctx.save(); ctx.shadowBlur = 0; const c1 = D.color || '#ffcc33', c2 = D.color2 || '#e01e37';
-  const W = w + px * .9, H = h + px * .5;
-  if (D.k === 'ribbon') { ctx.fillStyle = c2; for (const s of [-1, 1]) { ctx.beginPath(); const x0 = s * W / 2; ctx.moveTo(x0, -H * .3); ctx.lineTo(x0 + s * px * .7, -H * .3); ctx.lineTo(x0 + s * px * .45, 0); ctx.lineTo(x0 + s * px * .7, H * .3); ctx.lineTo(x0, H * .3); ctx.fill(); }
+export function decoPad(D, w, h, px) {
+  const k = D.k; if (k === 'burst' || k === 'badge') return { x: w * .3 + px, y: h * 1.1 + px };
+  if (k === 'rays') return { x: px * 1.2, y: px * 2.4 }; if (k === 'crossline') return { x: px, y: px * 1.6 };
+  if (k === 'pin' || k === 'subbtn' || k === 'dot' || k === 'handle' || k === 'play') return { x: px * 2.2, y: px * .6 };
+  if (k === 'lower' || k === 'ticker') return { x: px * 1.6, y: px * .7 }; if (k === 'letterbox') return { x: w * .5 + px, y: px * 1.2 };
+  if (k === 'butterfly') return { x: px * 1.4, y: px * 1.6 }; if (k === 'leak' || k === 'mist') return { x: px * 1.2, y: px * .9 };
+  if (k === 'ribbon') return { x: px * 1.6, y: px * .5 }; return { x: px * 1.1, y: px * .7 };
+}
+const rrect = (ctx, x, y, w, h, r) => { ctx.beginPath(); r = Math.min(r, w / 2, h / 2); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+export function drawDeco(ctx, D, w, h, px, T) {
+  if (!D) return; ctx.save(); ctx.shadowBlur = 0; if ('letterSpacing' in ctx) ctx.letterSpacing = '0px'; const c1 = D.color || '#ffcc33', c2 = D.color2 || '#e01e37';
+  const W = Math.max(w, px * 2.2) + px * .9, H = h + px * .5, ax = T && T.align === 'left' ? -w / 2 : T && T.align === 'right' ? w / 2 : 0;
+  if (D.k === 'lines') { ctx.fillStyle = c1; if (D.glow) { ctx.shadowColor = c1; ctx.shadowBlur = px * .3; } const lw = Math.max(1, px * .022), L = W * (D.len || 1);
+    if (D.side) { for (const s of [-1, 1]) ctx.fillRect(s < 0 ? -W / 2 - px * .2 - px * .9 : W / 2 + px * .2, -lw / 2, px * .9, lw); }
+    else { ctx.fillRect(-L / 2, -H / 2 - px * .05, L, lw); ctx.fillRect(-L / 2, H / 2 + px * .05 - lw, L, lw); } }
+  else if (D.k === 'letterbox') { ctx.fillStyle = c1; const BW = w * 1.5 + px * 2; ctx.fillRect(-BW / 2, -H / 2 - px * .7, BW, px * .4); ctx.fillRect(-BW / 2, H / 2 + px * .3, BW, px * .4); }
+  else if (D.k === 'lower') { const x0 = -w / 2 - px * .5; ctx.fillStyle = D.color2 || 'rgba(10,10,14,.72)'; ctx.fillRect(x0, -H / 2, W + px * .4, H); ctx.fillStyle = c1; ctx.fillRect(x0 - px * .12, -H / 2, px * .12, H); }
+  else if (D.k === 'ticker') { ctx.fillStyle = D.color2 || 'rgba(10,10,14,.85)'; ctx.fillRect(-W / 2 - px * .6, -H / 2, W + px * 1.2, H); ctx.fillStyle = c1; ctx.fillRect(-W / 2 - px * .6, -H / 2, px * .5, H); ctx.fillRect(-W / 2 - px * .6, H / 2 - px * .05, W + px * 1.2, px * .05); }
+  else if (D.k === 'pin') { const X = ax - (T && T.align === 'left' ? 0 : w / 2) - px * .7, r = px * .26; ctx.fillStyle = c1; ctx.beginPath(); ctx.arc(X, -px * .12, r, Math.PI, 0); ctx.quadraticCurveTo(X + r, px * .2, X, px * .42); ctx.quadraticCurveTo(X - r, px * .2, X - r, -px * .12); ctx.fill(); ctx.fillStyle = D.color2 || '#111'; ctx.beginPath(); ctx.arc(X, -px * .12, r * .4, 0, 7); ctx.fill(); }
+  else if (D.k === 'subbtn' || D.k === 'play') { const X = -w / 2 - px * .95, s = px * .62; ctx.fillStyle = c1; rrect(ctx, X - s * .7, -s * .5, s * 1.4, s, s * .28); ctx.fill(); ctx.fillStyle = D.color2 || '#fff'; ctx.beginPath(); ctx.moveTo(X - s * .18, -s * .24); ctx.lineTo(X + s * .28, 0); ctx.lineTo(X - s * .18, s * .24); ctx.fill();
+    if (D.k === 'subbtn') { ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = px * .03; rrect(ctx, -W / 2 - px * 1.75, -H / 2 - px * .05, W + px * 1.9, H + px * .1, H * .5); ctx.stroke(); } }
+  else if (D.k === 'dot') { ctx.fillStyle = c1; ctx.shadowColor = c1; ctx.shadowBlur = px * .3; ctx.beginPath(); ctx.arc(-w / 2 - px * .45, 0, px * .12, 0, 7); ctx.fill(); }
+  else if (D.k === 'handle') { ctx.strokeStyle = c1; ctx.lineWidth = px * .035; rrect(ctx, -W / 2 - px * .3, -H / 2, W + px * .6, H, H / 2); ctx.stroke(); }
+  else if (D.k === 'goldframe') { ctx.strokeStyle = c1; ctx.lineWidth = Math.max(1, px * .03); ctx.shadowColor = c1; ctx.shadowBlur = px * .35; const FW = W + px * .6, FH = H + px * .5, g = px * .7;
+    ctx.beginPath(); ctx.moveTo(-FW / 2 + g, -FH / 2); ctx.lineTo(-FW / 2, -FH / 2); ctx.lineTo(-FW / 2, FH / 2); ctx.lineTo(-FW / 2 + g, FH / 2); ctx.moveTo(FW / 2 - g, -FH / 2); ctx.lineTo(FW / 2, -FH / 2); ctx.lineTo(FW / 2, FH / 2); ctx.lineTo(FW / 2 - g, FH / 2); ctx.stroke(); }
+  else if (D.k === 'butterfly') { ctx.fillStyle = c1; ctx.shadowColor = c1; ctx.shadowBlur = px * .6; const s = px * .7, X = W / 2 + px * .1, Y = -H / 2 - px * .1; ctx.globalAlpha *= .9;
+    for (const sg of [-1, 1]) { ctx.beginPath(); ctx.ellipse(X + sg * s * .45, Y - s * .25, s * .45, s * .32, sg * .5, 0, 7); ctx.fill(); ctx.beginPath(); ctx.ellipse(X + sg * s * .32, Y + s * .25, s * .3, s * .22, -sg * .4, 0, 7); ctx.fill(); } ctx.fillRect(X - s * .04, Y - s * .4, s * .08, s * .8); }
+  else if (D.k === 'marker') { ctx.fillStyle = c1; ctx.globalAlpha *= .92; ctx.beginPath(); const L = W + px * .5; ctx.moveTo(-L / 2, -H * .32); for (let i = 0; i <= 10; i++) ctx.lineTo(-L / 2 + L * i / 10, -H * .34 + px * .05 * hash(i, 1)); ctx.lineTo(L / 2 + px * .15, H * .3); for (let i = 10; i >= 0; i--) ctx.lineTo(-L / 2 + L * i / 10, H * .33 - px * .05 * hash(i, 2)); ctx.closePath(); ctx.fill(); }
+  else if (D.k === 'rays') { const g = ctx.createRadialGradient(0, -H / 2 - px * 1.2, 1, 0, -H / 2 - px * 1.2, px * 2.6); g.addColorStop(0, c1); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.globalAlpha *= .55;
+    for (let i = -4; i <= 4; i++) { const a = Math.PI / 2 + i * .2; ctx.beginPath(); ctx.moveTo(0, -H / 2 - px * 1.2); ctx.lineTo(Math.cos(a - .05) * px * 3, -H / 2 - px * 1.2 + Math.sin(a - .05) * px * 3); ctx.lineTo(Math.cos(a + .05) * px * 3, -H / 2 - px * 1.2 + Math.sin(a + .05) * px * 3); ctx.fill(); } }
+  else if (D.k === 'crossline') { ctx.fillStyle = c1; ctx.shadowColor = c1; ctx.shadowBlur = px * .25; const t = Math.max(1, px * .03); ctx.fillRect(-t / 2, -H / 2 - px * 1.25, t, px * 1.0); ctx.fillRect(-px * .3, -H / 2 - px * 1.0, px * .6, t); }
+  else if (D.k === 'glass') { ctx.fillStyle = D.color2 || 'rgba(255,255,255,.14)'; rrect(ctx, -W / 2 - px * .2, -H / 2, W + px * .4, H, px * .25); ctx.fill(); ctx.strokeStyle = c1; ctx.lineWidth = Math.max(1, px * .02); ctx.stroke(); }
+  else if (D.k === 'leak' || D.k === 'mist') { const g = ctx.createRadialGradient(D.k === 'leak' ? -W * .35 : 0, 0, 1, 0, 0, W * .75); g.addColorStop(0, c1); g.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = g; ctx.globalAlpha *= D.k === 'leak' ? .55 : .4; ctx.beginPath(); ctx.ellipse(0, 0, W * .8, H * 1.1, 0, 0, 7); ctx.fill(); }
+  else if (D.k === 'ribbon') { ctx.fillStyle = c2; for (const s of [-1, 1]) { ctx.beginPath(); const x0 = s * W / 2; ctx.moveTo(x0, -H * .3); ctx.lineTo(x0 + s * px * .7, -H * .3); ctx.lineTo(x0 + s * px * .45, 0); ctx.lineTo(x0 + s * px * .7, H * .3); ctx.lineTo(x0, H * .3); ctx.fill(); }
     ctx.fillStyle = c1; ctx.fillRect(-W / 2, -H * .42, W, H * .84); }
   else if (D.k === 'badge') { ctx.fillStyle = c1; ctx.beginPath(); const R = Math.max(W, H) * .58; for (let k = 0; k < 32; k++) { const a = k * Math.PI / 16, r = k % 2 ? R * .9 : R; ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r * Math.min(1, H / W * 1.6)); } ctx.fill(); ctx.strokeStyle = c2; ctx.lineWidth = px * .06; ctx.stroke(); }
   else if (D.k === 'burst') { ctx.fillStyle = c1; ctx.strokeStyle = c2; ctx.lineWidth = px * .08; ctx.beginPath(); for (let k = 0; k < 24; k++) { const a = k * Math.PI / 12, r = k % 2 ? .62 : 1 + .15 * hash(k, 1); ctx.lineTo(Math.cos(a) * W * .62 * r, Math.sin(a) * H * .95 * r); } ctx.closePath(); ctx.fill(); ctx.stroke(); }

@@ -90,7 +90,7 @@ async def test_text(b):
     await shot(pg, 'b6-titles-390.png')
     await pg.click('.titlegrid .trtile[data-v="t_0"]'); await pg.wait_for_timeout(300)
     c = await P(pg, 'studio.S.project.tracks.find(t=>t.kind==="text").clips[0]')
-    ok(c['text']['font'] == 'bangers' and c['text']['deco'] and c['text']['fx'] and c['anim']['in']['id'] == 'g_slam', 'tapping a template applies font + effect + decoration + animation')
+    ok(c['text']['font'] == 'bebasneue' and c['text']['deco'] and c['text']['sub'] and c['text']['track'] > 0 and c['anim']['in']['id'] == 'cineFade', 'tapping a template applies font + tracking + subtitle + decoration + animation')
     await pg.click('.texttabs .chipbtn[data-v="style"]'); await pg.wait_for_selector('.stylegrid .trtile'); await pg.wait_for_timeout(700)
     await shot(pg, 'b6-text-styles-390.png')
     await pg.click('.stylegrid .trtile[data-v="e_block3d"]'); await pg.wait_for_timeout(200)

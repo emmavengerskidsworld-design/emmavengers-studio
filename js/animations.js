@@ -206,6 +206,12 @@ const T_IN = [
   { id: 'unfoldLetters', name: 'Unfold letters', out: 'Fold letters', unit: 'char', stagger: .6, f: q => ({ sy: Math.max(.001, out(q)), sx: 1.5 - .5 * out(q), a: cl(q * 2) }) },
   { id: 'blurZoom', name: 'Blur zoom', out: 'Blur zoom', unit: 'block', f: q => ({ blur: .5 * (1 - q), s: 1.5 - .5 * out(q), a: q }) },
   { id: 'spiralLetters', name: 'Spiral letters', out: 'Spiral letters', unit: 'char', stagger: .5, f: q => { const k = 1 - out(q), a = q * TAU; return { dx: 2 * k * Math.cos(a), dy: 2 * k * Math.sin(a), rot: -120 * k, a: q }; } },
+  // B21 cinematic (smooth, never bouncy)
+  { id: 'cineFade', name: 'Cinematic Fade', out: 'Cinematic Fade', unit: 'block', f: q => ({ a: inOut(q), blur: .25 * (1 - inOut(q)), s: 1.06 - .06 * out(q) }) },
+  { id: 'trackIn', name: 'Track In', out: 'Track Out', unit: 'char', stagger: 0, f: (q, u) => ({ dx: (u.i - (u.n - 1) / 2) * .28 * (1 - inOut(q)), a: inOut(q) }) },
+  { id: 'wipeIn', name: 'Wipe Reveal', out: 'Wipe Hide', unit: 'block', f: q => ({ reveal: inOut(q) }) },
+  { id: 'riseSoft', name: 'Soft Rise', out: 'Soft Sink', unit: 'block', f: q => ({ dy: .35 * (1 - inOut(q)), a: inOut(q), blur: .12 * (1 - q) }) },
+  { id: 'letterFade', name: 'Letter Fade', out: 'Letter Fade', unit: 'char', stagger: .85, f: q => ({ a: inOut(q), blur: .2 * (1 - q) }) },
   // B17 named text animations (own implementations)
   { id: 'flamePuff', name: 'Flame Puff', out: 'Flame Fade', unit: 'char', stagger: .6, f: (q, u) => ({ s: Math.max(.001, back(q)), dy: .6 * (1 - out(q)), glow: .6 * (1 - q), bright: .5 * (1 - q), a: cl(q * 3) }) },
   { id: 'loveBounce', name: 'Love Bounce', out: 'Love Drop', unit: 'char', stagger: .7, f: q => ({ dy: -1.4 * (1 - E.bounce(q)), sx: 1 + .25 * (1 - q), sy: 1 - .2 * (1 - q), a: cl(q * 4) }) },
@@ -253,6 +259,8 @@ const T_LOOP = [
   { id: 'squash', name: 'Squash', unit: 'char', f: (ph, u) => { const v = Math.abs(Math.sin(PI * (ph - u.i * .07))); return { sx: 1 + .15 * v, sy: 1 - .15 * v }; } },
   { id: 'orbit', name: 'Orbit letters', unit: 'char', f: (ph, u) => ({ dx: .12 * Math.cos(TAU * ph + u.i * .7), dy: .12 * Math.sin(TAU * ph + u.i * .7) }) },
   { id: 'colorWave', name: 'Colour wave', unit: 'char', f: (ph, u) => ({ color: `hsl(${(200 + 60 * Math.sin(TAU * (ph - u.i * .06))).toFixed(0)},90%,62%)` }) },
+  { id: 'slowZoom', name: 'Slow Zoom', unit: 'block', f: ph => ({ s: 1 + .035 * wave(ph) }) },
+  { id: 'softGlow', name: 'Soft Glow', unit: 'block', f: ph => ({ glow: .18 * wave(ph) }) },
   { id: 'beatZoom', name: 'Beat Zoom', unit: 'block', f: ph => ({ s: 1 + .18 * beat(ph) }) },
   { id: 'heartBeat', name: 'Heart Beat', unit: 'block', f: ph => ({ s: 1 + .12 * beat(ph) + .06 * beat(ph + .3), glow: .3 * beat(ph) }) },
   { id: 'neonBuzz', name: 'Neon Buzz', unit: 'char', f: (ph, u) => ({ glow: .3 + .5 * hash(u.i, Math.floor((ph - Math.floor(ph)) * 8)), a: hash(u.i, Math.floor((ph - Math.floor(ph)) * 8)) > .1 ? 1 : .5 }) },

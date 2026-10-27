@@ -1,4 +1,4 @@
-import { texPaint, fxPasses, drawDeco } from './textfx.js';
+import { texPaint, fxPasses, drawDeco, decoPad } from './textfx.js';
 /* The compositor: draws the project at time t onto a 2D canvas. Used by BOTH the live preview and the exporter,
    so what you see is exactly what you export. getSource(clip, t) supplies the pixels for a video/image clip:
    { img: CanvasImageSource, w, h, rot } (w/h = coded size, rot = display rotation in degrees). */
@@ -303,14 +303,16 @@ export function drawText(ctx, W, H, clip, tr, local = 0) {
   const lines = String(T.content || '').split('\n');
   const plan = clip.anim ? textAnimPlan(clip, local, clipDur(clip)) : null, B = plan ? plan.block : null;
   ctx.save();
-  ctx.font = fontCss(T, px); ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+  ctx.font = fontCss(T, px); ctx.textBaseline = 'middle'; ctx.textAlign = 'center'; if ('letterSpacing' in ctx) ctx.letterSpacing = (T.track ? T.track * px : 0).toFixed(2) + 'px';
   const lh = px * 1.18, widths = lines.map(l => ctx.measureText(l).width), w = Math.max(1, ...widths), h0 = lh * lines.length;
   const curve = Math.max(-1, Math.min(1, T.curve || 0)), curved = Math.abs(curve) > 0.01;
   const R = curved ? w / (Math.abs(curve) * Math.PI) : 0, sag = curved ? R * (1 - Math.cos(w / 2 / R)) : 0, h = h0 + sag;
   const shape = bubbleOf(T), sc = tr.scale * (B ? B.s : 1);
   const { bw, bh } = shape ? bubbleSize(shape, w, h, px) : { bw: w + px * 0.2, bh: h + px * 0.2 };
   const ext = T.extrude ? T.extrude.depth * px : 0, deco = (T.outline ? (T.outlineW ?? 0.14) * px : 0) + (T.stroke2 ? 2 * T.stroke2.w * px : 0);
-  const cx = tr.x * W, cy = tr.y * H, box = { cx, cy, w: (bw + (shape ? 0 : deco)) * tr.scale, h: (bh + (shape ? 0 : deco + ext) + (shape === 'speech' ? px * 0.55 : 0)) * tr.scale };
+  const SB = T.sub && T.sub.text ? T.sub : null, spx = SB ? px * (SB.scale || .32) : 0, sgap = SB ? px * (SB.gap ?? .28) : 0, sext = SB ? spx + sgap : 0;
+  const dpad = T.deco ? decoPad(T.deco, w, h + 2 * sext, px) : { x: 0, y: 0 };
+  const cx = tr.x * W, cy = tr.y * H, box = { cx, cy, w: Math.max(bw + (shape ? 0 : deco), w + dpad.x) * tr.scale, h: Math.max(bh + (shape ? 0 : deco + ext) + (shape === 'speech' ? px * 0.55 : 0) + 2 * sext, h + 2 * sext + dpad.y) * tr.scale };
   const alpha = Math.max(0, Math.min(1, tr.opacity * (B ? B.a : 1)));
   if (alpha <= 0.0005 || (B && (B.reveal <= 1e-4 || Math.abs(B.s * B.sx * B.s * B.sy) < 1e-6))) { ctx.restore(); return box; }
   ctx.globalAlpha = alpha;
@@ -319,7 +321,7 @@ export function drawText(ctx, W, H, clip, tr, local = 0) {
     if (B.blur > .002) ctx.filter = `blur(${(B.blur * px * tr.scale).toFixed(2)}px)`;
     if (B.reveal < 1) { ctx.beginPath(); ctx.rect(-bw / 2 - px, -bh / 2 - px, (bw + px) * B.reveal + px, bh + 2 * px); ctx.clip(); } }
   if (shape) drawBubble(ctx, T, shape, bw, bh, px, sc);
-  if (T.deco) drawDeco(ctx, T.deco, w, h, px);
+  if (T.deco) drawDeco(ctx, T.deco, w, h + 2 * sext, px, T);
   const ax = T.align === 'left' ? -w / 2 : T.align === 'right' ? w / 2 : 0;
   const passes = textPasses(ctx, T, px, w, h, sc, lh), perChar = curved || (plan && plan.units.length) || (T.fill && T.fill.dir === 'letters');
   if (!perChar) {
@@ -328,7 +330,7 @@ export function drawText(ctx, W, H, clip, tr, local = 0) {
     for (const P of passes) for (const g of gs) P(g, ax, g.y);
   } else {
     // per-letter engine: every animation picks its own unit (letter / word / line) and stagger; curved text bends the letters onto an arc
-    const Lo = textLayout(ctx, lines, T.align || 'center', ctx.font + '|' + (T.align || 'center') + '|' + T.content + '|' + fontsVersion);
+    const Lo = textLayout(ctx, lines, T.align || 'center', ctx.font + '|' + (T.track || 0) + '|' + (T.align || 'center') + '|' + T.content + '|' + fontsVersion);
     const units = plan ? plan.units : [];
     const gs = Lo.chars.map(c => { const s = { dx: 0, dy: 0, s: 1, sx: 1, sy: 1, rot: 0, a: 1, glow: B ? B.glow : 0, color: null };
       for (const U of units) { const i = U.unit === 'word' ? c.wi : U.unit === 'line' ? c.li : c.ci, n = U.unit === 'word' ? Lo.nWords : U.unit === 'line' ? Lo.nLines : Lo.nChars;
@@ -343,6 +345,8 @@ export function drawText(ctx, W, H, clip, tr, local = 0) {
       ctx.save(); ctx.globalAlpha = alpha * Math.min(1, s.a); ctx.translate(g.X, g.Y); if (g.rot) ctx.rotate(g.rot); ctx.translate(s.dx * px, s.dy * px); if (s.rot) ctx.rotate(s.rot * Math.PI / 180); if (s.s !== 1 || s.sx !== 1 || s.sy !== 1) ctx.scale(s.s * s.sx, s.s * s.sy);
       P(g, 0, 0); ctx.restore(); }
   }
+  if (SB) { ctx.save(); ctx.shadowBlur = 0; ctx.filter = 'none'; ctx.font = fontCss({ font: SB.font || T.font }, spx); if ('letterSpacing' in ctx) ctx.letterSpacing = ((SB.track ?? .25) * spx).toFixed(2) + 'px'; ctx.textAlign = T.align || 'center';
+    ctx.fillStyle = SB.color || T.color; if (SB.glow) { ctx.shadowColor = SB.glow; ctx.shadowBlur = spx * .8 * sc; } const sy = SB.pos === 'above' ? -h0 / 2 - sgap - spx / 2 : h0 / 2 + sgap + spx / 2; ctx.fillText(SB.text, ax, sy); ctx.restore(); }
   if (B && B.underline && B.underline[1] - B.underline[0] > 1e-4) {
     ctx.shadowBlur = 0; ctx.fillStyle = T.color;
     widths.forEach((lw, i) => { const x0 = T.align === 'left' ? -w / 2 : T.align === 'right' ? w / 2 - lw : -lw / 2, y = -h0 / 2 + lh * (i + 0.5) + px * .62;

@@ -933,13 +933,13 @@ function textSheet(startTab) {
           holder.append(tileGrid(L, null, pr => ({ ...clipNow(), anim: null, text: { ...pr.text, content: 'Aa', curve: 0, size: 160 } }), pr => { ensureFont(pr.text.font); editSel(cl => { Object.assign(cl.text, JSON.parse(JSON.stringify(pr.text))); if (pr.anim) cl.anim = JSON.parse(JSON.stringify(pr.anim)); else delete cl.anim; }); timeline.render(); }, 'presetgrid')); }
         fillP();
       } else if (textTab === 'title') {
-        const tmpl = (t, c) => { const e = effectById(t.fx), tx = c.text; applyStyle(tx, null); if (e) Object.assign(tx, JSON.parse(JSON.stringify(e.s))); tx.styleId = t.fx; tx.font = t.font; tx.size = t.size; tx.curve = 0; tx.deco = t.deco ? { ...t.deco } : null; tx.box = false; tx.bubble = null;
+        const tmpl = (t, c) => { const e = t.fx && effectById(t.fx), tx = c.text; applyStyle(tx, null); if (e) Object.assign(tx, JSON.parse(JSON.stringify(e.s))); if (t.s) Object.assign(tx, JSON.parse(JSON.stringify(t.s))); tx.styleId = t.fx || null; tx.font = t.font; tx.size = t.size; tx.curve = 0; tx.deco = t.deco ? { ...t.deco } : null; tx.box = false; tx.bubble = null; tx.track = t.track || 0; tx.sub = t.sub ? { ...t.sub } : null; tx.align = t.align || 'center';
           c.anim = JSON.parse(JSON.stringify(t.anim)); if (!Object.keys(c.anim).length) delete c.anim; c.titleId = t.id; return c; };
         pane.append(artBrowser({ items: TEMPLATES, cats: TEMPLATE_CATS, trending: TRENDING_T, favKey: 'emma.tplFav', cur: () => clipNow().titleId, cls: 'titlegrid', dflt: true, animated: true, ph: 'Search templates',
-          mk: t => t.dflt ? { ...clipNow(), anim: null, text: { ...applyStyle({ ...clipNow().text }, null), content: 'Text', curve: 0, size: 160 } } : tmpl(t, { id: 'tile', type: 'text', start: 0, dur: 3, transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, text: { ...clipNow().text, content: t.word } }),
+          mk: t => t.dflt ? { ...clipNow(), anim: null, text: { ...applyStyle({ ...clipNow().text }, null), content: 'Text', curve: 0, size: 160 } } : tmpl(t, { id: 'tile', type: 'text', start: 0, dur: 3, transform: { ...DEFAULT_TRANSFORM }, keyframes: {}, text: { ...clipNow().text, content: t.word || ' ' } }),
           pick: t => { if (t.dflt) { editSel(cl => { applyStyle(cl.text, null); cl.text.curve = 0; delete cl.titleId; delete cl.anim; }); timeline.render(); return; }
             ensureFont(t.font); const typed = ta.value.trim() && !TEMPLATES.some(x => x.word === ta.value) && !TITLES.some(x => x.content === ta.value);
-            editSel(cl => { tmpl(t, cl); if (!typed) { cl.text.content = t.word; delete cl.placeholder; } }); if (!typed) ta.value = clipNow().text.content; timeline.render(); } }));
+            editSel(cl => { tmpl(t, cl); if (!typed) { cl.text.content = t.word || ' '; delete cl.placeholder; } }); if (!typed) ta.value = clipNow().text.content; timeline.render(); } }));
       }
     };
     show();
