@@ -212,7 +212,7 @@ const T_IN = [
   { id: 'fireworkBloom', name: 'Firework Bloom', out: 'Firework Fade', unit: 'char', stagger: .5, f: (q, u) => { const ang = hash(u.i, 3) * TAU, d = 2.2 * (1 - out(q)); return { dx: Math.cos(ang) * d, dy: Math.sin(ang) * d, s: .3 + .7 * out(q), glow: .5 * (1 - q), a: cl(q * 2) }; } },
   { id: 'gemConfetti', name: 'Gem Confetti', out: 'Gem Scatter', unit: 'char', stagger: .8, f: (q, u) => ({ dy: -1.6 * (1 - out(q)), rot: 180 * (1 - out(q)) * (hash(u.i, 1) - .5), bright: .4 * (1 - q), a: cl(q * 3) }) },
   { id: 'starShower', name: 'Star Shower', out: 'Star Rise', unit: 'char', stagger: .9, f: (q, u) => ({ dy: -2.5 * (1 - out(q)) * (.6 + hash(u.i, 2)), a: cl(q * 2), glow: .3 * (1 - q) }) },
-  { id: 'neonComet', name: 'Neon Comet', out: 'Neon Trail', unit: 'block', f: q => ({ dx: -3 * (1 - out(q)), skx: -.4 * (1 - q), glow: .8 * (1 - q), blur: .3 * (1 - q), a: cl(q * 2) }) },
+  { id: 'neonComet', name: 'Neon Comet', out: 'Neon Trail', unit: 'block', f: q => ({ dx: -3 * (1 - out(q)), skx: -.4 * (1 - q), glow: .8 * (1 - q), a: cl(q * 2) }) },
   { id: 'featherPoof', name: 'Feather Poof', out: 'Feather Away', unit: 'char', stagger: .7, f: (q, u) => ({ dy: -.5 * (1 - out(q)), dx: .4 * Math.sin(TAU * q + u.i) * (1 - q), blur: .5 * (1 - q), a: q }) },
   { id: 'blastDown', name: 'Blast Down', out: 'Blast Up', unit: 'block', f: q => ({ s: 2.4 - 1.4 * E.bounce(q), a: cl(q * 3) }) },
   { id: 'lensFlare', name: 'Lens Flare Path', out: 'Flare Out', unit: 'block', f: q => ({ bright: 1.2 * Math.sin(Math.PI * cl(q / .8)), glow: .7 * Math.sin(Math.PI * cl(q / .8)), dx: -.8 * (1 - out(q)), a: cl(q * 2) }) },
