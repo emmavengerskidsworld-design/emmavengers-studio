@@ -234,6 +234,10 @@ function bubbleSize(shape, w, h, px) {
   if (shape === 'cloud' || shape === 'thought') return { bw: w + p * 3.2, bh: h + p * 3 };
   if (shape === 'banner') return { bw: w + p * 5, bh: h + p * 2 };
   if (shape === 'tag') return { bw: w + p * 4, bh: h + p * 2 };
+  if (shape === 'ribbon2' || shape === 'scroll') return { bw: w + p * 7, bh: h + p * 2 };
+  if (shape === 'ticket' || shape === 'tape' || shape === 'brush' || shape === 'torn') return { bw: w + p * 3.4, bh: h + p * 2.2 };
+  if (shape === 'oval') return { bw: (w + p * 2) * 1.3, bh: (h + p * 2) * 1.45 };
+  if (shape === 'frame2' || shape === 'corners') return { bw: w + p * 3.4, bh: h + p * 2.6 };
   if (shape === 'pill') return { bw: w + p * 2 + h * 0.4, bh: h + p * 2 };
   return { bw: w + p * 2, bh: h + p * 2 };
 }
@@ -253,6 +257,16 @@ function bubblePath(ctx, shape, bw, bh, px) {
     case 'burst': { const n = 16, rx = bw / 2, ry = bh / 2; for (let i = 0; i < n * 2; i++) { const a = i / (n * 2) * Math.PI * 2 - Math.PI / 2, k = i % 2 ? 0.78 : 1; ctx[i ? 'lineTo' : 'moveTo'](Math.cos(a) * rx * k, Math.sin(a) * ry * k); } ctx.closePath(); break; }
     case 'label': { const s = bh * 0.25; ctx.moveTo(x + s, y); ctx.lineTo(x + bw, y); ctx.lineTo(x + bw - s, y + bh); ctx.lineTo(x, y + bh); ctx.closePath(); break; }
     case 'sticker': rr(ctx, x, y, bw, bh, px * 0.4); break;
+    case 'chat': case 'chatR': { const r = Math.min(px * .55, bh / 2), R = shape === 'chatR'; rr(ctx, x, y, bw, bh, r); const tx = R ? x + bw - r * .6 : x + r * .6; ctx.moveTo(tx - px * .2, y + bh - 2); ctx.quadraticCurveTo(tx + (R ? px * .5 : -px * .5), y + bh + px * .1, tx + (R ? px * .55 : -px * .55), y + bh + px * .18); ctx.quadraticCurveTo(tx + (R ? px * .1 : -px * .1), y + bh + px * .12, tx + px * .2, y + bh - 2); ctx.closePath(); break; }
+    case 'oval': { ctx.ellipse(0, 0, bw / 2, bh / 2, 0, 0, 7); ctx.moveTo(-bw * .18, bh * .4); ctx.quadraticCurveTo(-bw * .3, bh * .62, -bw * .4, bh * .68); ctx.quadraticCurveTo(-bw * .16, bh * .62, -bw * .04, bh * .46); ctx.closePath(); break; }
+    case 'callout': { rr(ctx, x, y, bw, bh, px * .12); ctx.moveTo(x + bw * .08, y + bh - 1); ctx.lineTo(x + bw * .08, y + bh + px * .6); ctx.lineTo(x + bw * .2, y + bh - 1); ctx.closePath(); break; }
+    case 'ribbon2': { const n = px * .55, e = px * .9; ctx.rect(x + e, y, bw - 2 * e, bh); for (const sg of [-1, 1]) { const X = sg < 0 ? x : x + bw; ctx.moveTo(X - sg * e * 1.4, y + bh * .22); ctx.lineTo(X, y + bh * .22); ctx.lineTo(X + sg * -n * .9, y + bh * .61); ctx.lineTo(X, y + bh * 1.0); ctx.lineTo(X - sg * e * 1.4, y + bh * 1.0); ctx.closePath(); } break; }
+    case 'scroll': { const e = px * .5; ctx.moveTo(x + e, y); ctx.quadraticCurveTo(0, y + px * .25, x + bw - e, y); ctx.lineTo(x + bw - e, y + bh); ctx.quadraticCurveTo(0, y + bh + px * .25, x + e, y + bh); ctx.closePath(); for (const X of [x + e, x + bw - e]) { ctx.moveTo(X + e * .5, y + bh / 2); ctx.ellipse(X, y + bh / 2, e * .5, bh / 2 + px * .05, 0, 0, 7); } break; }
+    case 'ticket': { const r = px * .22; ctx.moveTo(x, y); ctx.lineTo(x + bw, y); ctx.lineTo(x + bw, -r); ctx.arc(x + bw, 0, r, -Math.PI / 2, Math.PI / 2, true); ctx.lineTo(x + bw, y + bh); ctx.lineTo(x, y + bh); ctx.lineTo(x, r); ctx.arc(x, 0, r, Math.PI / 2, -Math.PI / 2, true); ctx.closePath(); break; }
+    case 'torn': { const n = Math.max(8, Math.round(bw / (px * .18))); ctx.moveTo(x, y); for (let i = 1; i <= n; i++) ctx.lineTo(x + bw * i / n, y + (i % 2 ? px * .07 : -px * .03) * (1 + (i * 7 % 3) * .4)); for (let i = n; i >= 0; i--) ctx.lineTo(x + bw * i / n, y + bh + (i % 2 ? -px * .07 : px * .03) * (1 + (i * 5 % 3) * .4)); ctx.closePath(); break; }
+    case 'tape': { const n = 6; ctx.moveTo(x, y); ctx.lineTo(x + bw, y); for (let i = 1; i <= n; i++) ctx.lineTo(x + bw - (i % 2 ? px * .12 : 0), y + bh * i / n); ctx.lineTo(x, y + bh); for (let i = n - 1; i >= 0; i--) ctx.lineTo(x + (i % 2 ? px * .12 : 0), y + bh * i / n); ctx.closePath(); break; }
+    case 'brush': { const n = 14; ctx.moveTo(x + px * .3, y + px * .06); for (let i = 1; i <= n; i++) ctx.lineTo(x + px * .3 + (bw - px * .5) * i / n, y + px * (.04 + .06 * ((i * 7) % 3))); ctx.quadraticCurveTo(x + bw + px * .15, 0, x + bw - px * .25, y + bh - px * .05); for (let i = n; i >= 0; i--) ctx.lineTo(x + px * .2 + (bw - px * .5) * i / n, y + bh - px * (.03 + .06 * ((i * 5) % 3))); ctx.quadraticCurveTo(x - px * .2, 0, x + px * .3, y + px * .06); ctx.closePath(); break; }
+    case 'frame2': case 'corners': rr(ctx, x, y, bw, bh, shape === 'frame2' ? px * .06 : 0); break;
     default: rr(ctx, x, y, bw, bh, px * 0.25);
   }
 }
@@ -263,6 +277,9 @@ function drawBubble(ctx, T, shape, bw, bh, px, sc) {
   // border = a stroke twice as wide drawn first; the fill then covers its inner half (so clouds get one outline round the union)
   if (Bd && Bd.w > 0) { ctx.lineJoin = 'round'; ctx.lineWidth = Bd.w * px * 2; ctx.strokeStyle = Bd.color; ctx.stroke(); ctx.shadowColor = 'transparent'; }
   ctx.fillStyle = T.boxColor || '#000'; ctx.fill('nonzero');
+  if (shape === 'frame2' || shape === 'corners') { const c = (T.bubbleBorder && T.bubbleBorder.color) || '#fff', lw = Math.max(1, px * .03); ctx.strokeStyle = c; ctx.lineWidth = lw; ctx.shadowColor = 'transparent'; const x = -bw / 2, y = -bh / 2;
+    if (shape === 'frame2') { ctx.strokeRect(x, y, bw, bh); ctx.strokeRect(x + px * .12, y + px * .12, bw - px * .24, bh - px * .24); }
+    else { const g = Math.min(bw, bh) * .3; ctx.beginPath(); for (const [X, Y, sx, sy] of [[x, y, 1, 1], [x + bw, y, -1, 1], [x, y + bh, 1, -1], [x + bw, y + bh, -1, -1]]) { ctx.moveTo(X + sx * g, Y); ctx.lineTo(X, Y); ctx.lineTo(X, Y + sy * g); } ctx.lineWidth = lw * 1.6; ctx.stroke(); } }
   ctx.restore();
 }
 /* fill paint: solid colour or a gradient laid out over the whole text block (ox, oy = where this glyph sits in the block) */

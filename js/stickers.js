@@ -42,13 +42,15 @@ export function stickerSheet(X) {
     sb.innerHTML = `${icon('search', 18)}<input id="stkSearch" type="search" placeholder="Search stickers (e.g. lion, star, A)" autocomplete="off">`;
     const catRow = document.createElement('div'), grid = Object.assign(document.createElement('div'), { className: 'stkgrid', id: 'stkGrid' }), foot = Object.assign(document.createElement('p'), { className: 'hint', id: 'stkInfo' });
     body.append(sb, catRow, grid, foot); grid.textContent = 'Loading stickers…';
+    await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));   // let the sheet paint first
     let L; try { L = await loadStickers(); } catch (e) { grid.textContent = 'Could not load the sticker library. Connect to the internet once to open it.'; return; }
     const cats = [{ value: 'fav', html: icon('heart', 14) + ' Favourites' }, { value: 'anim', html: icon('anim', 14) + ' Animated' }, ...L.cats.map(c => ({ value: c.id, label: c.name }))];
     const catChips = chips(cats, cat, v => { cat = v; shown = 60; list(); }, 'tabs stkcats'); catRow.append(catChips);
     const list = () => {
       const all = filterStickers(L, { cat: q ? '' : cat, q }), F = favs(); grid.innerHTML = '';
       if (!all.length) grid.innerHTML = `<p class="hint">${cat === 'fav' && !q ? 'Tap the heart on a sticker to keep it here.' : 'No stickers found.'}</p>`;
-      for (const it of all.slice(0, shown)) {
+      const tok = list.tok = (list.tok || 0) + 1, items = all.slice(0, shown), more = all.length > shown;
+      const one = it => {
         const b = document.createElement('button'); b.className = 'stk' + (it.anim ? ' anim' : ''); b.dataset.id = it.id; b.title = it.name;
         b.innerHTML = `<img loading="lazy" decoding="async" alt="${it.name.replace(/"/g, '&quot;')}" src="${it.url}"><span class="fav${F.has(it.id) ? ' on' : ''}" role="button" aria-label="Favourite">${icon('heart', 14)}</span>${it.anim ? `<span class="am">${icon('anim', 12)}</span>` : ''}`;
         b.onclick = async e => {
@@ -56,11 +58,17 @@ export function stickerSheet(X) {
           b.classList.add('busy'); try { await addSticker(X, it, X.player.t); X.toast('Added ' + it.name + (it.anim ? ' (animated)' : '')); } catch (err) { console.warn(err); X.toast('Could not add this sticker'); } finally { b.classList.remove('busy'); }
         };
         grid.append(b);
-      }
-      if (all.length > shown) { const m = document.createElement('button'); m.className = 'chipbtn more'; m.id = 'stkMore'; m.textContent = `Show more (${all.length - shown})`; m.onclick = () => { shown += 90; list(); }; grid.append(m); }
+      };
+      // paint the first rows now, the rest after the sheet has shown (keeps open < 100 ms)
+      items.slice(0, 16).forEach(one);
+      setTimeout(() => { if (list.tok !== tok) return; items.slice(16).forEach(one); if (more) addMore(); }, 140);
+      function addMore() { const m = document.createElement('button'); m.className = 'chipbtn more'; m.id = 'stkMore'; m.textContent = `Show more (${all.length - shown})`; m.onclick = () => { shown += 90; list(); }; grid.append(m); }
       foot.textContent = q ? `${all.length} stickers for “${q}”` : `${all.length} stickers · ${L.items.length} in the library · tap to add, ♥ to keep as favourite`;
     };
     const inp = sb.querySelector('input'); let h = 0; inp.oninput = () => { clearTimeout(h); h = setTimeout(() => { q = inp.value.trim(); shown = 60; catChips.style.opacity = q ? .45 : 1; list(); }, 160); };
     list();
   }, { className: 'tall', gesture: false });
 }
+
+// warm the sticker library + sheet styles while idle so the first open paints fast
+(window.requestIdleCallback || (f => setTimeout(f, 2500)))(() => { loadStickers().catch(() => {}); const d = document.createElement('div'); d.className = 'stkgrid'; d.style.cssText = 'position:absolute;visibility:hidden;contain:strict;width:0;height:0'; d.innerHTML = '<button class="stk"><img alt=""></button>'; document.body.append(d); d.offsetHeight; d.remove(); }, { timeout: 4000 });

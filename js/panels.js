@@ -46,3 +46,8 @@ export function chips(items, active, onPick, cls = '') {
 export function swatches(colors, active, onPick) {
   return chips(colors.map(c => ({ value: c, html: `<i style="background:${c}"></i>`, title: c })), active, onPick, 'swatches');
 }
+
+// First sheet open used to cost ~130 ms (cold style/layout of the sheet subtree). Warm it once while idle, invisibly.
+(window.requestIdleCallback || (f => setTimeout(f, 2000)))(() => { const el = sheet(); if (!el || !el.classList.contains('hidden')) return;
+  el.style.opacity = '0.01'; el.style.pointerEvents = 'none'; el.className = 'sheet tall'; el.innerHTML = `<div class="sh-head"><b>.</b><button class="ib sh-done">${icon('check')}</button></div><div class="sh-body"><div class="chips tabs"><button class="chipbtn">a</button></div><div class="stkgrid"><button class="stk"></button></div></div>`;
+  document.body.classList.add('sheet-open'); el.getBoundingClientRect(); document.querySelector('#stage, canvas')?.getBoundingClientRect(); document.body.classList.remove('sheet-open'); document.body.getBoundingClientRect(); requestAnimationFrame(() => requestAnimationFrame(() => { if (el.style.opacity === '0.01' && el.querySelector('.sh-head b')?.textContent === '.') { el.className = 'sheet hidden'; el.innerHTML = ''; } el.style.opacity = ''; el.style.pointerEvents = ''; })); }, { timeout: 3000 });

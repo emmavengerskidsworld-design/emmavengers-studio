@@ -750,20 +750,40 @@ const fxCat = st => st.cat || (/neon/i.test(st.id + st.name) ? 'neon' : /3d/i.te
 const FX_CATS = [['all', 'Trending'], ['fav', '★ Saved'], ['halloween', 'Halloween'], ['neon', 'Neon'], ['3d', '3D'], ['gradient', 'Gradient'], ['sticker', 'Sticker'], ['outline', 'Outline'], ['metallic', 'Metallic'], ['fire', 'Fire'], ['glitch', 'Glitch'], ['hearts', 'Hearts'], ['balloon', 'Balloon'], ['splash', 'Splash'], ['paper', 'Paper']];
 const lsGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } }, lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 // bubble designs: shape x colour x border x type combos, all drawn by the shared drawText bubble renderer
-const BUB_DESIGNS = (() => { const L = [], add = (cat, name, word, t) => L.push({ id: 'bd' + L.length, cat, name, word, t });
-  for (const [n, bc, tc, br] of [['Comic white', '#ffffff', '#1b1b2f', '#000000'], ['Comic yellow', '#ffe600', '#1b1b2f', '#000000'], ['Comic pink', '#ff9de2', '#1b1b2f', '#000000'], ['Comic blue', '#9fd0ff', '#1b1b2f', '#000000'], ['Comic black', '#1b1b2f', '#ffffff', '#ffffff'], ['Comic mint', '#b8ffde', '#1b1b2f', '#000000']]) add('comic', n, 'Hey!', { bubble: 'speech', boxColor: bc, color: tc, bubbleBorder: { color: br, w: 0.07 } });
-  for (const [n, bc, tc] of [['Cloud white', '#ffffff', '#1b1b2f'], ['Cloud sky', '#cfeaff', '#1f3bff'], ['Cloud lilac', '#e6d4ff', '#5a00b3'], ['Dream', '#fff4c2', '#7a4b00']]) { add('cloud', n, 'Hmm...', { bubble: 'thought', boxColor: bc, color: tc, bubbleBorder: { color: '#1b1b2f', w: 0.05 } }); add('cloud', n + ' puff', 'Dreamy', { bubble: 'cloud', boxColor: bc, color: tc, bubbleBorder: null }); }
-  for (const [n, w, bc, tc] of [['BAM yellow', 'BAM!', '#ffe600', '#e01e37'], ['POW red', 'POW!', '#ff2d2d', '#ffe600'], ['WOW blue', 'WOW!', '#1fb6ff', '#ffffff'], ['ZAP purple', 'ZAP!', '#a259ff', '#ffe600'], ['BOOM orange', 'BOOM', '#ff8a00', '#ffffff'], ['YAY green', 'YAY!', '#3ddc84', '#1b1b2f']]) add('burst', n, w, { bubble: 'burst', boxColor: bc, color: tc, bubbleBorder: { color: '#000000', w: 0.07 }, outline: true, outlineColor: '#000000', outlineW: 0.1 });
-  for (const [n, w, c] of [['Neon HELLO', 'HELLO', '#ff5fa2'], ['Neon OOPS', 'OOPS', '#00e5ff'], ['Neon WHAT', 'WHAT?', '#9dff3d'], ['Neon OMG', 'OMG', '#ffe600'], ['Neon LOL', 'LOL', '#a259ff'], ['Neon YES', 'YES!', '#ff8a00']]) add('neon', n, w, { bubble: 'speech', boxColor: 'rgba(0,0,0,0)', color: '#ffffff', bubbleBorder: { color: c, w: 0.06 }, glow: { color: c, blur: 0.6 } });
-  for (const [n, bc, tc] of [['Price red', '#e01e37', '#ffffff'], ['Price yellow', '#ffe600', '#1b1b2f'], ['Price green', '#00b37e', '#ffffff'], ['Sale black', '#1b1b2f', '#ffe600']]) { add('ticket', n, '$9.99', { bubble: 'tag', boxColor: bc, color: tc, bubbleBorder: null }); add('ticket', n + ' ticket', 'SALE', { bubble: 'label', boxColor: bc, color: tc, bubbleBorder: { color: '#ffffff', w: 0.05 } }); }
-  for (const [n, bc, tc] of [['Ribbon red', '#e01e37', '#ffffff'], ['Ribbon blue', '#1f7bff', '#ffffff'], ['Ribbon gold', '#ffcc33', '#5a3a00'], ['Ribbon pink', '#ff5fa2', '#ffffff'], ['Ribbon green', '#00b37e', '#ffffff']]) add('ribbon', n, 'NEW', { bubble: 'banner', boxColor: bc, color: tc, bubbleBorder: null });
-  for (const [n, bc, tc] of [['Note yellow', '#fff27a', '#1b1b2f'], ['Note pink', '#ffc2dd', '#1b1b2f'], ['Note blue', '#c2e4ff', '#1b1b2f'], ['Tape beige', 'rgba(240,226,190,.9)', '#3b2a10'], ['Tape grey', 'rgba(220,220,220,.85)', '#1b1b2f'], ['Paper torn', '#f7f1e3', '#1b1b2f']]) add('note', n, 'Note', { bubble: 'box', boxColor: bc, color: tc, bubbleBorder: null, shadow: { color: 'rgba(0,0,0,.35)', dx: 0.02, dy: 0.04, blur: 0.05 } });
-  for (const [n, c] of [['Chalk white', '#ffffff'], ['Chalk yellow', '#fff27a'], ['Chalk pink', '#ffb3d9'], ['Chalk blue', '#a6dcff']]) add('chalk', n, 'Hello', { bubble: 'box', boxColor: 'rgba(0,0,0,0)', color: c, bubbleBorder: { color: c, w: 0.04 } });
-  for (const [n, bc] of [['Brush HAPPY', '#ff5fa2'], ['Brush yellow', '#ffcc33'], ['Brush teal', '#00c2b8'], ['Brush black', '#1b1b2f']]) add('brush', n, 'HAPPY', { bubble: 'label', boxColor: bc, color: '#ffffff', bubbleBorder: null, outline: true, outlineColor: '#1b1b2f', outlineW: 0.06 });
-  for (const [n, bc, sh] of [['Kawaii pink', '#ffd1ec', 'pill'], ['Kawaii heart', '#ff9de2', 'cloud'], ['Kawaii peach', '#ffe0c2', 'speech'], ['Kawaii lilac', '#e6d4ff', 'pill'], ['Kawaii mint', '#c8ffe8', 'cloud']]) add('kawaii', n, 'Cute~', { bubble: sh, boxColor: bc, color: '#ff2d7a', bubbleBorder: { color: '#ff5fa2', w: 0.05 } });
-  for (const [n, bc, tc] of [['Sticker white', '#ffffff', '#1b1b2f'], ['Sticker black', '#1b1b2f', '#ffffff'], ['Sticker red', '#e01e37', '#ffffff'], ['Label slate', '#2b2b3a', '#ffcc33']]) add('label', n, 'LABEL', { bubble: 'sticker', boxColor: bc, color: tc, bubbleBorder: null });
+// B22 bubbles: designed shapes that resize to the text (render.js bubblePath). Professional first; cartoon ones only in Kids.
+const BUB_DESIGNS = (() => { const L = [], add = (cat, name, word, t, trend) => L.push({ id: 'bd' + L.length, cat, name, word, t, trend: !!trend });
+  const B = (bubble, boxColor, color, border, x = {}) => ({ bubble, boxColor, color, bubbleBorder: border, ...x });
+  const ink = '#16161c', cream = '#f5efe6', gold = '#d4af37';
+  // Speech
+  for (const [n, sh, bc, tc, tr] of [['Chat white', 'chat', '#ffffff', ink, 1], ['Chat blue', 'chatR', '#0a84ff', '#ffffff', 1], ['Chat gray', 'chat', '#e9e9eb', ink], ['Chat dark', 'chatR', '#2c2c2e', '#ffffff'], ['Speech round', 'speech', '#ffffff', ink, 1], ['Speech dark', 'speech', 'rgba(16,16,20,.82)', '#ffffff'], ['Oval speech', 'oval', '#ffffff', ink], ['Oval outline', 'oval', 'rgba(0,0,0,0)', '#ffffff', 0, { color: '#ffffff', w: .04 }], ['Thought', 'thought', '#ffffff', ink], ['Callout', 'callout', '#ffffff', ink, 1], ['Callout dark', 'callout', 'rgba(16,16,20,.85)', '#ffffff'], ['Callout gold', 'callout', gold, ink]])
+    add('speech', n, 'Hello', B(sh, bc, tc, null), tr);
+  L.find(x => x.name === 'Oval outline').t.bubbleBorder = { color: '#ffffff', w: .04 };
+  // Ribbons & banners
+  for (const [n, sh, bc, tc, tr] of [['Ribbon crimson', 'ribbon2', '#9e1b32', '#ffffff', 1], ['Ribbon navy', 'ribbon2', '#1d2b53', cream], ['Ribbon gold', 'ribbon2', gold, ink, 1], ['Ribbon black', 'ribbon2', '#121214', gold], ['Banner cut', 'banner', '#9e1b32', '#ffffff'], ['Banner slate', 'banner', '#2b2f3a', '#ffffff'], ['Scroll cream', 'scroll', '#efe4cc', '#3a2a14'], ['Scroll gold', 'scroll', '#c9a35a', '#2a1e08']])
+    add('ribbons', n, 'SPECIAL', B(sh, bc, tc, null, { font: 'montserrat' }), tr);
+  // Frames
+  for (const [n, sh, c, bc, tr] of [['Double frame', 'frame2', '#ffffff', 'rgba(0,0,0,0)', 1], ['Gold frame', 'frame2', gold, 'rgba(0,0,0,.35)', 1], ['Corners', 'corners', '#ffffff', 'rgba(0,0,0,0)', 1], ['Gold corners', 'corners', gold, 'rgba(0,0,0,0)'], ['Thin box', 'box', '#ffffff', 'rgba(0,0,0,0)'], ['Round outline', 'pill', '#ffffff', 'rgba(0,0,0,0)'], ['Dark frame', 'frame2', cream, 'rgba(10,10,14,.7)'], ['Black corners', 'corners', ink, 'rgba(255,255,255,.85)']])
+    add('frames', n, 'Frame', B(sh, bc, sh === 'corners' && bc.startsWith('rgba(255') ? ink : c, sh === 'frame2' || sh === 'corners' ? { color: c, w: 0 } : { color: c, w: .035 }), tr);
+  // Labels & tags
+  for (const [n, sh, bc, tc, w, tr] of [['Price tag', 'tag', '#ffffff', ink, '$29', 1], ['Price red', 'tag', '#c8102e', '#ffffff', '$29'], ['Ticket', 'ticket', gold, ink, 'ADMIT ONE', 1], ['Ticket dark', 'ticket', '#1c1c22', cream, 'VIP'], ['Label slant', 'label', '#ffffff', ink, 'NEW'], ['Label black', 'label', '#111114', '#ffffff', 'SALE'], ['Sticker', 'sticker', '#ffffff', ink, 'LABEL'], ['Box solid', 'box', '#111114', '#ffffff', 'LABEL', 1], ['Box white', 'box', '#ffffff', ink, 'LABEL'], ['Box accent', 'box', '#ff5a36', '#ffffff', 'LIVE']])
+    add('labels', n, w, B(sh, bc, tc, null), tr);
+  // Tape & paper
+  for (const [n, sh, bc, tc, tr] of [['Washi tape', 'tape', 'rgba(240,226,190,.88)', '#3a2a14', 1], ['Clear tape', 'tape', 'rgba(255,255,255,.55)', ink], ['Pink tape', 'tape', 'rgba(244,196,196,.9)', '#5a2a2a'], ['Torn white', 'torn', '#f7f5f0', ink, 1], ['Torn kraft', 'torn', '#c8a47a', '#2a1a08'], ['Torn black', 'torn', '#141416', '#ffffff'], ['Note card', 'box', '#fbf7ea', '#2a2a2a', 0, { shadow: null }], ['Paper slip', 'label', '#f7f5f0', ink]])
+    add('paper', n, 'Note', B(sh, bc, tc, null), tr);
+  // Brush
+  for (const [n, bc, tc, tr] of [['Brush black', '#111114', '#ffffff', 1], ['Brush red', '#c8102e', '#ffffff', 1], ['Brush gold', gold, ink], ['Brush white', '#f5f5f5', ink], ['Brush coral', '#ff6b5a', '#ffffff'], ['Brush navy', '#1d2b53', '#ffffff']])
+    add('brush', n, 'HIGHLIGHT', B('brush', bc, tc, null), tr);
+  // Social
+  for (const [n, sh, bc, tc, w, tr] of [['Subscribe', 'box', '#ff0000', '#ffffff', 'SUBSCRIBE', 1], ['Follow pill', 'pill', '#ffffff', ink, '+ Follow', 1], ['Glass pill', 'pill', 'rgba(255,255,255,.18)', '#ffffff', '@yourname', 1], ['Dark pill', 'pill', 'rgba(16,16,20,.75)', '#ffffff', 'Link in bio'], ['Blue pill', 'pill', '#0a84ff', '#ffffff', 'Shop now'], ['Like chat', 'chatR', '#ff2d55', '#ffffff', '♥ 2.4K']])
+    add('social', n, w, B(sh, bc, tc, sh === 'pill' && bc.includes('.18') ? { color: 'rgba(255,255,255,.6)', w: .025 } : null, { font: 'poppins' }), tr);
+  // Minimal
+  for (const [n, sh, bc, tc, tr] of [['Glass', 'pill', 'rgba(255,255,255,.16)', '#ffffff', 1], ['Smoke box', 'box', 'rgba(0,0,0,.55)', '#ffffff', 1], ['White box', 'box', 'rgba(255,255,255,.92)', ink], ['Cream pill', 'pill', cream, '#3a2a14'], ['Line box', 'box', 'rgba(0,0,0,0)', '#ffffff']])
+    add('minimal', n, 'minimal', B(sh, bc, tc, bc === 'rgba(0,0,0,0)' || bc.includes('.16') ? { color: 'rgba(255,255,255,.7)', w: .025 } : null), tr);
+  // Kids (playful)
+  for (const [n, w, sh, bc, tc] of [['BAM', 'BAM!', 'burst', '#ffe600', '#e01e37'], ['POW', 'POW!', 'burst', '#ff2d2d', '#ffe600'], ['WOW', 'WOW!', 'burst', '#1fb6ff', '#ffffff'], ['Comic', 'Hey!', 'speech', '#ffe600', '#1b1b2f'], ['Cloud', 'Dreamy', 'cloud', '#cfeaff', '#1f3bff'], ['Kawaii', 'Cute~', 'pill', '#ffd1ec', '#ff2d7a'], ['Kawaii cloud', 'Yay', 'cloud', '#ffe0c2', '#ff2d7a'], ['Neon OMG', 'OMG', 'speech', 'rgba(0,0,0,0)', '#ffffff']])
+    add('kids', n, w, B(sh, bc, tc, n === 'Neon OMG' ? { color: '#ff5fa2', w: .06 } : { color: '#000000', w: .06 }, { font: 'bangers' }));
   return L; })();
-const BUB_CATS = [['all', 'All'], ['comic', 'Comic'], ['cloud', 'Cloud'], ['burst', 'Burst'], ['neon', 'Neon'], ['ticket', 'Ticket'], ['ribbon', 'Ribbon'], ['note', 'Notes & tape'], ['chalk', 'Chalk'], ['brush', 'Brush'], ['kawaii', 'Kawaii'], ['label', 'Label']];
+const BUB_CATS = [['trending', 'Trending'], ['speech', 'Speech'], ['ribbons', 'Ribbons'], ['frames', 'Frames'], ['labels', 'Labels'], ['paper', 'Tape & Paper'], ['brush', 'Brush'], ['social', 'Social'], ['minimal', 'Minimal'], ['kids', 'Kids']];
 const fxStyle = (t, fid) => { const x = EXTRA_FX.find(e => e.id === fid); if (!x) return applyStyle(t, fid); applyStyle(t, null); Object.assign(t, JSON.parse(JSON.stringify(x.s))); t.styleId = fid; return t; };
 const FONT_CATS = [['trending', 'Trending'], ['classic', 'Classic'], ['new', 'NEW'], ['brand', 'Brand fonts'], ...FONT_GROUPS];
 const fontCat = (k, cat) => { const f = FONTS[k], g = f.group || 'system', i = Object.keys(FONTS).indexOf(k);
@@ -907,20 +927,20 @@ function textSheet(startTab) {
       } else if (textTab === 'anim') {
         animSheet('in', pane);
       } else if (textTab === 'bubble') {
-        let bc = 'all'; const holder = document.createElement('div');
+        let bc = 'trending'; const holder = document.createElement('div');
         pane.append(chips(BUB_CATS.map(([value, label]) => ({ value, label })), bc, v => { bc = v; fillB(); }, 'tabs bubcats'), holder);
         function fillB() { holder.innerHTML = ''; const g = document.createElement('div'); g.className = 'bubblechips bubgrid'; const curB = clipNow().text.bubbleId || null;
-          const list = [{ id: null, name: 'None', word: '', t: { bubble: null } }, ...BUBBLES.filter(x => x.id).map(x => ({ id: x.id, name: x.name, word: 'Hi!', t: { bubble: x.id }, basic: true })), ...BUB_DESIGNS.filter(d => bc === 'all' || d.cat === bc)];
-          const shown = bc === 'all' ? list : [list[0], ...list.filter(x => !x.basic && x.id)];
+          const list = [{ id: null, name: 'None', word: '', t: { bubble: null } }, ...BUB_DESIGNS.filter(d => bc === 'trending' ? d.trend : d.cat === bc)];
+          const shown = list;
           shown.forEach((bb, i) => { const b = document.createElement('button'); b.className = 'chipbtn bubtile' + ((bb.id ?? null) === curB ? ' on' : ''); b.dataset.v = bb.id ?? 'null'; b.dataset.lazy = 1; b.dataset.i = i; b.innerHTML = `<canvas width="${TW}" height="${TH}"></canvas><span>${bb.name}</span>`;
-            b.onclick = () => { editSel(cl => { const t = cl.text; if (bb.basic || !bb.id) { t.bubble = bb.id; t.box = !!bb.id; if (bb.id && !t.boxColor) t.boxColor = '#ffffff'; } else { const font = t.font; applyStyle(t, null); Object.assign(t, JSON.parse(JSON.stringify(bb.t))); t.font = font; t.box = true; } t.bubbleId = bb.id; }); g.querySelectorAll('.bubtile').forEach(x => x.classList.toggle('on', x === b)); }; g.append(b); });
-          requestAnimationFrame(() => lazyDraw(g, b => { const bb = shown[+b.dataset.i], c = clipNow(), t = { ...c.text, content: bb.word || 'Hi!', curve: 0, size: 130 };
-            if (bb.basic || !bb.id) Object.assign(t, { bubble: bb.id, box: !!bb.id, boxColor: c.text.boxColor || '#ffffff', color: bb.id && (c.text.color === '#ffffff' && (!c.text.boxColor || c.text.boxColor === '#ffffff')) ? '#1b1b2f' : c.text.color }); else Object.assign(t, JSON.parse(JSON.stringify(bb.t)), { box: true, outline: bb.t.outline || false, glow: bb.t.glow || null, fill: null });
+            b.onclick = () => { editSel(cl => { const t = cl.text; if (bb.basic || !bb.id) { t.bubble = bb.id; t.box = !!bb.id; if (bb.id && !t.boxColor) t.boxColor = '#ffffff'; } else { const font = t.font; applyStyle(t, null); Object.assign(t, JSON.parse(JSON.stringify(bb.t))); if (bb.cat !== 'kids') t.font = font; t.box = true; } t.bubbleId = bb.id; }); g.querySelectorAll('.bubtile').forEach(x => x.classList.toggle('on', x === b)); }; g.append(b); });
+          requestAnimationFrame(() => lazyDraw(g, b => { const bb = shown[+b.dataset.i], c = clipNow(), t = applyStyle({ ...c.text, content: bb.word || 'Hi!', curve: 0, size: 130, font: 'montserrat', color: '#ffffff' }, null); t.content = bb.word || 'Hi!'; t.size = 130; t.font = bb.t.font || 'montserrat';
+            if (bb.basic || !bb.id) Object.assign(t, { bubble: null, box: false, color: '#ffffff' }); else Object.assign(t, JSON.parse(JSON.stringify(bb.t)), { box: true, outline: bb.t.outline || false, glow: bb.t.glow || null, fill: null });
             textTile(b.querySelector('canvas').getContext('2d'), TW, TH, { ...c, anim: null, text: t }); }));
           holder.append(g); }
         fillB();
         const sub = document.createElement('div'); sub.className = 'sub'; sub.innerHTML = '<span class="cl">Bubble colour</span>';
-        sub.append(swatches(['#ffffff', '#000000', '#ffcc33', '#ffe600', '#ff4d4d', '#1fb6ff', '#3ddc84', '#ff5fa2', '#a259ff', '#1b1b2f'], T.boxColor, v => editSel(cl => { cl.text.boxColor = v; if (!cl.text.bubble && !cl.text.box) { cl.text.box = true; cl.text.bubble = 'box'; } })));
+        sub.append(swatches(['#ffffff', '#16161c', '#f5efe6', '#d4af37', '#9e1b32', '#c8102e', '#1d2b53', '#0a84ff', '#2b2f3a', 'rgba(255,255,255,.16)', 'rgba(0,0,0,.55)'], T.boxColor, v => editSel(cl => { cl.text.boxColor = v; if (!cl.text.bubble && !cl.text.box) { cl.text.box = true; cl.text.bubble = 'box'; } })));
         const sub2 = document.createElement('div'); sub2.className = 'sub'; sub2.innerHTML = '<span class="cl">Border</span>';
         sub2.append(swatches(['none', '#000000', '#ffffff', '#1b1b2f', '#e01e37', '#1f7bff'], T.bubbleBorder ? T.bubbleBorder.color : 'none', v => editSel(cl => { cl.text.bubbleBorder = v === 'none' ? null : { color: v, w: 0.07 }; })));
         pane.append(sub, sub2);

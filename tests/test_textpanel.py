@@ -107,9 +107,18 @@ async def run():
         await pg.click('.animtabs .chipbtn[data-v="in"]'); await pg.wait_for_timeout(150)
         await pg.click('.angrid .trtile >> nth=2'); await pg.wait_for_timeout(200); ok(bool(await P(pg, TX + '.anim?.in?.id')), 'in animation applies')
         await tab('bubble', 'bubbles')
-        await pg.click('.bubblechips .chipbtn[data-v="speech"]'); await pg.wait_for_timeout(150); ok(await P(pg, TX + '.text.bubble') == 'speech', 'speech bubble')
-        n = await P(pg, 'document.querySelectorAll(".bubgrid .bubtile").length'); ok(n >= 70, f'{n} bubble tiles')
-        await pg.click('.bubcats .chipbtn[data-v="neon"]'); await pg.wait_for_timeout(150); await pg.click('.bubgrid .bubtile >> nth=1'); await pg.wait_for_timeout(150); ok(bool(await P(pg, TX + '.text.glow')), 'neon bubble design applies'); await shot(pg, 'b17-text-bubbles-neon.png', 700)
+        cats = await P(pg, "[...document.querySelectorAll('.bubcats .chipbtn')].map(b=>b.textContent.trim())")
+        ok(cats == ['Trending', 'Speech', 'Ribbons', 'Frames', 'Labels', 'Tape & Paper', 'Brush', 'Social', 'Minimal', 'Kids'], f'bubble chips {cats}')
+        total = 0
+        for c in ['speech', 'ribbons', 'frames', 'labels', 'paper', 'brush', 'social', 'minimal', 'kids']:
+            await pg.click(f'.bubcats .chipbtn[data-v="{c}"]'); await pg.wait_for_timeout(120); total += await P(pg, 'document.querySelectorAll(".bubgrid .bubtile").length') - 1
+        ok(total >= 60, f'{total} bubble designs')
+        await pg.click('.bubcats .chipbtn[data-v="trending"]'); await pg.wait_for_timeout(150)
+        await shot(pg, 'b22-bubbles-grid-390.png', 900)
+        for i, (c, n, name) in enumerate([('speech', 1, 'chat'), ('ribbons', 3, 'ribbon-gold'), ('frames', 2, 'gold-frame'), ('brush', 1, 'brush')]):
+            await pg.click(f'.bubcats .chipbtn[data-v="{c}"]'); await pg.wait_for_timeout(150); await pg.click(f'.bubgrid .bubtile >> nth={n}'); await pg.wait_for_timeout(200)
+            ok(bool(await P(pg, TX + '.text.bubble')), f'{c} bubble applies'); await shot(pg, f'b22-bubbles-applied-{name}-390.png', 600)
+        await pg.click('.bubgrid .bubtile >> nth=0'); await pg.wait_for_timeout(150)
         await tab('preset', 'presets')
         ok('Add text presets to your space' in await P(pg, 'document.querySelector(".textpane").textContent'), 'presets empty state')
         await pg.click('#presetSave'); await pg.wait_for_timeout(300); ok(await P(pg, 'document.querySelectorAll(".presetgrid .trtile").length') == 1, 'save as preset'); await shot(pg, 'b17-text-presets-saved.png', 500)
